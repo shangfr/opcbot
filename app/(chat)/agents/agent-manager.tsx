@@ -30,6 +30,7 @@ type AgentFormData = {
   avatar: string;
   systemPrompt: string;
   phone: string;
+  starterQuestions: string;
   isActive: boolean;
   sortOrder: number;
 };
@@ -40,6 +41,7 @@ const emptyForm: AgentFormData = {
   avatar: "/icon.png",
   systemPrompt: "",
   phone: "",
+  starterQuestions: "",
   isActive: true,
   sortOrder: 0,
 };
@@ -61,7 +63,7 @@ export function AgentManager() {
       const data = await res.json();
       setAgents(data);
     } catch {
-      toast.error("获取 Agent 列表失败");
+      toast.error("获取 OPC 列表失败");
     } finally {
       setLoading(false);
     }
@@ -85,6 +87,7 @@ export function AgentManager() {
       avatar: agent.avatar,
       systemPrompt: agent.systemPrompt,
       phone: agent.phone ?? "",
+      starterQuestions: (agent.starterQuestions ?? []).join("\n"),
       isActive: agent.isActive,
       sortOrder: agent.sortOrder,
     });
@@ -101,24 +104,32 @@ export function AgentManager() {
       return;
     }
 
+    const payload = {
+      ...form,
+      starterQuestions: form.starterQuestions
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    };
+
     setSaving(true);
     try {
       if (editingAgent) {
         const res = await fetch(`/api/agents?id=${editingAgent.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error("Failed to update");
-        toast.success("Agent 已更新");
+        toast.success("OPC 已更新");
       } else {
         const res = await fetch("/api/agents", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error("Failed to create");
-        toast.success("Agent 已创建");
+        toast.success("OPC 已创建");
       }
       setDialogOpen(false);
       fetchAgents();
@@ -136,7 +147,7 @@ export function AgentManager() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete");
-      toast.success("Agent 已删除");
+      toast.success("OPC 已删除");
       setDeleteConfirm(null);
       fetchAgents();
     } catch {
@@ -186,15 +197,15 @@ export function AgentManager() {
       <div className="mb-10 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Agent 管理
+            OPC 管理
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            管理 AI Agent 角色配置，共 {agents.length} 个
+            管理 AI OPC 角色配置，共 {agents.length} 个
           </p>
         </div>
         <Button onClick={openCreate} className="gap-2">
           <Plus className="size-4" />
-          新建 Agent
+          新建 OPC
         </Button>
       </div>
 
@@ -202,14 +213,14 @@ export function AgentManager() {
       {agents.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-20">
           <Plus className="mb-4 size-12 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">还没有任何 Agent</p>
+          <p className="text-sm text-muted-foreground">还没有任何 OPC</p>
           <Button
             variant="outline"
             className="mt-4 gap-2"
             onClick={openCreate}
           >
             <Plus className="size-4" />
-            创建第一个 Agent
+            创建第一个 AI OPC
           </Button>
         </div>
       )}
@@ -304,7 +315,7 @@ export function AgentManager() {
                       }
                       disabled={!agent.isActive}
                       title={
-                        agent.isActive ? "开始对话" : "已停用的 Agent 无法对话"
+                        agent.isActive ? "开始对话" : "已停用的 OPC 无法对话"
                       }
                     >
                       <MessageCircle className="size-3" />
@@ -406,7 +417,7 @@ export function AgentManager() {
                       }
                       disabled={!agent.isActive}
                       title={
-                        agent.isActive ? "开始对话" : "已停用的 Agent 无法对话"
+                        agent.isActive ? "开始对话" : "已停用的 OPC 无法对话"
                       }
                     >
                       <MessageCircle className="size-3" />
@@ -443,12 +454,12 @@ export function AgentManager() {
         <DialogContent className="max-h-[85dvh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingAgent ? "编辑 Agent" : "新建 Agent"}
+              {editingAgent ? "编辑 OPC" : "新建 OPC"}
             </DialogTitle>
             <DialogDescription>
               {editingAgent
-                ? "修改 Agent 角色的名称、描述和系统提示词"
-                : "创建一个新的 Agent 角色配置"}
+                ? "修改 OPC 角色的名称、描述和系统提示词"
+                : "创建一个新的 OPC 角色配置"}
             </DialogDescription>
           </DialogHeader>
 
@@ -488,7 +499,7 @@ export function AgentManager() {
               <Textarea
                 id="desc"
                 className="min-h-[60px]"
-                placeholder="简短描述 Agent 的角色定位..."
+                placeholder="简短描述 OPC 的角色定位..."
                 value={form.description}
                 onChange={(e) =>
                   setForm({ ...form, description: e.target.value })
@@ -507,6 +518,22 @@ export function AgentManager() {
                   setForm({ ...form, systemPrompt: e.target.value })
                 }
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="starterQuestions">默认问题</Label>
+              <Textarea
+                id="starterQuestions"
+                className="min-h-[80px] text-xs"
+                placeholder="每行一个问题，最多 8 个&#10;例如：&#10;你好，你能帮我做什么？&#10;请介绍一下你的专业能力"
+                value={form.starterQuestions}
+                onChange={(e) =>
+                  setForm({ ...form, starterQuestions: e.target.value })
+                }
+              />
+              <p className="text-[11px] text-muted-foreground">
+                用户进入该 OPC 聊天时显示的默认引导问题，每行一个
+              </p>
             </div>
 
             <div className="flex items-center gap-6">
@@ -560,7 +587,7 @@ export function AgentManager() {
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
             <DialogDescription>
-              确定要删除 Agent「{deleteConfirm?.name}」吗？此操作不可撤销。
+              确定要删除 OPC「{deleteConfirm?.name}」吗？此操作不可撤销。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

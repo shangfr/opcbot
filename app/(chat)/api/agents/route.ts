@@ -16,6 +16,7 @@ const agentSchema = z.object({
   avatar: z.string().default("/icon.png"),
   systemPrompt: z.string().min(1, "系统提示词不能为空"),
   phone: z.string().max(20, "手机号最长 20 个字符").nullable().default(null),
+  starterQuestions: z.array(z.string()).max(8, "默认问题最多 8 个").default([]),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().default(0),
 });
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
       avatar: body.avatar,
       systemPrompt: body.systemPrompt,
       phone: body.phone,
+      starterQuestions: body.starterQuestions,
       isActive: body.isActive,
       sortOrder: body.sortOrder,
       userId: session.user.id,
@@ -122,6 +124,7 @@ export async function PATCH(request: Request) {
       avatar: body.avatar ?? existing.avatar,
       systemPrompt: body.systemPrompt ?? existing.systemPrompt,
       phone: body.phone ?? existing.phone,
+      starterQuestions: body.starterQuestions ?? existing.starterQuestions ?? [],
       isActive: body.isActive ?? existing.isActive,
       sortOrder: body.sortOrder ?? existing.sortOrder,
     });

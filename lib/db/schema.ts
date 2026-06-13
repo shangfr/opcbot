@@ -143,6 +143,7 @@ export const agent = pgTable("Agent", {
   avatar: text("avatar").notNull().default("/icon.png"),
   systemPrompt: text("system_prompt").notNull(),
   phone: text("phone"),
+  starterQuestions: json("starter_questions").$type<string[]>().default([]),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   userId: uuid("userId")

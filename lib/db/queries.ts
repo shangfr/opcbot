@@ -665,6 +665,7 @@ export async function createAgent({
   avatar,
   systemPrompt,
   phone,
+  starterQuestions,
   isActive,
   sortOrder,
   userId,
@@ -674,6 +675,7 @@ export async function createAgent({
   avatar: string;
   systemPrompt: string;
   phone?: string | null;
+  starterQuestions?: string[];
   isActive: boolean;
   sortOrder: number;
   userId: string;
@@ -687,6 +689,7 @@ export async function createAgent({
         avatar,
         systemPrompt,
         phone: phone || null,
+        starterQuestions: starterQuestions ?? [],
         isActive,
         sortOrder,
         userId,
@@ -705,6 +708,7 @@ export async function updateAgent({
   avatar,
   systemPrompt,
   phone,
+  starterQuestions,
   isActive,
   sortOrder,
 }: {
@@ -714,6 +718,7 @@ export async function updateAgent({
   avatar: string;
   systemPrompt: string;
   phone?: string | null;
+  starterQuestions?: string[];
   isActive: boolean;
   sortOrder: number;
 }) {
@@ -726,6 +731,7 @@ export async function updateAgent({
         avatar,
         systemPrompt,
         phone: phone ?? null,
+        starterQuestions: starterQuestions ?? [],
         isActive,
         sortOrder,
         updatedAt: new Date(),

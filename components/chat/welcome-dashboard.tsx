@@ -3,7 +3,6 @@
 import {
   Bot,
   MessageSquare,
-  Sparkles,
   TrendingUp,
   Users,
   Zap,
@@ -28,20 +27,30 @@ function StatCard({
   value,
   trend,
   delay,
+  color,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
   trend?: { value: string; up: boolean };
   delay: number;
+  color: string;
 }) {
+  const colorMap: Record<string, { bg: string; icon: string }> = {
+    cyan: { bg: "bg-sky-500/10", icon: "text-sky-500" },
+    orange: { bg: "bg-orange-500/10", icon: "text-orange-500" },
+    amber: { bg: "bg-amber-500/10", icon: "text-amber-500" },
+    green: { bg: "bg-emerald-500/10", icon: "text-emerald-500" },
+  };
+  const c = colorMap[color] ?? colorMap.cyan;
+
   return (
     <div
       className="stat-enter flex items-center gap-4 rounded-xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/8">
-        <Icon className="size-4 text-primary/70" />
+      <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${c.bg}`}>
+        <Icon className={`size-4 ${c.icon}`} />
       </div>
       <div className="min-w-0">
         <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -117,20 +126,21 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
       <div className="w-full max-w-3xl pt-12 pb-8">
         {/* ===== Welcome 标题 ===== */}
         <div className="mb-10 text-center">
-          <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 ring-1 ring-primary/10">
-            <Sparkles className="size-7 text-primary" />
+          <div className="mx-auto mb-5 flex size-16 items-center justify-center overflow-hidden rounded-2xl ring-1 ring-primary/10">
+            <img src="/logo.jpg" alt="OPC Bot" className="size-full object-cover" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
             OPC Bot
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            选择一位 Agent 或直接开始对话，探索 AI 助手的无限可能
+            选择一位 OPC 或直接开始对话，探索 AI 助手的无限可能
           </p>
         </div>
 
         {/* ===== 统计卡片 ===== */}
         <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
+            color="cyan"
             delay={0}
             icon={MessageSquare}
             label="对话数"
@@ -138,6 +148,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
             value="--"
           />
           <StatCard
+            color="orange"
             delay={80}
             icon={Users}
             label="活跃用户"
@@ -145,6 +156,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
             value="--"
           />
           <StatCard
+            color="amber"
             delay={160}
             icon={Zap}
             label="响应速度"
@@ -152,9 +164,10 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
             value="--"
           />
           <StatCard
+            color="green"
             delay={240}
             icon={TrendingUp}
-            label="Agent 数"
+            label="OPC 数"
             value={String(activeAgents.length)}
           />
         </div>
@@ -168,41 +181,43 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
             <button
               type="button"
               onClick={handleNewChat}
-              className="group flex items-center gap-4 rounded-xl border border-border/40 bg-card p-4 text-left shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--shadow-float)]"
+              className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/[0.04] to-transparent p-5 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-500/30 hover:shadow-[0_4px_24px_-4px_rgba(14,165,233,0.15)]"
             >
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/8 transition-colors group-hover:bg-primary/15">
-                <MessageSquare className="size-5 text-primary/70" />
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 transition-colors group-hover:bg-sky-500/15">
+                <MessageSquare className="size-5 text-sky-500" />
               </div>
-              <div>
-                <p className="text-sm font-medium">新建对话</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">新建对话</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   直接与 AI 开始对话
                 </p>
               </div>
+              <svg className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-sky-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
             <button
               type="button"
               onClick={() => router.push("/agents")}
-              className="group flex items-center gap-4 rounded-xl border border-border/40 bg-card p-4 text-left shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[var(--shadow-float)]"
+              className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-rose-500/15 bg-gradient-to-br from-rose-500/[0.04] to-transparent p-5 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-500/30 hover:shadow-[0_4px_24px_-4px_rgba(244,63,94,0.15)]"
             >
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/8 transition-colors group-hover:bg-accent/15">
-                <Bot className="size-5 text-accent/70" />
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 transition-colors group-hover:bg-rose-500/15">
+                <Bot className="size-5 text-rose-500" />
               </div>
-              <div>
-                <p className="text-sm font-medium">选择 Agent</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">选择 OPC</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  浏览和管理 Agent 角色
+                  浏览和管理 OPC 角色
                 </p>
               </div>
+              <svg className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-rose-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
           </div>
         </div>
 
-        {/* ===== 推荐 Agent ===== */}
+        {/* ===== 推荐 OPC ===== */}
         {featuredAgents.length > 0 && (
           <div>
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              推荐 Agent
+              推荐 OPC
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {featuredAgents.map((agent, i) => {
@@ -214,7 +229,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                     key={agent.id}
                     type="button"
                     onClick={() => handleStartChatWithAgent(agent)}
-                    className="stat-enter group flex items-center gap-4 rounded-xl border border-border/40 bg-card p-3 text-left shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-transparent hover:shadow-[var(--shadow-float)] hover:ring-2 hover:ring-primary/15"
+                    className={`stat-enter group flex items-center gap-4 overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br ${group.gradientFrom} to-transparent p-4 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:${group.borderHover} ${group.hoverShadow}`}
                     style={{
                       animationDelay: `${300 + i * 80}ms`,
                       animationFillMode: "both",
@@ -226,13 +241,14 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                       {avatarChar}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
+                      <p className="truncate text-sm font-semibold">
                         {agent.name}
                       </p>
                       <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
                         {agent.description || "点击开始对话"}
                       </p>
                     </div>
+                    <svg className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-foreground" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </button>
                 );
               })}
@@ -245,7 +261,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                 onClick={() => router.push("/agents")}
                 className="mt-4 w-full rounded-xl border border-dashed border-border/50 py-2.5 text-center text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
               >
-                查看全部 {activeAgents.length} 个 Agent →
+                查看全部 {activeAgents.length} 个 OPC →
               </button>
             )}
           </div>

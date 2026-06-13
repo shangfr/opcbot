@@ -6,7 +6,6 @@ import {
   PanelLeftIcon,
   PenSquareIcon,
   TrashIcon,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -87,11 +86,11 @@ export function AppSidebar({
                 {/* 折叠时的 Logo 图标 */}
                 <SidebarMenuButton
                   asChild
-                  className="size-8 shrink-0 items-center justify-center rounded-lg !p-0 bg-sidebar-primary/15 text-sidebar-primary group-data-[collapsible=icon]:group-hover/logo:opacity-0 transition-opacity duration-150"
+                  className="size-8 shrink-0 items-center justify-center rounded-lg !p-0 group-data-[collapsible=icon]:group-hover/logo:opacity-0 transition-opacity duration-150"
                   tooltip="OPC Bot"
                 >
                   <Link href="/" onClick={() => setOpenMobile(false)}>
-                    <Zap className="size-3.5" />
+                    <img src="/logo.jpg" alt="OPC Bot" className="size-8 rounded-lg object-cover" />
                   </Link>
                 </SidebarMenuButton>
                 {/* 展开时的品牌名称 */}
@@ -146,20 +145,20 @@ export function AppSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {/* Agent */}
+                {/* OPC */}
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      tooltip={isAdmin ? "Agent 管理" : "选择 Agent"}
+                      tooltip={isAdmin ? "OPC 管理" : "选择 OPC"}
                     >
                       <Link
                         href="/agents"
                         onClick={() => setOpenMobile(false)}
                       >
                         <Bot className="size-3.5" />
-                        <span>{isAdmin ? "Agent 管理" : "选择 Agent"}</span>
+                        <span>{isAdmin ? "OPC 管理" : "选择 OPC"}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

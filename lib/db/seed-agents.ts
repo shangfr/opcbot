@@ -17,6 +17,7 @@ interface SeedAgent {
   description: string;
   systemPrompt: string;
   phone?: string;
+  starterQuestions: string[];
   sortOrder: number;
 }
 
@@ -74,6 +75,12 @@ const AGENTS: SeedAgent[] = [
 ### ⚠️ 免责声明
 本回复基于您提供的信息进行初步法律分析，仅供参考，不构成正式的法律意见或承诺。具体案件处理请咨询持有执业证的专业律师。`,
     phone: "13800010001",
+    starterQuestions: [
+      "我想咨询离婚财产分割的法律问题",
+      "劳动争议仲裁的流程和时效是怎样的？",
+      "合同纠纷可以通过哪些法律途径解决？",
+      "被人侵权了，我应该如何收集证据维权？",
+    ],
     sortOrder: 1,
   },
   {
@@ -121,6 +128,12 @@ const AGENTS: SeedAgent[] = [
 ### ⚠️ 免责声明
 本回复基于您提供的信息进行初步法律分析，仅供参考，不构成正式的法律意见或承诺。`,
     phone: "13800010002",
+    starterQuestions: [
+      "帮我审核一份股权转让协议的合规性",
+      "企业合同中常见的法律风险有哪些？",
+      "如何设计合理的股权架构？",
+      "公司章程需要注意哪些合规要点？",
+    ],
     sortOrder: 2,
   },
   {
@@ -165,6 +178,12 @@ const AGENTS: SeedAgent[] = [
 ### ⚠️ 免责声明
 本回复仅供参考，不构成正式法律意见。具体案件请咨询执业律师。`,
     phone: "13800010003",
+    starterQuestions: [
+      "员工试用期被辞退是否有赔偿？",
+      "竞业限制协议的补偿标准是什么？",
+      "加班费应该如何计算？",
+      "劳动合同到期不续签需要补偿吗？",
+    ],
     sortOrder: 3,
   },
   {
@@ -208,6 +227,12 @@ const AGENTS: SeedAgent[] = [
 ### ⚠️ 免责声明
 本回复仅供参考，不构成正式法律意见。`,
     phone: "13800010004",
+    starterQuestions: [
+      "企业如何制定合规的隐私政策？",
+      "个人信息保护法对企业有哪些要求？",
+      "数据安全等级保护怎么做？",
+      "AI使用用户数据的合规边界是什么？",
+    ],
     sortOrder: 4,
   },
   // ========== 财税资本 ==========
@@ -252,6 +277,12 @@ const AGENTS: SeedAgent[] = [
 ### ⚠️ 免责声明
 本回复仅供参考，不构成专业财税意见。重大决策请咨询专业税务师。`,
     phone: "13800020005",
+    starterQuestions: [
+      "金税四期下企业需要注意哪些合规要点？",
+      "小规模纳税人和一般纳税人如何选择？",
+      "企业税务筹划有哪些合法方案？",
+      "如何搭建财务内控体系？",
+    ],
     sortOrder: 5,
   },
   {
@@ -295,6 +326,12 @@ const AGENTS: SeedAgent[] = [
 ### 🤝 资本对接
 [投资机构推荐和对接策略]`,
     phone: "13800020006",
+    starterQuestions: [
+      "如何撰写一份吸引投资人的商业计划书？",
+      "项目估值的方法和融资额度怎么确定？",
+      "天使轮融资一般出让多少股权？",
+      "如何对接合适的投资机构？",
+    ],
     sortOrder: 6,
   },
   {
@@ -338,6 +375,12 @@ const AGENTS: SeedAgent[] = [
 ### ⚠️ 免责声明
 本回复仅供参考，政策以当地税务机关为准。`,
     phone: "13800020007",
+    starterQuestions: [
+      "OPC个体工商户如何合规报税？",
+      "灵活用工的税务如何处理？",
+      "一人企业能否申请小规模纳税人？",
+      "微型企业有哪些税收优惠政策？",
+    ],
     sortOrder: 7,
   },
   // ========== 核心战略 ==========
@@ -386,6 +429,12 @@ const AGENTS: SeedAgent[] = [
 ### ⚠️ 风险提示
 战略实施中的关键风险点和应对措施`,
     phone: "13800030010",
+    starterQuestions: [
+      "如何为企业做好顶层战略设计？",
+      "专家智库体系应该如何搭建？",
+      "AI研发战略应该如何规划？",
+      "知行者联盟能给我们提供什么支持？",
+    ],
     sortOrder: 10,
   },
   {
@@ -433,6 +482,12 @@ const AGENTS: SeedAgent[] = [
 ### 🤝 资源对接
 [可对接的资源和合作机会]`,
     phone: "13800030011",
+    starterQuestions: [
+      "如何加入问道私董会？",
+      "我的项目应该如何获客？",
+      "政企合作有哪些切入点？",
+      "高端圈层运营有什么好的模式？",
+    ],
     sortOrder: 11,
   },
   {
@@ -480,6 +535,12 @@ const AGENTS: SeedAgent[] = [
 ### 🔄 训战结合
 [实战训练和反馈机制]`,
     phone: "13800030012",
+    starterQuestions: [
+      "如何设计训战结合的人才培养方案？",
+      "订单交付如何做到标准化？",
+      "课程大纲应该如何设计？",
+      "如何建立质量评估机制？",
+    ],
     sortOrder: 12,
   },
   // ========== 产业政策 ==========
@@ -523,6 +584,12 @@ const AGENTS: SeedAgent[] = [
 ### 💰 补贴申领
 [可申报的补贴项目]`,
     phone: "13800040013",
+    starterQuestions: [
+      "高新技术企业申报需要哪些条件？",
+      "专精特新企业有哪些补贴政策？",
+      "OPC注册和普通公司注册有什么区别？",
+      "招投标需要哪些资质和材料？",
+    ],
     sortOrder: 13,
   },
   {
@@ -565,6 +632,12 @@ const AGENTS: SeedAgent[] = [
 ### 📈 效能提升
 [组织优化和培训体系]`,
     phone: "13800040014",
+    starterQuestions: [
+      "如何设计合理的薪酬绩效体系？",
+      "人才梯队建设应该怎么做？",
+      "组织架构优化有哪些方法？",
+      "如何搭建企业内训体系？",
+    ],
     sortOrder: 14,
   },
   {
@@ -607,6 +680,12 @@ const AGENTS: SeedAgent[] = [
 ### 🏆 项目申报
 [申报策略和材料准备]`,
     phone: "13800040015",
+    starterQuestions: [
+      "如何建立有效的政府沟通渠道？",
+      "公共事务策划有哪些好的案例？",
+      "招投标流程中需要注意什么？",
+      "如何申报政府扶持项目？",
+    ],
     sortOrder: 15,
   },
   // ========== AI与数字化 ==========
@@ -650,6 +729,12 @@ const AGENTS: SeedAgent[] = [
 ### 🔄 迭代优化
 [持续优化策略]`,
     phone: "13800050020",
+    starterQuestions: [
+      "如何打造垂直领域的AI智能体？",
+      "AI智能体的技术架构怎么选型？",
+      "企业数字化转型有哪些落地方案？",
+      "SaaS工具如何结合AI提升效率？",
+    ],
     sortOrder: 20,
   },
   {
@@ -692,6 +777,12 @@ const AGENTS: SeedAgent[] = [
 ### ⚖️ 维权支持
 [侵权分析和维权策略]`,
     phone: "13800050021",
+    starterQuestions: [
+      "商标注册的流程和费用是怎样的？",
+      "如何申请专利保护我的技术？",
+      "版权登记有什么好处？",
+      "发现侵权应该如何维权？",
+    ],
     sortOrder: 21,
   },
   {
@@ -737,6 +828,12 @@ const AGENTS: SeedAgent[] = [
 ### 🔄 工作流搭建
 [流程设计和配置方案]`,
     phone: "13800050022",
+    starterQuestions: [
+      "如何教员工使用AI工具提高效率？",
+      "好的Prompt应该怎么写？",
+      "如何搭建AI自动化工作流？",
+      "数字员工怎么配置才能替代重复劳动？",
+    ],
     sortOrder: 22,
   },
   // ========== OPC孵化培训 ==========
@@ -783,6 +880,12 @@ const AGENTS: SeedAgent[] = [
 ### 💰 变现指导
 [接单策略和客户开发]`,
     phone: "13800060030",
+    starterQuestions: [
+      "一人企业如何开始创业？",
+      "OPC商业模式应该怎么设计？",
+      "如何用AI工具提升创业效率？",
+      "如何找到第一个客户？",
+    ],
     sortOrder: 30,
   },
   {
@@ -828,6 +931,12 @@ const AGENTS: SeedAgent[] = [
 ### 🔄 优化迭代
 [性能优化和功能扩展]`,
     phone: "13800060031",
+    starterQuestions: [
+      "零基础如何搭建AI智能体？",
+      "AI智能体部署需要什么环境？",
+      "智能体配置和调试有哪些技巧？",
+      "如何让AI智能体真正落地使用？",
+    ],
     sortOrder: 31,
   },
   {
@@ -870,6 +979,12 @@ const AGENTS: SeedAgent[] = [
 ### 🤝 资源对接
 [园区入驻和资源匹配]`,
     phone: "13800060032",
+    starterQuestions: [
+      "OPC注册的流程是什么？",
+      "OPC有哪些税收优惠政策？",
+      "如何申请园区入驻？",
+      "OPC合规经营需要注意什么？",
+    ],
     sortOrder: 32,
   },
   // ========== 三大平台智能体 ==========
@@ -916,6 +1031,12 @@ const AGENTS: SeedAgent[] = [
 ### 📞 后续跟进
 [服务反馈和支持]`,
     phone: "13800070040",
+    starterQuestions: [
+      "知行者联盟提供哪些服务？",
+      "如何对接专家智库资源？",
+      "AI研发方面有哪些能力？",
+      "加入联盟需要什么条件？",
+    ],
     sortOrder: 40,
   },
   {
@@ -961,6 +1082,12 @@ const AGENTS: SeedAgent[] = [
 ### 💼 订单转化
 [资源对接和合作促成]`,
     phone: "13800070041",
+    starterQuestions: [
+      "问道私董会的核心价值是什么？",
+      "如何加入私董会？",
+      "有哪些资源对接机会？",
+      "私董会会员有哪些权益？",
+    ],
     sortOrder: 41,
   },
   {
@@ -1006,6 +1133,12 @@ const AGENTS: SeedAgent[] = [
 ### 🤝 社区运营
 [交流活动和资源共享]`,
     phone: "13800070042",
+    starterQuestions: [
+      "智匠OPC工坊有哪些培训课程？",
+      "如何接单赚钱？",
+      "订单交付有什么标准？",
+      "社区有哪些交流活动？",
+    ],
     sortOrder: 42,
   },
 ];
@@ -1076,6 +1209,7 @@ async function seed() {
           description: a.description,
           systemPrompt: a.systemPrompt,
           phone: a.phone ?? null,
+          starterQuestions: a.starterQuestions,
           sortOrder: a.sortOrder,
           isActive: true,
           updatedAt: new Date(),
@@ -1092,6 +1226,7 @@ async function seed() {
         avatar: "/icon.png",
         systemPrompt: a.systemPrompt,
         phone: a.phone ?? null,
+        starterQuestions: a.starterQuestions,
         isActive: true,
         sortOrder: a.sortOrder,
         userId: adminUser.id,

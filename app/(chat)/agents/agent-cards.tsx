@@ -19,7 +19,7 @@ export function AgentCards() {
       const data = await res.json();
       setAgents(data);
     } catch {
-      toast.error("获取 Agent 列表失败");
+      toast.error("获取 OPC 列表失败");
     } finally {
       setLoading(false);
     }
@@ -76,9 +76,9 @@ export function AgentCards() {
     <div className="mx-auto max-w-6xl px-6 py-8">
       {/* 页头 */}
       <div className="mb-10">
-        <h1 className="text-2xl font-semibold tracking-tight">选择 Agent</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">选择 OPC</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          选择一个角色开始对话，共 {activeCount} 个可用 Agent
+          选择一个角色开始对话，共 {activeCount} 个可用 OPC
         </p>
       </div>
 
@@ -86,7 +86,7 @@ export function AgentCards() {
       {agents.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-20">
           <Lightbulb className="mb-4 size-12 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">还没有可用的 Agent</p>
+          <p className="text-sm text-muted-foreground">还没有可用的 OPC</p>
         </div>
       )}
 
@@ -117,7 +117,7 @@ export function AgentCards() {
                   key={agent.id}
                   type="button"
                   onClick={() => handleStartChat(agent)}
-                  className={`fade-up group relative cursor-pointer overflow-hidden rounded-2xl border border-border/50 bg-card p-5 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-[var(--shadow-float)] ${group.ring} hover:ring-2`}
+                  className={`fade-up group relative cursor-pointer overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br ${group.gradientFrom} to-transparent p-5 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:${group.borderHover} ${group.hoverShadow}`}
                 >
                   {/* 顶部色条 */}
                   <div className={`absolute inset-x-0 top-0 h-1 ${group.bg}`} />
@@ -145,15 +145,6 @@ export function AgentCards() {
                   <p className="mb-4 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                     {agent.description}
                   </p>
-
-                  {/* 提示词预览 */}
-                  <div
-                    className={`mb-4 rounded-lg px-3 py-2 ${group.soft}`}
-                  >
-                    <p className="line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/60 font-mono">
-                      {agent.systemPrompt}
-                    </p>
-                  </div>
 
                   {/* hover 行动按钮 */}
                   <div className="flex items-center justify-between opacity-0 transition-opacity duration-200 group-hover:opacity-100">

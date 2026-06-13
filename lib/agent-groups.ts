@@ -27,6 +27,12 @@ export interface AgentGroup {
   softText: string;
   /** Tailwind 卡片 hover 边框色 */
   ring: string;
+  /** 渐变起始色（用于 bg-gradient-to-br from-{color}/[0.04]） */
+  gradientFrom: string;
+  /** hover 边框色 class */
+  borderHover: string;
+  /** hover 彩色阴影（完整 class） */
+  hoverShadow: string;
   /** 排序权重 */
   order: number;
 }
@@ -41,6 +47,9 @@ const GROUPS: AgentGroup[] = [
     soft: "bg-indigo-50 dark:bg-indigo-950/40",
     softText: "text-indigo-700 dark:text-indigo-300",
     ring: "ring-indigo-500/20",
+    gradientFrom: "bg-indigo-500/[0.04]",
+    borderHover: "border-indigo-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(99,102,241,0.15)]",
     order: 1,
   },
   {
@@ -52,6 +61,9 @@ const GROUPS: AgentGroup[] = [
     soft: "bg-amber-50 dark:bg-amber-950/40",
     softText: "text-amber-700 dark:text-amber-300",
     ring: "ring-amber-500/20",
+    gradientFrom: "bg-amber-500/[0.04]",
+    borderHover: "border-amber-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(245,158,11,0.15)]",
     order: 2,
   },
   {
@@ -63,6 +75,9 @@ const GROUPS: AgentGroup[] = [
     soft: "bg-emerald-50 dark:bg-emerald-950/40",
     softText: "text-emerald-700 dark:text-emerald-300",
     ring: "ring-emerald-500/20",
+    gradientFrom: "bg-emerald-500/[0.04]",
+    borderHover: "border-emerald-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(16,185,129,0.15)]",
     order: 3,
   },
   {
@@ -74,6 +89,9 @@ const GROUPS: AgentGroup[] = [
     soft: "bg-violet-50 dark:bg-violet-950/40",
     softText: "text-violet-700 dark:text-violet-300",
     ring: "ring-violet-500/20",
+    gradientFrom: "bg-violet-500/[0.04]",
+    borderHover: "border-violet-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(139,92,246,0.15)]",
     order: 4,
   },
   {
@@ -85,6 +103,9 @@ const GROUPS: AgentGroup[] = [
     soft: "bg-sky-50 dark:bg-sky-950/40",
     softText: "text-sky-700 dark:text-sky-300",
     ring: "ring-sky-500/20",
+    gradientFrom: "bg-sky-500/[0.04]",
+    borderHover: "border-sky-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(14,165,233,0.15)]",
     order: 5,
   },
   {
@@ -96,6 +117,9 @@ const GROUPS: AgentGroup[] = [
     soft: "bg-orange-50 dark:bg-orange-950/40",
     softText: "text-orange-700 dark:text-orange-300",
     ring: "ring-orange-500/20",
+    gradientFrom: "bg-orange-500/[0.04]",
+    borderHover: "border-orange-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(249,115,22,0.15)]",
     order: 6,
   },
   {
@@ -107,7 +131,10 @@ const GROUPS: AgentGroup[] = [
     soft: "bg-rose-50 dark:bg-rose-950/40",
     softText: "text-rose-700 dark:text-rose-300",
     ring: "ring-rose-500/20",
-    order: 7,
+    gradientFrom: "bg-rose-500/[0.04]",
+    borderHover: "border-rose-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(244,63,94,0.15)]",
+    order: 0,
   },
 ];
 
@@ -120,6 +147,9 @@ const DEFAULT_GROUP: AgentGroup = {
   soft: "bg-slate-50 dark:bg-slate-950/40",
   softText: "text-slate-700 dark:text-slate-300",
   ring: "ring-slate-500/20",
+  gradientFrom: "bg-slate-500/[0.04]",
+  borderHover: "border-slate-500/25",
+  hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(100,116,139,0.15)]",
   order: 99,
 };
 

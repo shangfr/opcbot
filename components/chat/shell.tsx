@@ -15,7 +15,6 @@ import { DataStreamHandler } from "./data-stream-handler";
 import { submitEditedMessage } from "./message-editor";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
-import { WelcomeDashboard } from "./welcome-dashboard";
 
 export function ChatShell() {
   const {
@@ -75,7 +74,7 @@ export function ChatShell() {
 
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
             {messages.length === 0 && status !== "submitted" ? (
-              <WelcomeDashboard onNewChat={() => {}} />
+              <div className="flex flex-1 items-center justify-center" />
             ) : (
               <Messages
                 addToolApprovalResponse={addToolApprovalResponse}
