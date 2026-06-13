@@ -75,7 +75,7 @@ export const VersionFooter = ({
             mode === "diff" && "bg-muted text-foreground"
           )}
           onClick={() => setMode(mode === "diff" ? "edit" : "diff")}
-          title="Show changes"
+          title="查看变更"
           type="button"
         >
           <DiffIcon className="size-4" />
@@ -140,7 +140,7 @@ export const VersionFooter = ({
           }}
           type="button"
         >
-          Latest
+          最新
         </button>
       </div>
     </motion.div>

@@ -279,20 +279,27 @@ function n(num: number): number {
 }
 
 export function Weather({
-  weatherAtLocation = SAMPLE,
+  weatherAtLocation,
 }: {
   weatherAtLocation?: WeatherAtLocation;
 }) {
+  // 防御性检查：数据无效时不渲染
+  if (!weatherAtLocation?.hourly?.temperature_2m) {
+    return null;
+  }
+
+  const data = weatherAtLocation;
+
   const currentHigh = Math.max(
-    ...weatherAtLocation.hourly.temperature_2m.slice(0, 24)
+    ...data.hourly.temperature_2m.slice(0, 24)
   );
   const currentLow = Math.min(
-    ...weatherAtLocation.hourly.temperature_2m.slice(0, 24)
+    ...data.hourly.temperature_2m.slice(0, 24)
   );
 
-  const isDay = isWithinInterval(new Date(weatherAtLocation.current.time), {
-    start: new Date(weatherAtLocation.daily.sunrise[0]),
-    end: new Date(weatherAtLocation.daily.sunset[0]),
+  const isDay = isWithinInterval(new Date(data.current.time), {
+    start: new Date(data.daily.sunrise[0]),
+    end: new Date(data.daily.sunset[0]),
   });
 
   const [isMobile, setIsMobile] = useState(false);
@@ -310,22 +317,22 @@ export function Weather({
 
   const hoursToShow = isMobile ? 5 : 6;
 
-  const currentTimeIndex = weatherAtLocation.hourly.time.findIndex(
-    (time) => new Date(time) >= new Date(weatherAtLocation.current.time)
+  const currentTimeIndex = data.hourly.time.findIndex(
+    (time) => new Date(time) >= new Date(data.current.time)
   );
 
-  const displayTimes = weatherAtLocation.hourly.time.slice(
+  const displayTimes = data.hourly.time.slice(
     currentTimeIndex,
     currentTimeIndex + hoursToShow
   );
-  const displayTemperatures = weatherAtLocation.hourly.temperature_2m.slice(
+  const displayTemperatures = data.hourly.temperature_2m.slice(
     currentTimeIndex,
     currentTimeIndex + hoursToShow
   );
 
   const location =
-    weatherAtLocation.cityName ||
-    `${weatherAtLocation.latitude?.toFixed(1)}°, ${weatherAtLocation.longitude?.toFixed(1)}°`;
+    data.cityName ||
+    `${data.latitude?.toFixed(1)}°, ${data.longitude?.toFixed(1)}°`;
 
   return (
     <div
@@ -346,7 +353,7 @@ export function Weather({
         <div className="mb-2 flex items-center justify-between">
           <div className="font-medium text-white/80 text-xs">{location}</div>
           <div className="text-white/60 text-xs">
-            {format(new Date(weatherAtLocation.current.time), "MMM d, h:mm a")}
+            {format(new Date(data.current.time), "M月d日 HH:mm")}
           </div>
         </div>
 
@@ -361,24 +368,24 @@ export function Weather({
               {isDay ? <SunIcon size={32} /> : <MoonIcon size={32} />}
             </div>
             <div className="font-light text-3xl text-white">
-              {n(weatherAtLocation.current.temperature_2m)}
+              {n(data.current.temperature_2m)}
               <span className="text-lg text-white/80">
-                {weatherAtLocation.current_units.temperature_2m}
+                {data.current_units.temperature_2m}
               </span>
             </div>
           </div>
 
           <div className="text-right">
             <div className="font-medium text-white/90 text-xs">
-              H: {n(currentHigh)}°
+              最高: {n(currentHigh)}°
             </div>
-            <div className="text-white/70 text-xs">L: {n(currentLow)}°</div>
+            <div className="text-white/70 text-xs">最低: {n(currentLow)}°</div>
           </div>
         </div>
 
         <div className="rounded-xl bg-white/10 p-3 backdrop-blur-sm">
           <div className="mb-2 font-medium text-white/80 text-xs">
-            Hourly Forecast
+            逐小时预报
           </div>
           <div className="flex justify-between gap-1">
             {displayTimes.map((time, index) => {
@@ -397,7 +404,7 @@ export function Weather({
                   key={time}
                 >
                   <div className="font-medium text-white/70 text-xs">
-                    {index === 0 ? "Now" : format(hourTime, "ha")}
+                    {index === 0 ? "现在" : format(hourTime, "HH:mm")}
                   </div>
 
                   <div
@@ -420,12 +427,12 @@ export function Weather({
 
         <div className="mt-2 flex justify-between text-white/60 text-xs">
           <div>
-            Sunrise:{" "}
-            {format(new Date(weatherAtLocation.daily.sunrise[0]), "h:mm a")}
+            日出:{" "}
+            {format(new Date(data.daily.sunrise[0]), "HH:mm")}
           </div>
           <div>
-            Sunset:{" "}
-            {format(new Date(weatherAtLocation.daily.sunset[0]), "h:mm a")}
+            日落:{" "}
+            {format(new Date(data.daily.sunset[0]), "HH:mm")}
           </div>
         </div>
       </div>

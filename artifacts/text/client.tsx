@@ -20,7 +20,7 @@ type TextArtifactMetadata = {
 
 export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
   kind: "text",
-  description: "Useful for text content, like drafting essays and emails.",
+  description: "适用于文本内容，如撰写文章和邮件。",
   initialize: async ({ documentId, setMetadata }) => {
     const suggestions = await getSuggestions({ documentId });
 
@@ -102,7 +102,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
   actions: [
     {
       icon: <ClockRewind size={18} />,
-      description: "View changes",
+      description: "查看变更",
       onClick: ({ handleVersionChange }) => {
         handleVersionChange("toggle");
       },
@@ -116,7 +116,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
     },
     {
       icon: <UndoIcon size={18} />,
-      description: "View Previous version",
+      description: "查看上一版本",
       onClick: ({ handleVersionChange }) => {
         handleVersionChange("prev");
       },
@@ -130,7 +130,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
     },
     {
       icon: <RedoIcon size={18} />,
-      description: "View Next version",
+      description: "查看下一版本",
       onClick: ({ handleVersionChange }) => {
         handleVersionChange("next");
       },
@@ -144,7 +144,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
     },
     {
       icon: <CopyIcon size={18} />,
-      description: "Copy to clipboard",
+      description: "复制到剪贴板",
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
         toast.success("Copied to clipboard!");
@@ -154,7 +154,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
   toolbar: [
     {
       icon: <PenIcon />,
-      description: "Add final polish",
+      description: "添加最终润色",
       onClick: ({ sendMessage }) => {
         sendMessage({
           role: "user",
@@ -169,7 +169,7 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
     },
     {
       icon: <MessageIcon />,
-      description: "Request suggestions",
+      description: "请求建议",
       onClick: ({ sendMessage }) => {
         sendMessage({
           role: "user",

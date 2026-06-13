@@ -4,14 +4,42 @@ import { z } from "zod";
 
 import { auth } from "@/app/(auth)/auth";
 
+const ALLOWED_TYPES = [
+  // 图片
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/bmp",
+  // 视频
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/x-matroska",
+  // 文档
+  "text/plain",
+  "text/csv",
+  "text/markdown",
+  "application/pdf",
+  "application/json",
+  "application/xml",
+  "text/xml",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+];
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
 const FileSchema = z.object({
   file: z
     .instanceof(Blob)
-    .refine((file) => file.size <= 5 * 1024 * 1024, {
-      message: "File size should be less than 5MB",
+    .refine((file) => file.size <= MAX_FILE_SIZE, {
+      message: `File size should be less than ${MAX_FILE_SIZE / 1024 / 1024}MB`,
     })
-    .refine((file) => ["image/jpeg", "image/png"].includes(file.type), {
-      message: "File type should be JPEG or PNG",
+    .refine((file) => ALLOWED_TYPES.includes(file.type), {
+      message: `File type not supported. Allowed: ${ALLOWED_TYPES.join(", ")}`,
     }),
 });
 

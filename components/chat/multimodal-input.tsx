@@ -191,9 +191,9 @@ function PureMultimodalInput({
         });
         break;
       case "purge":
-        toast("Delete all chats?", {
+        toast("删除全部对话？", {
           action: {
-            label: "Delete all",
+            label: "全部删除",
             onClick: () => {
               fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`, {
                 method: "DELETE",
@@ -399,6 +399,7 @@ function PureMultimodalInput({
         )}
 
       <input
+        accept="image/*,video/*,.pdf,.txt,.csv,.md,.json,.xml,.docx,.xlsx,.pptx"
         className="pointer-events-none fixed -top-4 -left-4 size-0.5 opacity-0"
         multiple
         onChange={handleFileChange}
@@ -435,7 +436,7 @@ function PureMultimodalInput({
           if (status === "ready" || status === "error") {
             submitForm();
           } else {
-            toast.error("Please wait for the model to finish its response!");
+            toast.error("请等待模型回复完成！");
           }
         }}
       >
@@ -649,7 +650,7 @@ function PureModelSelectorCompact({
     activeModels.find((m: ChatModel) => m.id === selectedModelId) ??
     activeModels.find((m: ChatModel) => m.id === DEFAULT_CHAT_MODEL) ??
     activeModels[0];
-  const [provider] = selectedModel.id.split("/");
+  const provider = selectedModel.provider;
 
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
@@ -722,6 +723,8 @@ function PureModelSelectorCompact({
               xiaomi: "Xiaomi",
               xai: "xAI",
               zai: "Zai",
+              zhipu: "ZhipuAI",
+              zhipuai: "ZhipuAI",
             };
 
             return sortedKeys.map((key) => (
@@ -734,7 +737,7 @@ function PureModelSelectorCompact({
                 key={key}
               >
                 {grouped[key].map(({ model, curated }) => {
-                  const logoProvider = model.id.split("/")[0];
+                  const logoProvider = model.provider;
                   return (
                     <ModelSelectorItem
                       className={cn(

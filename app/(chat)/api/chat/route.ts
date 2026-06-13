@@ -181,12 +181,27 @@ export async function POST(request: Request) {
     }
 
     const modelConfig = chatModels.find((m) => m.id === chatModel);
-    const modelCapabilities = await getCapabilities();
+    const modelCapabilities = getCapabilities();
     const capabilities = modelCapabilities[chatModel];
     const isReasoningModel = capabilities?.reasoning === true;
     const supportsTools = capabilities?.tools === true;
 
     const modelMessages = await convertToModelMessages(uiMessages);
+
+    // 调试：打印转换后的消息格式
+    if (!isProductionEnvironment) {
+      console.log(
+        "[chat] modelMessages:",
+        JSON.stringify(
+          modelMessages.map((m: Record<string, unknown>) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          null,
+          2
+        ).slice(0, 2000)
+      );
+    }
 
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
@@ -207,9 +222,6 @@ export async function POST(request: Request) {
                   "requestSuggestions",
                 ],
           providerOptions: {
-            ...(modelConfig?.gatewayOrder && {
-              gateway: { order: modelConfig.gatewayOrder },
-            }),
             ...(modelConfig?.reasoningEffort && {
               openai: { reasoningEffort: modelConfig.reasoningEffort },
             }),
@@ -294,11 +306,9 @@ export async function POST(request: Request) {
       onError: (error) => {
         if (
           error instanceof Error &&
-          error.message?.includes(
-            "AI Gateway requires a valid credit card on file to service requests"
-          )
+          error.message?.includes("Insufficient Balance")
         ) {
-          return "AI Gateway requires a valid credit card on file to service requests. Please visit https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dadd-credit-card to add a card and unlock your free credits.";
+          return "智谱 API 余额不足，请前往 open.bigmodel.cn 充值。";
         }
         return "Oops, an error occurred!";
       },
@@ -334,11 +344,9 @@ export async function POST(request: Request) {
 
     if (
       error instanceof Error &&
-      error.message?.includes(
-        "AI Gateway requires a valid credit card on file to service requests"
-      )
+      error.message?.includes("Insufficient Balance")
     ) {
-      return new ChatbotError("bad_request:activate_gateway").toResponse();
+      return new ChatbotError("bad_request:api").toResponse();
     }
 
     console.error("Unhandled error in chat API:", error, { vercelId });
