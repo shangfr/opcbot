@@ -15,6 +15,7 @@ import {
 import useSWR, { useSWRConfig } from "swr";
 import { useWindowSize } from "usehooks-ts";
 import { codeArtifact } from "@/artifacts/code/client";
+import { htmlArtifact } from "@/artifacts/html/client";
 import { imageArtifact } from "@/artifacts/image/client";
 import { sheetArtifact } from "@/artifacts/sheet/client";
 import { textArtifact } from "@/artifacts/text/client";
@@ -33,6 +34,7 @@ import type { VisibilityType } from "./visibility-selector";
 export const artifactDefinitions = [
   textArtifact,
   codeArtifact,
+  htmlArtifact,
   imageArtifact,
   sheetArtifact,
 ];
@@ -261,9 +263,11 @@ function PureArtifact({
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
 
   const isCurrentVersion =
-    documents && documents.length > 0
-      ? currentVersionIndex === documents.length - 1
-      : true;
+    artifact.status === "streaming" || currentVersionIndex === -1
+      ? true
+      : documents && documents.length > 0
+        ? currentVersionIndex === documents.length - 1
+        : true;
 
   const { width: windowWidth, height: windowHeight } = useWindowSize();
   const isMobile = windowWidth ? windowWidth < 768 : false;
@@ -275,6 +279,14 @@ function PureArtifact({
   if (!artifactDefinition) {
     throw new Error("Artifact definition not found!");
   }
+
+  const { documentId } = artifact;
+
+  useEffect(() => {
+    if (documentId) {
+      setCurrentVersionIndex(-1);
+    }
+  }, [documentId]);
 
   useEffect(() => {
     if (artifact.documentId !== "init" && artifactDefinition.initialize) {

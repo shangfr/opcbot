@@ -377,7 +377,7 @@ const PureToolbar = ({
       ]
     : artifactDefinition.toolbar;
 
-  if (toolsByArtifactKind.length === 0) {
+  if (toolsByArtifactKind.length === 0 && !artifactActions) {
     return null;
   }
 

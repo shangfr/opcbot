@@ -20,6 +20,7 @@ import {
   CodeIcon,
   FileIcon,
   FullscreenIcon,
+  GlobeIcon,
   ImageIcon,
   LoaderIcon,
 } from "./icons";
@@ -230,6 +231,8 @@ const PureDocumentHeader = ({
           <ImageIcon size={14} />
         ) : kind === "code" ? (
           <CodeIcon size={14} />
+        ) : kind === "html" ? (
+          <GlobeIcon size={14} />
         ) : (
           <FileIcon size={14} />
         )}
@@ -298,11 +301,21 @@ const DocumentContent = ({ document }: { document: Document }) => {
           status={artifact.status}
           title={document.title}
         />
+      ) : document.kind === "html" ? (
+        <div className="relative flex w-full flex-1">
+          <div className="absolute inset-0">
+            <CodeEditor {...commonProps} onSaveContent={handleSaveContent} />
+          </div>
+        </div>
       ) : null}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-muted to-transparent dark:from-muted" />
+      {document.kind !== "html" && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-muted to-transparent dark:from-muted" />
+      )}
       {document.kind === "code" && (
         <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-muted to-transparent dark:from-muted" />
       )}
     </div>
   );
 };
+
+

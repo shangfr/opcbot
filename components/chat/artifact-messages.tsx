@@ -18,6 +18,7 @@ type ArtifactMessagesProps = {
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
   isReadonly: boolean;
   artifactStatus: UIArtifact["status"];
+  selectedModelId: string;
 };
 
 function PureArtifactMessages({
@@ -29,6 +30,7 @@ function PureArtifactMessages({
   setMessages,
   regenerate,
   isReadonly,
+  selectedModelId,
 }: ArtifactMessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -57,6 +59,7 @@ function PureArtifactMessages({
           requiresScrollPadding={
             hasSentMessage && index === messages.length - 1
           }
+          selectedModelId={selectedModelId}
           setMessages={setMessages}
           vote={
             votes
@@ -72,7 +75,7 @@ function PureArtifactMessages({
             msg.parts?.some(
               (part) => "state" in part && part.state === "approval-responded"
             )
-          ) && <ThinkingMessage key="thinking" />}
+          ) && <ThinkingMessage key="thinking" selectedModelId={selectedModelId} />}
       </AnimatePresence>
 
       <motion.div

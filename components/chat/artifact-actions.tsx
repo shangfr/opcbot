@@ -113,6 +113,9 @@ export const ArtifactActions = memo(
     if (prevProps.mode !== nextProps.mode) {
       return false;
     }
+    if (prevProps.metadata !== nextProps.metadata) {
+      return false;
+    }
 
     return true;
   }

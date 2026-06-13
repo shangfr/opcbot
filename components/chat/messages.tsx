@@ -35,7 +35,7 @@ function PureMessages({
   isReadonly,
   isArtifactVisible,
   isLoading,
-  selectedModelId: _selectedModelId,
+  selectedModelId,
   onEditMessage,
 }: MessagesProps) {
   const {
@@ -90,6 +90,7 @@ function PureMessages({
               requiresScrollPadding={
                 hasSentMessage && index === messages.length - 1
               }
+              selectedModelId={selectedModelId}
               setMessages={setMessages}
               vote={
                 votes
@@ -100,7 +101,7 @@ function PureMessages({
           ))}
 
           {status === "submitted" && messages.at(-1)?.role !== "assistant" && (
-            <ThinkingMessage />
+            <ThinkingMessage selectedModelId={selectedModelId} />
           )}
 
           <div
