@@ -1,10 +1,12 @@
 "use client";
 
 import {
-  MessageSquareIcon,
+  Bot,
+  MessagesSquareIcon,
   PanelLeftIcon,
   PenSquareIcon,
   TrashIcon,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,6 +26,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -44,7 +47,13 @@ import {
 } from "../ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
-export function AppSidebar({ user }: { user: User | undefined }) {
+export function AppSidebar({
+  user,
+  isAdmin,
+}: {
+  user: User | undefined;
+  isAdmin: boolean;
+}) {
   const router = useRouter();
   const { setOpenMobile, toggleSidebar } = useSidebar();
   const { mutate } = useSWRConfig();
@@ -66,20 +75,32 @@ export function AppSidebar({ user }: { user: User | undefined }) {
 
   return (
     <>
-      <Sidebar collapsible="icon">
-        <SidebarHeader className="pb-0 pt-3">
+      <Sidebar
+        collapsible="icon"
+        className="border-r border-sidebar-border shadow-[var(--shadow-sidebar)]"
+      >
+        {/* ===== Logo / Brand 区域 ===== */}
+        <SidebarHeader className="border-b border-sidebar-border px-3 pb-3 pt-4">
           <SidebarMenu>
-            <SidebarMenuItem className="flex flex-row items-center justify-between">
-              <div className="group/logo relative flex items-center justify-center">
+            <SidebarMenuItem className="flex items-center justify-between">
+              <div className="group/logo relative flex items-center gap-2.5">
+                {/* 折叠时的 Logo 图标 */}
                 <SidebarMenuButton
                   asChild
-                  className="size-8 !px-0 items-center justify-center group-data-[collapsible=icon]:group-hover/logo:opacity-0"
-                  tooltip="聊天机器人"
+                  className="size-8 shrink-0 items-center justify-center rounded-lg !p-0 bg-sidebar-primary/15 text-sidebar-primary group-data-[collapsible=icon]:group-hover/logo:opacity-0 transition-opacity duration-150"
+                  tooltip="OPC Bot"
                 >
                   <Link href="/" onClick={() => setOpenMobile(false)}>
-                    <MessageSquareIcon className="size-4 text-sidebar-foreground/50" />
+                    <Zap className="size-3.5" />
                   </Link>
                 </SidebarMenuButton>
+                {/* 展开时的品牌名称 */}
+                <div className="flex items-center gap-1.5 group-data-[collapsible=icon]:hidden">
+                  <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">
+                    OPC Bot
+                  </span>
+                </div>
+                {/* 折叠时悬停出现的展开按钮 */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <SidebarMenuButton
@@ -90,51 +111,91 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     </SidebarMenuButton>
                   </TooltipTrigger>
                   <TooltipContent className="hidden md:block" side="right">
-                    打开侧边栏
+                    展开侧边栏
                   </TooltipContent>
                 </Tooltip>
               </div>
+              {/* 收起按钮 */}
               <div className="group-data-[collapsible=icon]:hidden">
-                <SidebarTrigger className="text-sidebar-foreground/60 transition-colors duration-150 hover:text-sidebar-foreground" />
+                <SidebarTrigger className="text-sidebar-foreground/50 transition-colors duration-150 hover:text-sidebar-foreground" />
               </div>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
+
         <SidebarContent>
-          <SidebarGroup className="pt-1">
+          {/* ===== 操作区 ===== */}
+          <SidebarGroup className="px-2 pt-3">
+            <SidebarGroupLabel className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/40">
+              操作
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                {/* 新建对话 */}
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    className="h-9 w-full gap-2.5 rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-[13px] font-medium text-sidebar-foreground transition-all duration-150 hover:bg-sidebar-primary/15 hover:text-sidebar-primary hover:border-sidebar-primary/30"
                     onClick={() => {
                       setOpenMobile(false);
-                      router.push("/");
+                      router.push("/chat");
                     }}
                     tooltip="新建对话"
                   >
-                    <PenSquareIcon className="size-4" />
-                    <span className="font-medium">新建对话</span>
+                    <PenSquareIcon className="size-3.5" />
+                    <span>新建对话</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {/* Agent */}
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      className="rounded-lg text-sidebar-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setShowDeleteAllDialog(true)}
-                      tooltip="删除全部对话"
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip={isAdmin ? "Agent 管理" : "选择 Agent"}
                     >
-                      <TrashIcon className="size-4" />
-                      <span className="text-[13px]">删除全部</span>
+                      <Link
+                        href="/agents"
+                        onClick={() => setOpenMobile(false)}
+                      >
+                        <Bot className="size-3.5" />
+                        <span>{isAdmin ? "Agent 管理" : "选择 Agent"}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarHistory user={user} />
+
+          {/* ===== 历史对话区 ===== */}
+          <SidebarGroup className="px-2 pt-1">
+            <SidebarGroupLabel className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/40">
+              <MessagesSquareIcon className="mr-1.5 size-3" />
+              历史对话
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarHistory user={user} />
+            </SidebarGroupContent>
+          </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t border-sidebar-border pt-2 pb-3">
+
+        {/* ===== 底部 ===== */}
+        <SidebarFooter className="border-t border-sidebar-border px-2 pb-2 pt-2">
+          <SidebarMenu>
+            {user && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="h-8 gap-2.5 rounded-lg text-[12px] text-sidebar-foreground/35 transition-all duration-150 hover:bg-destructive/12 hover:text-destructive/80"
+                  onClick={() => setShowDeleteAllDialog(true)}
+                  tooltip="清空全部对话"
+                >
+                  <TrashIcon className="size-3" />
+                  <span>清空全部对话</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+          </SidebarMenu>
           {user && <SidebarUserNav user={user} />}
         </SidebarFooter>
         <SidebarRail />
@@ -146,15 +207,15 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>删除全部对话？</AlertDialogTitle>
+            <AlertDialogTitle>清空全部对话？</AlertDialogTitle>
             <AlertDialogDescription>
-              此操作无法撤销。这将永久删除你的所有对话并从服务器中移除。
+              此操作无法撤销，将永久删除所有对话记录。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll}>
-              全部删除
+              确认清空
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

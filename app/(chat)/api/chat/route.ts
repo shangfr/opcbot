@@ -19,6 +19,7 @@ import {
   getCapabilities,
 } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
+import { getAgentById } from "@/lib/db/queries";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType } =
+    const { id, message, messages, selectedChatModel, selectedVisibilityType, agentId } =
       requestBody;
 
     const [, session] = await Promise.all([
@@ -188,6 +189,15 @@ export async function POST(request: Request) {
 
     const modelMessages = await convertToModelMessages(uiMessages);
 
+    // 如果指定了 agentId，加载 agent 的系统提示词
+    let systemMessage = systemPrompt({ requestHints, supportsTools });
+    if (agentId) {
+      const agentRecord = await getAgentById({ id: agentId });
+      if (agentRecord?.isActive) {
+        systemMessage = `${agentRecord.systemPrompt}\n\n${systemMessage}`;
+      }
+    }
+
     // 调试：打印转换后的消息格式
     if (!isProductionEnvironment) {
       console.log(
@@ -208,7 +218,7 @@ export async function POST(request: Request) {
       execute: async ({ writer: dataStream }) => {
         const result = streamText({
           model: getLanguageModel(chatModel),
-          system: systemPrompt({ requestHints, supportsTools }),
+          system: systemMessage,
           messages: modelMessages,
           stopWhen: stepCountIs(5),
           experimental_activeTools:

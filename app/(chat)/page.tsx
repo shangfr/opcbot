@@ -1,3 +1,5 @@
+import { WelcomeDashboard } from "@/components/chat/welcome-dashboard";
+
 export default function Page() {
-  return null;
+  return <WelcomeDashboard />;
 }

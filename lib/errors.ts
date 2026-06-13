@@ -15,7 +15,8 @@ export type Surface =
   | "history"
   | "vote"
   | "document"
-  | "suggestions";
+  | "suggestions"
+  | "agent";
 
 export type ErrorCode = `${ErrorType}:${Surface}`;
 
@@ -31,6 +32,7 @@ export const visibilityBySurface: Record<Surface, ErrorVisibility> = {
   vote: "response",
   document: "response",
   suggestions: "response",
+  agent: "response",
 };
 
 export class ChatbotError extends Error {
@@ -106,6 +108,15 @@ export function getMessageByErrorCode(errorCode: ErrorCode): string {
       return "请先登录以查看此文档。";
     case "bad_request:document":
       return "创建或更新文档的请求无效。请检查输入后重试。";
+
+    case "unauthorized:agent":
+      return "请先登录以访问 Agent 管理。";
+    case "forbidden:agent":
+      return "当前账号无权访问 Agent 管理。仅管理员可操作。";
+    case "not_found:agent":
+      return "未找到该 Agent。请检查 ID 后重试。";
+    case "bad_request:agent":
+      return "Agent 操作请求无效。请检查输入后重试。";
 
     default:
       return "出了点问题，请稍后重试。";

@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   createContext,
   type Dispatch,
@@ -56,6 +56,7 @@ function extractChatId(pathname: string): string | null {
 
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { setDataStream } = useDataStream();
   const { mutate } = useSWRConfig();
 
@@ -64,8 +65,18 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const newChatIdRef = useRef(generateUUID());
   const prevPathnameRef = useRef(pathname);
 
+  // agentId from URL query param (for starting chat with a specific agent)
+  const agentIdFromUrl = searchParams.get("agentId");
+  const agentIdRef = useRef(agentIdFromUrl);
+
+  // Keep agentIdRef reactive to searchParams changes (e.g. navigating from /chat to /chat?agentId=xxx)
+  useEffect(() => {
+    agentIdRef.current = agentIdFromUrl;
+  }, [agentIdFromUrl]);
+
   if (isNewChat && prevPathnameRef.current !== pathname) {
     newChatIdRef.current = generateUUID();
+    agentIdRef.current = searchParams.get("agentId");
   }
   prevPathnameRef.current = pathname;
 
@@ -143,6 +154,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
               : { message: lastMessage }),
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibility,
+            ...(agentIdRef.current ? { agentId: agentIdRef.current } : {}),
             ...request.body,
           },
         };

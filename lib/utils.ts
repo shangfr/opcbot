@@ -85,3 +85,15 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
     .map((part) => (part as { type: 'text'; text: string}).text)
     .join('');
 }
+
+export function isAdmin(user: { email?: string | null }): boolean {
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (adminEmails.length === 0) return false;
+
+  const email = user.email?.toLowerCase() ?? "";
+  return adminEmails.includes(email);
+}

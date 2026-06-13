@@ -8,7 +8,7 @@ export function Preview() {
   const router = useRouter();
 
   const handleAction = (query?: string) => {
-    const url = query ? `/?query=${encodeURIComponent(query)}` : "/";
+    const url = query ? `/chat?query=${encodeURIComponent(query)}` : "/chat";
     router.push(url);
   };
 

@@ -22,9 +22,9 @@ function PureChatHeader({
   }
 
   return (
-    <header className="sticky top-0 flex h-14 items-center gap-2 bg-sidebar px-3">
+    <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm">
       <Button
-        className="md:hidden"
+        className="md:hidden -ml-1"
         onClick={toggleSidebar}
         size="icon-sm"
         variant="ghost"
@@ -32,13 +32,18 @@ function PureChatHeader({
         <PanelLeftIcon className="size-4" />
       </Button>
 
-      {!isReadonly && (
-        <VisibilitySelector
-          chatId={chatId}
-          selectedVisibilityType={selectedVisibilityType}
-        />
-      )}
+      <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+        <span className="text-foreground/60 font-medium">对话</span>
+      </div>
 
+      <div className="ml-auto flex items-center gap-2">
+        {!isReadonly && (
+          <VisibilitySelector
+            chatId={chatId}
+            selectedVisibilityType={selectedVisibilityType}
+          />
+        )}
+      </div>
     </header>
   );
 }

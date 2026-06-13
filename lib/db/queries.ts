@@ -19,6 +19,7 @@ import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { ChatbotError } from "../errors";
 import { generateUUID } from "../utils";
 import {
+  agent,
   type Chat,
   chat,
   type DBMessage,
@@ -628,5 +629,123 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
       "bad_request:database",
       "Failed to get stream ids by chat id"
     );
+  }
+}
+
+// ============================================================
+// Agent CRUD
+// ============================================================
+
+export async function getAgents() {
+  try {
+    return await db
+      .select()
+      .from(agent)
+      .orderBy(asc(agent.sortOrder), desc(agent.createdAt));
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to get agents");
+  }
+}
+
+export async function getAgentById({ id }: { id: string }) {
+  try {
+    const [result] = await db.select().from(agent).where(eq(agent.id, id));
+    return result ?? null;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get agent by id"
+    );
+  }
+}
+
+export async function createAgent({
+  name,
+  description,
+  avatar,
+  systemPrompt,
+  phone,
+  isActive,
+  sortOrder,
+  userId,
+}: {
+  name: string;
+  description: string;
+  avatar: string;
+  systemPrompt: string;
+  phone?: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  userId: string;
+}) {
+  try {
+    const [result] = await db
+      .insert(agent)
+      .values({
+        name,
+        description,
+        avatar,
+        systemPrompt,
+        phone: phone || null,
+        isActive,
+        sortOrder,
+        userId,
+      })
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to create agent");
+  }
+}
+
+export async function updateAgent({
+  id,
+  name,
+  description,
+  avatar,
+  systemPrompt,
+  phone,
+  isActive,
+  sortOrder,
+}: {
+  id: string;
+  name: string;
+  description: string;
+  avatar: string;
+  systemPrompt: string;
+  phone?: string | null;
+  isActive: boolean;
+  sortOrder: number;
+}) {
+  try {
+    const [result] = await db
+      .update(agent)
+      .set({
+        name,
+        description,
+        avatar,
+        systemPrompt,
+        phone: phone ?? null,
+        isActive,
+        sortOrder,
+        updatedAt: new Date(),
+      })
+      .where(eq(agent.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to update agent");
+  }
+}
+
+export async function deleteAgent({ id }: { id: string }) {
+  try {
+    const [result] = await db
+      .delete(agent)
+      .where(eq(agent.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to delete agent");
   }
 }

@@ -15,6 +15,7 @@ import { DataStreamHandler } from "./data-stream-handler";
 import { submitEditedMessage } from "./message-editor";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
+import { WelcomeDashboard } from "./welcome-dashboard";
 
 export function ChatShell() {
   const {
@@ -72,30 +73,34 @@ export function ChatShell() {
             selectedVisibilityType={visibilityType}
           />
 
-          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background md:rounded-tl-[12px] md:border-t md:border-l md:border-border/40">
-            <Messages
-              addToolApprovalResponse={addToolApprovalResponse}
-              chatId={chatId}
-              isArtifactVisible={isArtifactVisible}
-              isLoading={isLoading}
-              isReadonly={isReadonly}
-              messages={messages}
-              onEditMessage={(msg) => {
-                const text = msg.parts
-                  ?.filter((p) => p.type === "text")
-                  .map((p) => p.text)
-                  .join("");
-                setInput(text ?? "");
-                setEditingMessage(msg);
-              }}
-              regenerate={regenerate}
-              selectedModelId={currentModelId}
-              setMessages={setMessages}
-              status={status}
-              votes={votes}
-            />
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+            {messages.length === 0 && status !== "submitted" ? (
+              <WelcomeDashboard onNewChat={() => {}} />
+            ) : (
+              <Messages
+                addToolApprovalResponse={addToolApprovalResponse}
+                chatId={chatId}
+                isArtifactVisible={isArtifactVisible}
+                isLoading={isLoading}
+                isReadonly={isReadonly}
+                messages={messages}
+                onEditMessage={(msg) => {
+                  const text = msg.parts
+                    ?.filter((p) => p.type === "text")
+                    .map((p) => p.text)
+                    .join("");
+                  setInput(text ?? "");
+                  setEditingMessage(msg);
+                }}
+                regenerate={regenerate}
+                selectedModelId={currentModelId}
+                setMessages={setMessages}
+                status={status}
+                votes={votes}
+              />
+            )}
 
-            <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
+            <div className="sticky bottom-0 z-10 mx-auto flex w-full max-w-3xl gap-2 bg-gradient-to-t from-background via-background to-transparent px-2 pb-3 pt-4 md:px-4 md:pb-5">
               {!isReadonly && (
                 <MultimodalInput
                   attachments={attachments}
