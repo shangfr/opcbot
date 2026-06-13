@@ -36,13 +36,6 @@
       "when": 1781354062822,
       "tag": "0004_optimal_gunslinger",
       "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1781355604325,
-      "tag": "0005_volatile_thunderball",
-      "breakpoints": true
     }
   ]
 }
