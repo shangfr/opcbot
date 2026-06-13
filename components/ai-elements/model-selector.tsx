@@ -172,16 +172,24 @@ export const ModelSelectorLogo = ({
   provider,
   className,
   ...props
-}: ModelSelectorLogoProps) => (
-  <img
-    {...props}
-    alt={`${provider} logo`}
-    className={cn("size-4 dark:invert", className)}
-    height={16}
-    src={`https://models.dev/logos/${provider}.svg`}
-    width={16}
-  />
-);
+}: ModelSelectorLogoProps) => {
+  const localLogos: Record<string, string> = {
+    "glm-4.7-flash": "/images/glm-4.7-flash.svg",
+  };
+
+  const src = localLogos[provider] ?? `https://models.dev/logos/${provider}.svg`;
+
+  return (
+    <img
+      {...props}
+      alt={`${provider} logo`}
+      className={cn("size-4 dark:invert", className)}
+      height={16}
+      src={src}
+      width={16}
+    />
+  );
+};
 
 export type ModelSelectorLogoGroupProps = ComponentProps<"div">;
 

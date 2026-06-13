@@ -16,7 +16,7 @@ export const providers: Record<
     baseURL: string;
   }
 > = {
-  zhipu: {
+  zhipuai: {
     name: "zhipu",
     apiKey: process.env.ZHIPU_API_KEY ?? "",
     baseURL:
@@ -47,7 +47,7 @@ export const models: ChatModel[] = [
   {
     id: "glm-4.1v-thinking-flash",
     name: "GLM-4.1V-Thinking-Flash",
-    provider: "zhipu",
+    provider: "zhipuai",
     description:
       "智谱免费视觉推理模型，10B级SOTA，支持视频理解、网页Coding、视觉定位",
     reasoningEffort: "medium",

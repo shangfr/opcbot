@@ -7,12 +7,9 @@ import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://opcbot.vercel.app"),
+  metadataBase: new URL("https://opc.mrkl.top"),
   title: "OPC Bot",
   description: "OPC Bot - AI-powered chat assistant.",
-  icons: {
-    icon: "/icon.png",
-  },
 };
 
 export const viewport = {

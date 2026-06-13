@@ -2,6 +2,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
+import Image from "next/image";
 import { cn, sanitizeText } from "@/lib/utils";
 import { MessageContent, MessageResponse } from "../ai-elements/message";
 import { Shimmer } from "../ai-elements/shimmer";
@@ -344,7 +345,7 @@ const PurePreviewMessage = ({
     >
       <div
         className={cn(
-          isUser ? "flex flex-col items-end gap-2" : "flex items-start gap-3"
+          isUser ? "flex items-start justify-end gap-3" : "flex items-start gap-3"
         )}
       >
         {isAssistant && (
@@ -367,7 +368,23 @@ const PurePreviewMessage = ({
         {isAssistant ? (
           <div className="flex min-w-0 flex-1 flex-col gap-2">{content}</div>
         ) : (
-          content
+          <>
+            <div className="flex min-w-0 flex-1 flex-col gap-2 items-end">
+              {content}
+            </div>
+            <div className="mt-2 flex shrink-0 items-center">
+              <div className="flex size-7 items-center justify-center overflow-hidden rounded-lg bg-muted/60 ring-1 ring-border/50">
+                <Image
+                  alt="User"
+                  className="size-full object-cover"
+                  height={28}
+                  src="/icon.png"
+                  unoptimized
+                  width={28}
+                />
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

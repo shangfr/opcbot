@@ -191,9 +191,9 @@ function PureMultimodalInput({
         });
         break;
       case "purge":
-        toast("删除全部对话？", {
+        toast("Delete all chats?", {
           action: {
-            label: "全部删除",
+            label: "Delete all",
             onClick: () => {
               fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`, {
                 method: "DELETE",
@@ -436,7 +436,7 @@ function PureMultimodalInput({
           if (status === "ready" || status === "error") {
             submitForm();
           } else {
-            toast.error("请等待模型回复完成！");
+            toast.error("Please wait for the model to finish its response!");
           }
         }}
       >
