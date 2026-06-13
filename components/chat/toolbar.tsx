@@ -1,8 +1,8 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import cx from "classnames";
-import { motion, useMotionValue, useTransform } from "framer-motion";
 import { WrenchIcon, XIcon } from "lucide-react";
+import { motion, useMotionValue, useTransform } from "motion/react";
 import { nanoid } from "nanoid";
 import {
   type Dispatch,
@@ -140,14 +140,7 @@ const ReadingLevelSelector = ({
   isAnimating: boolean;
   sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
 }) => {
-  const LEVELS = [
-    "小学",
-    "初中",
-    "保持当前水平",
-    "高中",
-    "大学",
-    "研究生",
-  ];
+  const LEVELS = ["小学", "初中", "保持当前水平", "高中", "大学", "研究生"];
 
   const y = useMotionValue(-40 * 2);
   const dragConstraints = 5 * 40 + 2;

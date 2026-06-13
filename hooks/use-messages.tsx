@@ -23,8 +23,10 @@ export function useMessages({
   useEffect(() => {
     if (status === "submitted") {
       setHasSentMessage(true);
+      // Force scroll to bottom when a message is sent
+      scrollToBottom("smooth");
     }
-  }, [status]);
+  }, [status, scrollToBottom]);
 
   return {
     containerRef,

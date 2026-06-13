@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 export const Greeting = () => {
   return (
@@ -9,7 +9,7 @@ export const Greeting = () => {
         initial={{ opacity: 0, scale: 0.8 }}
         transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        <img src="/logo.jpg" alt="OPC Bot" className="size-full object-cover" />
+        <img alt="OPC Bot" className="size-full object-cover" src="/logo.jpg" />
       </motion.div>
       <motion.div
         animate={{ opacity: 1, y: 0 }}

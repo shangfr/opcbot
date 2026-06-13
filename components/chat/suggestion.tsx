@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 
 import type { UISuggestion } from "@/lib/editor/suggestions";
 import { Button } from "../ui/button";

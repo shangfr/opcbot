@@ -1,6 +1,6 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import equal from "fast-deep-equal";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { memo } from "react";
 import { useMessages } from "@/hooks/use-messages";
 import type { Vote } from "@/lib/db/schema";
@@ -75,7 +75,9 @@ function PureArtifactMessages({
             msg.parts?.some(
               (part) => "state" in part && part.state === "approval-responded"
             )
-          ) && <ThinkingMessage key="thinking" selectedModelId={selectedModelId} />}
+          ) && (
+            <ThinkingMessage key="thinking" selectedModelId={selectedModelId} />
+          )}
       </AnimatePresence>
 
       <motion.div

@@ -1,11 +1,18 @@
 "use client";
 
-import { Edit, MessageCircle, Power, PowerOff, Trash2 } from "lucide-react";
+import {
+  Edit,
+  MessageCircle,
+  Phone,
+  Power,
+  PowerOff,
+  Trash2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { getAgentGroup, getAllGroups, getAvatarChar } from "@/lib/agent-groups";
 import type { Agent } from "@/lib/db/schema";
-import { getAllGroups, getAgentGroup, getAvatarChar } from "@/lib/agent-groups";
 
 /* ================================================================
  * useAgents — 共享数据获取 + 分组逻辑
@@ -91,15 +98,15 @@ export function useAgents() {
         .filter(
           (a) =>
             a.name.toLowerCase().includes(q) ||
-            a.description?.toLowerCase().includes(q),
+            a.description?.toLowerCase().includes(q)
         );
     },
-    [agents],
+    [agents]
   );
 
   const handleStartChat = useCallback(
     (agent: Agent) => router.push(`/chat?agentId=${agent.id}`),
-    [router],
+    [router]
   );
 
   return {
@@ -127,7 +134,7 @@ export function GroupHeader({
 }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <div className={`h-1 w-6 rounded-full ${group.bg}`} aria-hidden />
+      <div aria-hidden className={`h-1 w-6 rounded-full ${group.bg}`} />
       <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         {group.label}
       </h2>
@@ -162,9 +169,7 @@ export function AgentCard({
   return (
     <div
       className={`fade-up group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br ${group.gradientFrom} to-transparent p-5 shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:${group.borderHover} ${group.hoverShadow} ${
-        !admin && onChat
-          ? "cursor-pointer"
-          : ""
+        !admin && onChat ? "cursor-pointer" : ""
       }`}
       onClick={!admin && onChat ? () => onChat(agent) : undefined}
       onKeyDown={
@@ -194,7 +199,9 @@ export function AgentCard({
             </h3>
             <div className="mt-0.5 flex items-center gap-2 text-[10px]">
               {admin && (
-                <span className="text-muted-foreground">#{agent.sortOrder}</span>
+                <span className="text-muted-foreground">
+                  #{agent.sortOrder}
+                </span>
               )}
               <span className={`font-medium ${group.softText}`}>
                 {group.label}
@@ -244,6 +251,17 @@ export function AgentCard({
               <MessageCircle className="size-3" />
               聊天
             </button>
+            {agent.phone && (
+              <a
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${group.soft} ${group.softText} hover:bg-foreground/10`}
+                href={`tel:${agent.phone}`}
+                onClick={(e) => e.stopPropagation()}
+                type="button"
+              >
+                <Phone className="size-3" />
+                电话
+              </a>
+            )}
             <div className="flex items-center gap-1">
               <button
                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${group.soft} ${group.softText} hover:bg-foreground/10`}
@@ -275,12 +293,29 @@ export function AgentCard({
             <span className="text-[10px] text-muted-foreground">
               点击开始对话
             </span>
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${group.soft} ${group.softText}`}
-            >
-              <MessageCircle className="size-3" />
-              聊天
-            </span>
+            <div className="flex items-center gap-1">
+              {agent.phone && (
+                <a
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${group.soft} ${group.softText} hover:bg-foreground/10 active:bg-foreground/20 cursor-pointer`}
+                  href={`tel:${agent.phone}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Phone className="size-3" />
+                  电话
+                </a>
+              )}
+              <button
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${group.soft} ${group.softText} hover:bg-foreground/10 active:bg-foreground/20 cursor-pointer`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChat?.(agent);
+                }}
+                type="button"
+              >
+                <MessageCircle className="size-3" />
+                聊天
+              </button>
+            </div>
           </>
         )}
       </div>

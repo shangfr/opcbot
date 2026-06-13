@@ -39,14 +39,14 @@ export const providers: Record<
 export const models: ChatModel[] = [
   {
     id: "deepseek-v4-flash",
-    name: "DeepSeek V4 Flash",
+    name: "DeepSeek",
     provider: "deepseek",
     description:
       "‌DeepSeek-V4-Flash‌是深度求索公司于‌2026年4月24日‌发布并开源的AI大模型，定位为 DeepSeek-V4 系列中的‌快速轻量版本‌，主打高效率、低成本，支持 100 万 token 超长上下文处理。",
   },
   {
     id: "glm-4.1v-thinking-flash",
-    name: "GLM-4.1V-Thinking-Flash",
+    name: "智谱AI",
     provider: "zhipuai",
     description:
       "智谱免费视觉推理模型，10B级SOTA，支持视频理解、网页Coding、视觉定位",

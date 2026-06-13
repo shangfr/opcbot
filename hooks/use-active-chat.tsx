@@ -73,18 +73,18 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const [agentId, setAgentId] = useState<string | null>(agentIdFromUrl);
   const agentIdRef = useRef(agentIdFromUrl);
 
-  // Keep agentIdRef and agentId state reactive to searchParams changes
-  // Only update when agentIdFromUrl is present, so navigating to /chat/[chatId]
-  // (where agentId is absent from URL) preserves the previous agentId
+  // Sync agentId with URL query param (bidirectional: set when present, clear when absent)
   useEffect(() => {
-    if (agentIdFromUrl) {
-      agentIdRef.current = agentIdFromUrl;
-      setAgentId(agentIdFromUrl);
-    }
+    agentIdRef.current = agentIdFromUrl;
+    setAgentId(agentIdFromUrl);
   }, [agentIdFromUrl]);
 
   if (isNewChat && prevPathnameRef.current !== pathname) {
     newChatIdRef.current = generateUUID();
+  }
+  // Reset agentId on any page navigation (not just new chats)
+  // so that navigating between chats doesn't carry stale agentId
+  if (prevPathnameRef.current !== pathname) {
     agentIdRef.current = searchParams.get("agentId");
     setAgentId(searchParams.get("agentId"));
   }
@@ -98,7 +98,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
 
-  const [thinkingEnabled, setThinkingEnabled] = useState(true);
+  const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const thinkingEnabledRef = useRef(thinkingEnabled);
   useEffect(() => {
     thinkingEnabledRef.current = thinkingEnabled;
@@ -114,13 +114,16 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     { revalidateOnFocus: false }
   );
 
-  // Restore agentId from chat data when loading an existing chat from history
+  // Restore agentId from chat data when loading an existing chat from history.
+  // Always sync from DB when chatData is available (including agentId = null)
+  // so that navigating to a non-agent chat correctly clears the previous agentId.
   useEffect(() => {
-    if (!isNewChat && chatData?.agentId && !agentIdFromUrl) {
-      agentIdRef.current = chatData.agentId;
-      setAgentId(chatData.agentId);
+    if (!isNewChat && chatData && !agentIdFromUrl) {
+      const restoredAgentId = chatData.agentId ?? null;
+      agentIdRef.current = restoredAgentId;
+      setAgentId(restoredAgentId);
     }
-  }, [chatData?.agentId, isNewChat, agentIdFromUrl]);
+  }, [chatData, isNewChat, agentIdFromUrl]);
 
   // Validate agentId: clear if the agent was deleted or deactivated
   const needsAgentValidation =
@@ -134,12 +137,17 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   );
   useEffect(() => {
     if (needsAgentValidation && agentsForValidation) {
-      const agentList: Array<{ id: string; isActive: boolean }> =
-        Array.isArray(agentsForValidation)
-          ? agentsForValidation
-          : (agentsForValidation as { agents?: Array<{ id: string; isActive: boolean }> }).agents ?? [];
+      const agentList: Array<{ id: string; isActive: boolean }> = Array.isArray(
+        agentsForValidation
+      )
+        ? agentsForValidation
+        : ((
+            agentsForValidation as {
+              agents?: Array<{ id: string; isActive: boolean }>;
+            }
+          ).agents ?? []);
       const match = agentList.find(
-        (a) => a.id === chatData?.agentId && a.isActive,
+        (a) => a.id === chatData?.agentId && a.isActive
       );
       if (!match) {
         agentIdRef.current = null;

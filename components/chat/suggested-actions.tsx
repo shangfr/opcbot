@@ -1,13 +1,10 @@
 "use client";
 
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { memo } from "react";
 import useSWR from "swr";
-import {
-  getAgentGroup,
-  getAvatarChar,
-} from "@/lib/agent-groups";
+import { getAgentGroup, getAvatarChar } from "@/lib/agent-groups";
 import { suggestions } from "@/lib/constants";
 import type { Agent } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
@@ -28,23 +25,17 @@ function PureSuggestedActions({
   agentId,
 }: SuggestedActionsProps) {
   const { data: agents } = useSWR<Agent[]>(
-    agentId
-      ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`
-      : null,
+    agentId ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents` : null,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
 
-  const currentAgent = agentId
-    ? agents?.find((a) => a.id === agentId)
-    : null;
+  const currentAgent = agentId ? agents?.find((a) => a.id === agentId) : null;
 
   const agentQuestions = currentAgent?.starterQuestions ?? null;
 
   const suggestedActions =
-    agentQuestions && agentQuestions.length > 0
-      ? agentQuestions
-      : suggestions;
+    agentQuestions && agentQuestions.length > 0 ? agentQuestions : suggestions;
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
@@ -76,9 +67,9 @@ function PureSuggestedActions({
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
           <img
-            src="/logo.jpg"
             alt="OPC Bot"
             className="mb-3 size-14 rounded-2xl object-cover shadow-sm"
+            src="/logo.jpg"
           />
           <h2 className="text-lg font-semibold tracking-tight">OPC Bot</h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">

@@ -1,8 +1,8 @@
 "use client";
 
 import { isAfter } from "date-fns";
-import { motion } from "framer-motion";
 import { ChevronLeftIcon, ChevronRightIcon, DiffIcon } from "lucide-react";
+import { motion } from "motion/react";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { useSWRConfig } from "swr";
