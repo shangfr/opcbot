@@ -40,6 +40,7 @@ import {
   type ChatModel,
   chatModels,
   DEFAULT_CHAT_MODEL,
+  getCapabilities,
   type ModelCapabilities,
 } from "@/lib/ai/models";
 import type { Attachment, ChatMessage } from "@/lib/types";
@@ -600,8 +601,8 @@ function PureAttachmentsButton({
     { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
   );
 
-  const caps: Record<string, ModelCapabilities> | undefined =
-    modelsResponse?.capabilities ?? modelsResponse;
+  const caps: Record<string, ModelCapabilities> =
+    modelsResponse?.capabilities ?? modelsResponse ?? getCapabilities();
   const hasVision = caps?.[selectedModelId]?.vision ?? false;
 
   return (
@@ -641,8 +642,8 @@ function PureModelSelectorCompact({
     { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
   );
 
-  const capabilities: Record<string, ModelCapabilities> | undefined =
-    modelsData?.capabilities ?? modelsData;
+  const capabilities: Record<string, ModelCapabilities> =
+    modelsData?.capabilities ?? modelsData ?? getCapabilities();
   const dynamicModels: ChatModel[] | undefined = modelsData?.models;
   const activeModels = dynamicModels ?? chatModels;
 
