@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType, agentId } =
+    const { id, message, messages, selectedChatModel, selectedVisibilityType, agentId, thinkingEnabled } =
       requestBody;
 
     const [, session] = await Promise.all([
@@ -115,6 +115,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title: "New chat",
         visibility: selectedVisibilityType,
+        agentId,
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }
@@ -262,7 +263,7 @@ export async function POST(request: Request) {
         });
 
         dataStream.merge(
-          result.toUIMessageStream({ sendReasoning: isReasoningModel })
+          result.toUIMessageStream({ sendReasoning: isReasoningModel && thinkingEnabled })
         );
 
         if (titlePromise) {

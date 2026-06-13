@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/chat/app-sidebar";
+import { ChatProvider } from "@/components/chat/chat-provider";
 import { ChatShellWrapper } from "@/components/chat/chat-shell-wrapper";
 import { DataStreamProvider } from "@/components/chat/data-stream-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -32,21 +33,23 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
-      <AppSidebar isAdmin={isAdminUser} user={session?.user} />
-      <SidebarInset>
-        <Toaster
-          position="top-center"
-          theme="system"
-          toastOptions={{
-            className:
-              "!bg-card !text-foreground !border-border/50 !shadow-lg",
-          }}
-        />
-        <Suspense fallback={<div className="flex h-dvh" />}>
-          <ChatShellWrapper />
-        </Suspense>
-        {children}
-      </SidebarInset>
+      <ChatProvider>
+        <AppSidebar isAdmin={isAdminUser} user={session?.user} />
+        <SidebarInset>
+          <Toaster
+            position="top-center"
+            theme="system"
+            toastOptions={{
+              className:
+                "!bg-card !text-foreground !border-border/50 !shadow-lg",
+            }}
+          />
+          <Suspense fallback={<div className="flex h-dvh" />}>
+            <ChatShellWrapper />
+          </Suspense>
+          {children}
+        </SidebarInset>
+      </ChatProvider>
     </SidebarProvider>
   );
 }

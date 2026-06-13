@@ -14,6 +14,7 @@ import {
   ToolOutput,
 } from "../ai-elements/tool";
 import { useDataStream } from "./data-stream-provider";
+import { useActiveChat } from "@/hooks/use-active-chat";
 import { DocumentToolResult } from "./document";
 import { DocumentPreview } from "./document-preview";
 import { ModelSelectorLogo } from "../ai-elements/model-selector";
@@ -54,6 +55,7 @@ const PurePreviewMessage = ({
   );
 
   useDataStream();
+  const { thinkingEnabled } = useActiveChat();
 
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
@@ -122,7 +124,7 @@ const PurePreviewMessage = ({
       return (
         <MessageContent
           className={cn("text-[13px] leading-[1.65]", {
-            "w-fit max-w-[min(80%,56ch)] overflow-hidden break-words rounded-2xl rounded-br-lg border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/10 to-accent/10 px-3.5 py-2 shadow-[0_0_12px_rgba(255,110,50,0.12)] dark:shadow-[0_0_18px_rgba(255,90,30,0.18)]":
+            "w-fit max-w-[min(80%,56ch)] overflow-hidden break-words rounded-2xl rounded-br-lg border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/10 to-accent/10 px-3.5 py-2 shadow-[0_0_12px_var(--accent-glow)] dark:shadow-[0_0_18px_var(--accent-glow)]":
               message.role === "user",
           })}
           data-testid="message-content"
@@ -323,7 +325,7 @@ const PurePreviewMessage = ({
   const content = isThinking ? (
     <div className="flex h-[calc(13px*1.65)] items-center text-[13px] leading-[1.65]">
       <Shimmer className="font-medium" duration={1}>
-        思考中...
+        {thinkingEnabled ? "思考中..." : "生成中..."}
       </Shimmer>
     </div>
   ) : (
@@ -366,7 +368,7 @@ const PurePreviewMessage = ({
           </div>
         )}
         {isAssistant ? (
-          <div className="flex min-w-0 flex-1 flex-col gap-2">{content}</div>
+          <div className="flex min-w-0 flex-1 flex-col gap-2 rounded-xl bg-muted/25 px-3.5 py-2.5">{content}</div>
         ) : (
           <>
             <div className="flex min-w-0 flex-1 flex-col gap-2 items-end">
@@ -399,6 +401,7 @@ export const ThinkingMessage = ({
   selectedModelId: string;
 }) => {
   const currentModel = chatModels.find((m) => m.id === selectedModelId);
+  const { thinkingEnabled } = useActiveChat();
   return (
     <div
       className="group/message w-full"
@@ -424,7 +427,7 @@ export const ThinkingMessage = ({
 
         <div className="flex h-[calc(13px*1.65)] items-center text-[13px] leading-[1.65]">
           <Shimmer className="font-medium" duration={1}>
-            思考中...
+            {thinkingEnabled ? "思考中..." : "生成中..."}
           </Shimmer>
         </div>
       </div>

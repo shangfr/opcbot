@@ -38,6 +38,7 @@ export async function GET(request: Request) {
     messages: convertToUIMessages(messages),
     visibility: chat.visibility,
     userId: chat.userId,
+    agentId: chat.agentId,
     isReadonly,
   });
 }

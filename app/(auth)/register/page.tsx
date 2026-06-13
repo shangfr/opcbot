@@ -47,20 +47,22 @@ export default function Page() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight text-center">创建账号</h1>
-      <p className="text-sm text-muted-foreground text-center">免费注册，立即体验</p>
-      <AuthForm action={handleSubmit} defaultEmail={email}>
-        <SubmitButton isSuccessful={isSuccessful}>注册</SubmitButton>
-        <p className="text-center text-[13px] text-muted-foreground">
-          {"已有账号？"}
-          <Link
-            className="text-foreground underline-offset-4 hover:underline"
-            href="/login"
-          >
-            登录
-          </Link>
-        </p>
-      </AuthForm>
+      <h1 className="auth-slide-in text-2xl font-semibold tracking-tight text-center" style={{ animationDelay: "0.1s" }}>创建账号</h1>
+      <p className="auth-slide-in text-sm text-muted-foreground text-center" style={{ animationDelay: "0.18s" }}>免费注册，立即体验</p>
+      <div className="auth-slide-in" style={{ animationDelay: "0.28s" }}>
+        <AuthForm action={handleSubmit} defaultEmail={email}>
+          <SubmitButton isSuccessful={isSuccessful}>注册</SubmitButton>
+          <p className="text-center text-[13px] text-muted-foreground">
+            {"已有账号？"}
+            <Link
+              className="text-foreground underline-offset-4 hover:underline"
+              href="/login"
+            >
+              登录
+            </Link>
+          </p>
+        </AuthForm>
+      </div>
     </>
   );
 }

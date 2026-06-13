@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { ActiveChatProvider } from "@/hooks/use-active-chat";
 import { ChatShell } from "./shell";
 
 const EXCLUDED_PATHS = ["/agents", "/"];
@@ -14,9 +13,5 @@ export function ChatShellWrapper() {
     return null;
   }
 
-  return (
-    <ActiveChatProvider>
-      <ChatShell />
-    </ActiveChatProvider>
-  );
+  return <ChatShell />;
 }

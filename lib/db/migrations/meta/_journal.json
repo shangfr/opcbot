@@ -29,6 +29,13 @@
       "when": 1781345758481,
       "tag": "0003_green_jack_power",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781354062822,
+      "tag": "0004_optimal_gunslinger",
+      "breakpoints": true
     }
   ]
 }

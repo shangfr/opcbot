@@ -45,6 +45,9 @@ type ActiveChatContextValue = {
   votes: Vote[] | undefined;
   currentModelId: string;
   setCurrentModelId: (id: string) => void;
+  thinkingEnabled: boolean;
+  setThinkingEnabled: Dispatch<SetStateAction<boolean>>;
+  agentId: string | null;
 };
 
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
@@ -67,16 +70,23 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   // agentId from URL query param (for starting chat with a specific agent)
   const agentIdFromUrl = searchParams.get("agentId");
+  const [agentId, setAgentId] = useState<string | null>(agentIdFromUrl);
   const agentIdRef = useRef(agentIdFromUrl);
 
-  // Keep agentIdRef reactive to searchParams changes (e.g. navigating from /chat to /chat?agentId=xxx)
+  // Keep agentIdRef and agentId state reactive to searchParams changes
+  // Only update when agentIdFromUrl is present, so navigating to /chat/[chatId]
+  // (where agentId is absent from URL) preserves the previous agentId
   useEffect(() => {
-    agentIdRef.current = agentIdFromUrl;
+    if (agentIdFromUrl) {
+      agentIdRef.current = agentIdFromUrl;
+      setAgentId(agentIdFromUrl);
+    }
   }, [agentIdFromUrl]);
 
   if (isNewChat && prevPathnameRef.current !== pathname) {
     newChatIdRef.current = generateUUID();
     agentIdRef.current = searchParams.get("agentId");
+    setAgentId(searchParams.get("agentId"));
   }
   prevPathnameRef.current = pathname;
 
@@ -88,6 +98,12 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
 
+  const [thinkingEnabled, setThinkingEnabled] = useState(true);
+  const thinkingEnabledRef = useRef(thinkingEnabled);
+  useEffect(() => {
+    thinkingEnabledRef.current = thinkingEnabled;
+  }, [thinkingEnabled]);
+
   const [input, setInput] = useState("");
 
   const { data: chatData, isLoading } = useSWR(
@@ -97,6 +113,40 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     fetcher,
     { revalidateOnFocus: false }
   );
+
+  // Restore agentId from chat data when loading an existing chat from history
+  useEffect(() => {
+    if (!isNewChat && chatData?.agentId && !agentIdFromUrl) {
+      agentIdRef.current = chatData.agentId;
+      setAgentId(chatData.agentId);
+    }
+  }, [chatData?.agentId, isNewChat, agentIdFromUrl]);
+
+  // Validate agentId: clear if the agent was deleted or deactivated
+  const needsAgentValidation =
+    !isNewChat && !!chatData?.agentId && !agentIdFromUrl;
+  const { data: agentsForValidation } = useSWR(
+    needsAgentValidation
+      ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`
+      : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+  useEffect(() => {
+    if (needsAgentValidation && agentsForValidation) {
+      const agentList: Array<{ id: string; isActive: boolean }> =
+        Array.isArray(agentsForValidation)
+          ? agentsForValidation
+          : (agentsForValidation as { agents?: Array<{ id: string; isActive: boolean }> }).agents ?? [];
+      const match = agentList.find(
+        (a) => a.id === chatData?.agentId && a.isActive,
+      );
+      if (!match) {
+        agentIdRef.current = null;
+        setAgentId(null);
+      }
+    }
+  }, [needsAgentValidation, agentsForValidation, chatData?.agentId]);
 
   const initialMessages: ChatMessage[] = isNewChat
     ? []
@@ -154,6 +204,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
               : { message: lastMessage }),
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibility,
+            thinkingEnabled: thinkingEnabledRef.current,
             ...(agentIdRef.current ? { agentId: agentIdRef.current } : {}),
             ...request.body,
           },
@@ -269,6 +320,9 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       votes,
       currentModelId,
       setCurrentModelId,
+      thinkingEnabled,
+      setThinkingEnabled,
+      agentId,
     }),
     [
       chatId,
@@ -286,6 +340,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       isLoading,
       votes,
       currentModelId,
+      thinkingEnabled,
+      agentId,
     ]
   );
 

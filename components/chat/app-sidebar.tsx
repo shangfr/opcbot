@@ -14,6 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
+import { useActiveChat } from "@/hooks/use-active-chat";
 import {
   getChatHistoryPaginationKey,
   SidebarHistory,
@@ -54,6 +55,7 @@ export function AppSidebar({
   isAdmin: boolean;
 }) {
   const router = useRouter();
+  const { agentId } = useActiveChat();
   const { setOpenMobile, toggleSidebar } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
@@ -136,7 +138,7 @@ export function AppSidebar({
                     className="h-9 w-full gap-2.5 rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-[13px] font-medium text-sidebar-foreground transition-all duration-150 hover:bg-sidebar-primary/15 hover:text-sidebar-primary hover:border-sidebar-primary/30"
                     onClick={() => {
                       setOpenMobile(false);
-                      router.push("/chat");
+                      router.push(agentId ? `/chat?agentId=${agentId}` : "/chat");
                     }}
                     tooltip="新建对话"
                   >

@@ -125,7 +125,7 @@ export const VersionFooter = ({
           }}
           type="button"
         >
-          Restore
+          恢复此版本
           {isMutating && (
             <div className="animate-spin">
               <LoaderIcon size={14} />

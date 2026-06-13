@@ -187,7 +187,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                 <MessageSquare className="size-5 text-sky-500" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">新建对话</p>
+                <p className="text-sm font-semibold">开始对话</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   直接与 AI 开始对话
                 </p>

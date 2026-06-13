@@ -102,9 +102,6 @@ function areEqual(
   if (prevProps.status !== nextProps.status) {
     return false;
   }
-  if (prevProps.status && nextProps.status) {
-    return false;
-  }
   if (prevProps.messages.length !== nextProps.messages.length) {
     return false;
   }

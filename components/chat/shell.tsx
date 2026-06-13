@@ -34,6 +34,8 @@ export function ChatShell() {
     votes,
     currentModelId,
     setCurrentModelId,
+    thinkingEnabled,
+    setThinkingEnabled,
   } = useActiveChat();
 
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(
@@ -113,8 +115,10 @@ export function ChatShell() {
                     setInput("");
                   }}
                   onModelChange={setCurrentModelId}
+                  onThinkingChange={setThinkingEnabled}
                   selectedModelId={currentModelId}
                   selectedVisibilityType={visibilityType}
+                  thinkingEnabled={thinkingEnabled}
                   sendMessage={
                     editingMessage
                       ? async () => {

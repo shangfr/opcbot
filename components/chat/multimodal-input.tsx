@@ -87,6 +87,8 @@ function PureMultimodalInput({
   editingMessage,
   onCancelEdit,
   isLoading,
+  thinkingEnabled,
+  onThinkingChange,
 }: {
   chatId: string;
   input: string;
@@ -107,6 +109,8 @@ function PureMultimodalInput({
   editingMessage?: ChatMessage | null;
   onCancelEdit?: () => void;
   isLoading?: boolean;
+  thinkingEnabled?: boolean;
+  onThinkingChange?: (enabled: boolean) => void;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -166,7 +170,7 @@ function PureMultimodalInput({
         setMessages(() => []);
         break;
       case "rename":
-        toast("Rename is available from the sidebar chat menu.");
+        toast("请从侧边栏聊天菜单中重命名");
         break;
       case "model": {
         const modelBtn = document.querySelector<HTMLButtonElement>(
@@ -179,30 +183,30 @@ function PureMultimodalInput({
         setTheme(resolvedTheme === "dark" ? "light" : "dark");
         break;
       case "delete":
-        toast("Delete this chat?", {
+        toast("删除此对话？", {
           action: {
-            label: "Delete",
+            label: "删除",
             onClick: () => {
               fetch(
                 `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatId}`,
                 { method: "DELETE" }
               );
               router.push("/chat");
-              toast.success("Chat deleted");
+              toast.success("对话已删除");
             },
           },
         });
         break;
       case "purge":
-        toast("Delete all chats?", {
+        toast("删除所有对话？", {
           action: {
-            label: "Delete all",
+            label: "全部删除",
             onClick: () => {
               fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`, {
                 method: "DELETE",
               });
               router.push("/chat");
-              toast.success("All chats deleted");
+              toast.success("所有对话已删除");
             },
           },
         });
@@ -424,7 +428,6 @@ function PureMultimodalInput({
       </div>
 
       <PromptInput
-        className="[&>div]:rounded-2xl [&>div]:border [&>div]:border-border/30 [&>div]:bg-card/70 [&>div]:shadow-[var(--shadow-composer)] [&>div]:transition-shadow [&>div]:duration-300 [&>div]:focus-within:shadow-[var(--shadow-composer-focus)]"
         onSubmit={() => {
           if (input.startsWith("/")) {
             const query = input.slice(1).trim();
@@ -478,7 +481,6 @@ function PureMultimodalInput({
           </div>
         )}
         <PromptInputTextarea
-          className="min-h-24 text-[13px] leading-relaxed px-4 pt-3.5 pb-1.5 placeholder:text-muted-foreground/35"
           data-testid="multimodal-input"
           onChange={handleInput}
           onKeyDown={(e) => {
@@ -515,7 +517,7 @@ function PureMultimodalInput({
             }
           }}
           placeholder={
-            editingMessage ? "Edit your message..." : "Ask anything..."
+            editingMessage ? "编辑消息..." : "随便问点什么..."
           }
           ref={textareaRef}
           value={input}
@@ -529,6 +531,11 @@ function PureMultimodalInput({
             />
             <ModelSelectorCompact
               onModelChange={onModelChange}
+              selectedModelId={selectedModelId}
+            />
+            <ThinkingToggle
+              enabled={thinkingEnabled}
+              onChange={onThinkingChange}
               selectedModelId={selectedModelId}
             />
           </PromptInputTools>
@@ -579,6 +586,9 @@ export const MultimodalInput = memo(
       return false;
     }
     if (prevProps.isLoading !== nextProps.isLoading) {
+      return false;
+    }
+    if (prevProps.thinkingEnabled !== nextProps.thinkingEnabled) {
       return false;
     }
     if (prevProps.messages.length !== nextProps.messages.length) {
@@ -660,7 +670,6 @@ function PureModelSelectorCompact({
     <ModelSelector onOpenChange={setOpen} open={open}>
       <ModelSelectorTrigger asChild>
         <Button
-          className="h-7 max-w-[200px] justify-between gap-1.5 rounded-lg px-2 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
           data-testid="model-selector"
           variant="ghost"
         >
@@ -669,7 +678,9 @@ function PureModelSelectorCompact({
         </Button>
       </ModelSelectorTrigger>
       <ModelSelectorContent>
-        <ModelSelectorInput placeholder="Search models..." />
+        <div className="sr-only">
+          <ModelSelectorInput />
+        </div>
         <ModelSelectorList>
           {(() => {
             const curatedIds = new Set(chatModels.map((m) => m.id));
@@ -735,7 +746,7 @@ function PureModelSelectorCompact({
               <ModelSelectorGroup
                 heading={
                   key === "_available"
-                    ? "Available"
+                    ? "可用模型"
                     : (providerNames[key] ?? key)
                 }
                 key={key}
@@ -797,6 +808,50 @@ function PureModelSelectorCompact({
 }
 
 const ModelSelectorCompact = memo(PureModelSelectorCompact);
+
+function ThinkingToggle({
+  selectedModelId,
+  enabled,
+  onChange,
+}: {
+  selectedModelId: string;
+  enabled?: boolean;
+  onChange?: (enabled: boolean) => void;
+}) {
+  const { data: modelsData } = useSWR(
+    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
+    (url: string) => fetch(url).then((r) => r.json()),
+    { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
+  );
+
+  const capabilities: Record<string, ModelCapabilities> =
+    modelsData?.capabilities ?? modelsData ?? getCapabilities();
+  const isReasoningModel = capabilities?.[selectedModelId]?.reasoning ?? false;
+
+  if (!isReasoningModel) return null;
+
+  return (
+    <button
+      className={cn(
+        "inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg px-2 text-[12px] font-medium transition-colors",
+        enabled
+          ? "bg-cyan-500 text-white hover:bg-cyan-500/90"
+          : "bg-muted text-muted-foreground hover:bg-muted/80"
+      )}
+      data-testid="thinking-toggle"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onChange?.(!enabled);
+      }}
+      title={enabled ? "思考模式已开启" : "思考模式已关闭"}
+      type="button"
+    >
+      <BrainIcon className="size-3.5" />
+      思考
+    </button>
+  );
+}
 
 function PureStopButton({
   stop,

@@ -1,8 +1,7 @@
 "use client";
 
-import { Edit, MessageCircle, Plus, Power, PowerOff, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,11 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Agent } from "@/lib/db/schema";
-import {
-  getAllGroups,
-  getAgentGroup,
-  getAvatarChar,
-} from "@/lib/agent-groups";
+import { AgentCard, GroupHeader, useAgents } from "./opc-shared";
 
 type AgentFormData = {
   name: string;
@@ -47,31 +42,12 @@ const emptyForm: AgentFormData = {
 };
 
 export function AgentManager() {
-  const router = useRouter();
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { agents, loading, refresh, adminGroups, handleStartChat } = useAgents();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [form, setForm] = useState<AgentFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Agent | null>(null);
-
-  const fetchAgents = useCallback(async () => {
-    try {
-      const res = await fetch("/api/agents");
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      setAgents(data);
-    } catch {
-      toast.error("获取 OPC 列表失败");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAgents();
-  }, [fetchAgents]);
 
   const openCreate = () => {
     setEditingAgent(null);
@@ -132,7 +108,7 @@ export function AgentManager() {
         toast.success("OPC 已创建");
       }
       setDialogOpen(false);
-      fetchAgents();
+      refresh();
     } catch {
       toast.error("保存失败，请重试");
     } finally {
@@ -149,36 +125,11 @@ export function AgentManager() {
       if (!res.ok) throw new Error("Failed to delete");
       toast.success("OPC 已删除");
       setDeleteConfirm(null);
-      fetchAgents();
+      refresh();
     } catch {
       toast.error("删除失败，请重试");
     }
   };
-
-  // 按分组归类
-  const groupedAgents = useMemo(() => {
-    const map = new Map<string, Agent[]>();
-    for (const g of getAllGroups()) {
-      map.set(g.key, []);
-    }
-    const ungrouped: Agent[] = [];
-    for (const a of agents) {
-      const group = getAgentGroup(a.sortOrder);
-      if (group.key === "default") {
-        ungrouped.push(a);
-      } else {
-        const bucket = map.get(group.key) ?? [];
-        bucket.push(a);
-        map.set(group.key, bucket);
-      }
-    }
-
-    const groups = getAllGroups()
-      .filter((g) => (map.get(g.key)?.length ?? 0) > 0)
-      .map((g) => ({ group: g, agents: map.get(g.key)! }));
-
-    return { groups, ungrouped };
-  }, [agents]);
 
   if (loading) {
     return (
@@ -191,14 +142,14 @@ export function AgentManager() {
     );
   }
 
+  const { groups, ungrouped } = adminGroups;
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       {/* Header */}
       <div className="mb-10 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            OPC 管理
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">OPC 管理</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             管理 AI OPC 角色配置，共 {agents.length} 个
           </p>
@@ -226,225 +177,42 @@ export function AgentManager() {
       )}
 
       {/* 按分组渲染 */}
-      {groupedAgents.groups.map(({ group, agents: groupAgents }) => (
+      {groups.map(({ group, agents: groupAgents }) => (
         <section key={group.key} className="mb-10">
-          <div className="mb-4 flex items-center gap-3">
-            <div className={`h-1 w-6 rounded-full ${group.bg}`} aria-hidden />
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {group.label}
-            </h2>
-            <span className="text-[10px] text-muted-foreground/50">
-              {groupAgents.length} 个
-            </span>
-          </div>
-
+          <GroupHeader group={group} count={groupAgents.length} />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {groupAgents.map((agent) => {
-              const agentGroup = getAgentGroup(agent.sortOrder);
-              const avatarChar = getAvatarChar(agent.name);
-
-              return (
-                <div
-                  key={agent.id}
-                  className={`fade-up group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-transparent hover:shadow-[var(--shadow-float)] ${agentGroup.ring} hover:ring-2`}
-                >
-                  {/* 顶部色条 */}
-                  <div
-                    className={`absolute inset-x-0 top-0 h-1 ${agentGroup.bg}`}
-                  />
-
-                  {/* Top bar */}
-                  <div className="mb-4 mt-1.5 flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-base font-bold shadow-sm ${agentGroup.bg} ${agentGroup.text}`}
-                      >
-                        {avatarChar}
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold leading-tight">
-                          {agent.name}
-                        </h3>
-                        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
-                          <span>#{agent.sortOrder}</span>
-                          <span
-                            className={`font-medium ${agentGroup.softText}`}
-                          >
-                            {agentGroup.label}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        agent.isActive
-                          ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {agent.isActive ? (
-                        <Power className="size-2.5" />
-                      ) : (
-                        <PowerOff className="size-2.5" />
-                      )}
-                      {agent.isActive ? "启用" : "停用"}
-                    </span>
-                  </div>
-
-                  {/* Description */}
-                  <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                    {agent.description}
-                  </p>
-
-                  {/* System prompt preview */}
-                  <div className={`mb-4 rounded-lg px-3 py-2 ${agentGroup.soft}`}>
-                    <p className="line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/60 font-mono">
-                      {agent.systemPrompt}
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-[11px]"
-                      onClick={() =>
-                        agent.isActive &&
-                        router.push(`/chat?agentId=${agent.id}`)
-                      }
-                      disabled={!agent.isActive}
-                      title={
-                        agent.isActive ? "开始对话" : "已停用的 OPC 无法对话"
-                      }
-                    >
-                      <MessageCircle className="size-3" />
-                      聊天
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-[11px]"
-                      onClick={() => openEdit(agent)}
-                    >
-                      <Edit className="size-3" />
-                      编辑
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-[11px] text-destructive hover:text-destructive"
-                      onClick={() => setDeleteConfirm(agent)}
-                    >
-                      <Trash2 className="size-3" />
-                      删除
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+            {groupAgents.map((agent) => (
+              <AgentCard
+                admin
+                agent={agent}
+                key={agent.id}
+                onChat={agent.isActive ? handleStartChat : undefined}
+                onDelete={(a) => setDeleteConfirm(a)}
+                onEdit={openEdit}
+              />
+            ))}
           </div>
         </section>
       ))}
 
-      {/* 未分组的 Agent */}
-      {groupedAgents.ungrouped.length > 0 && (
+      {/* 未分组 */}
+      {ungrouped.length > 0 && (
         <section className="mb-10">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="h-1 w-6 rounded-full bg-slate-400" />
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              其他
-            </h2>
-          </div>
+          <GroupHeader
+            group={{ bg: "bg-slate-400", label: "其他" }}
+            count={ungrouped.length}
+          />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {groupedAgents.ungrouped.map((agent) => {
-              const agentGroup = getAgentGroup(agent.sortOrder);
-              const avatarChar = getAvatarChar(agent.name);
-
-              return (
-                <div
-                  key={agent.id}
-                  className="fade-up group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-5 shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-float)]"
-                >
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-500 text-base font-bold text-white shadow-sm">
-                        {avatarChar}
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold leading-tight">
-                          {agent.name}
-                        </h3>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          #{agent.sortOrder}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        agent.isActive
-                          ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {agent.isActive ? (
-                        <Power className="size-2.5" />
-                      ) : (
-                        <PowerOff className="size-2.5" />
-                      )}
-                      {agent.isActive ? "启用" : "停用"}
-                    </span>
-                  </div>
-
-                  <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                    {agent.description}
-                  </p>
-
-                  <div className="mb-4 rounded-lg bg-muted/50 px-3 py-2">
-                    <p className="line-clamp-2 text-[11px] leading-relaxed text-muted-foreground/60 font-mono">
-                      {agent.systemPrompt}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-[11px]"
-                      onClick={() =>
-                        agent.isActive &&
-                        router.push(`/chat?agentId=${agent.id}`)
-                      }
-                      disabled={!agent.isActive}
-                      title={
-                        agent.isActive ? "开始对话" : "已停用的 OPC 无法对话"
-                      }
-                    >
-                      <MessageCircle className="size-3" />
-                      聊天
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-[11px]"
-                      onClick={() => openEdit(agent)}
-                    >
-                      <Edit className="size-3" />
-                      编辑
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-[11px] text-destructive hover:text-destructive"
-                      onClick={() => setDeleteConfirm(agent)}
-                    >
-                      <Trash2 className="size-3" />
-                      删除
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+            {ungrouped.map((agent) => (
+              <AgentCard
+                admin
+                agent={agent}
+                key={agent.id}
+                onChat={agent.isActive ? handleStartChat : undefined}
+                onDelete={(a) => setDeleteConfirm(a)}
+                onEdit={openEdit}
+              />
+            ))}
           </div>
         </section>
       )}
@@ -525,7 +293,7 @@ export function AgentManager() {
               <Textarea
                 id="starterQuestions"
                 className="min-h-[80px] text-xs"
-                placeholder="每行一个问题，最多 8 个&#10;例如：&#10;你好，你能帮我做什么？&#10;请介绍一下你的专业能力"
+                placeholder={"每行一个问题，最多 8 个\n例如：\n你好，你能帮我做什么？\n请介绍一下你的专业能力"}
                 value={form.starterQuestions}
                 onChange={(e) =>
                   setForm({ ...form, starterQuestions: e.target.value })

@@ -48,8 +48,8 @@ function PureSuggestedActions({
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
-      {/* Agent 信息 */}
-      {currentAgent && (
+      {/* Agent 信息 / 默认品牌信息 */}
+      {currentAgent ? (
         <motion.div
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center text-center"
@@ -66,6 +66,23 @@ function PureSuggestedActions({
           </h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
             {currentAgent.description}
+          </p>
+        </motion.div>
+      ) : (
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center text-center"
+          initial={{ opacity: 0, y: 12 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img
+            src="/logo.jpg"
+            alt="OPC Bot"
+            className="mb-3 size-14 rounded-2xl object-cover shadow-sm"
+          />
+          <h2 className="text-lg font-semibold tracking-tight">OPC Bot</h2>
+          <p className="mt-1 max-w-md text-sm text-muted-foreground">
+            智能助手，随时为您提供帮助
           </p>
         </motion.div>
       )}

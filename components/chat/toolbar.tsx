@@ -110,6 +110,8 @@ const Tool = ({
               handleSelect();
             }
           }}
+          role="button"
+          tabIndex={0}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -139,12 +141,12 @@ const ReadingLevelSelector = ({
   sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
 }) => {
   const LEVELS = [
-    "Elementary",
-    "Middle School",
-    "Keep current level",
-    "High School",
-    "College",
-    "Graduate",
+    "小学",
+    "初中",
+    "保持当前水平",
+    "高中",
+    "大学",
+    "研究生",
   ];
 
   const y = useMotionValue(-40 * 2);
@@ -385,7 +387,7 @@ const PureToolbar = ({
     <TooltipProvider delayDuration={0}>
       <motion.div
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="fixed right-6 bottom-6 z-50 flex cursor-pointer flex-col items-center rounded-3xl border bg-background py-1 shadow-lg"
+        className="absolute right-6 bottom-6 z-50 flex cursor-pointer flex-col items-center rounded-3xl border bg-background py-1 shadow-[var(--shadow-float)]"
         exit={{ opacity: 0, y: -20, transition: { duration: 0.1 } }}
         initial={{ opacity: 0, y: -20, scale: 1 }}
         onAnimationComplete={() => {
