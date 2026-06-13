@@ -10,7 +10,7 @@ import {
   LockIcon,
   WrenchIcon,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   type ChangeEvent,
@@ -36,6 +36,7 @@ import {
   ModelSelectorName,
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
+import { useActiveChat } from "@/hooks/use-active-chat";
 import {
   type ChatModel,
   chatModels,
@@ -113,8 +114,7 @@ function PureMultimodalInput({
   onThinkingChange?: (enabled: boolean) => void;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const agentId = searchParams.get("agentId");
+  const { agentId } = useActiveChat();
   const { setTheme, resolvedTheme } = useTheme();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -516,9 +516,7 @@ function PureMultimodalInput({
               onCancelEdit();
             }
           }}
-          placeholder={
-            editingMessage ? "编辑消息..." : "随便问点什么..."
-          }
+          placeholder={editingMessage ? "编辑消息..." : "随便问点什么..."}
           ref={textareaRef}
           value={input}
         />
@@ -669,10 +667,7 @@ function PureModelSelectorCompact({
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
       <ModelSelectorTrigger asChild>
-        <Button
-          data-testid="model-selector"
-          variant="ghost"
-        >
+        <Button data-testid="model-selector" variant="ghost">
           {provider && <ModelSelectorLogo provider={provider} />}
           <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
         </Button>

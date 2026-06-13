@@ -14,7 +14,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import { useActiveChat } from "@/hooks/use-active-chat";
 import {
   getChatHistoryPaginationKey,
   SidebarHistory,
@@ -35,6 +34,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useActiveChat } from "@/hooks/use-active-chat";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +55,8 @@ export function AppSidebar({
   isAdmin: boolean;
 }) {
   const router = useRouter();
-  const { agentId } = useActiveChat();
+  const { agentId, messages } = useActiveChat();
+  const isEmptyChat = messages.length === 0;
   const { setOpenMobile, toggleSidebar } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
@@ -77,8 +78,8 @@ export function AppSidebar({
   return (
     <>
       <Sidebar
-        collapsible="icon"
         className="border-r border-sidebar-border shadow-[var(--shadow-sidebar)]"
+        collapsible="icon"
       >
         {/* ===== Logo / Brand 区域 ===== */}
         <SidebarHeader className="border-b border-sidebar-border px-3 pb-3 pt-4">
@@ -92,7 +93,11 @@ export function AppSidebar({
                   tooltip="OPC Bot"
                 >
                   <Link href="/" onClick={() => setOpenMobile(false)}>
-                    <img src="/logo.jpg" alt="OPC Bot" className="size-8 rounded-lg object-cover" />
+                    <img
+                      alt="OPC Bot"
+                      className="size-8 rounded-lg object-cover"
+                      src="/logo.jpg"
+                    />
                   </Link>
                 </SidebarMenuButton>
                 {/* 展开时的品牌名称 */}
@@ -135,10 +140,33 @@ export function AppSidebar({
                 {/* 新建对话 */}
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 w-full gap-2.5 rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-[13px] font-medium text-sidebar-foreground transition-all duration-150 hover:bg-sidebar-primary/15 hover:text-sidebar-primary hover:border-sidebar-primary/30"
-                    onClick={() => {
+                    className="h-9 w-full gap-2.5 rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-[13px] font-medium text-sidebar-foreground transition-all duration-150 hover:bg-sidebar-primary/15 hover:text-sidebar-primary hover:border-sidebar-primary/30 disabled:opacity-40 disabled:pointer-events-none"
+                    disabled={isEmptyChat}
+                    onClick={async () => {
                       setOpenMobile(false);
-                      router.push(agentId ? `/chat?agentId=${agentId}` : "/chat");
+                      try {
+                        const res = await fetch("/api/chat/create", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            agentId: agentId ?? undefined,
+                          }),
+                        });
+                        if (!res.ok) {
+                          throw new Error("Failed to create chat");
+                        }
+                        const { chatId } = await res.json();
+                        // Store agentId temporarily for page initialization
+                        if (agentId) {
+                          sessionStorage.setItem(
+                            `pending-chat-${chatId}`,
+                            agentId
+                          );
+                        }
+                        router.push(`/chat/${chatId}`);
+                      } catch {
+                        toast.error("创建对话失败，请重试");
+                      }
                     }}
                     tooltip="新建对话"
                   >
@@ -155,10 +183,7 @@ export function AppSidebar({
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       tooltip={isAdmin ? "OPC 管理" : "选择 OPC"}
                     >
-                      <Link
-                        href="/agents"
-                        onClick={() => setOpenMobile(false)}
-                      >
+                      <Link href="/agents" onClick={() => setOpenMobile(false)}>
                         <Bot className="size-3.5" />
                         <span>{isAdmin ? "OPC 管理" : "选择 OPC"}</span>
                       </Link>

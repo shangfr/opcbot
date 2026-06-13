@@ -105,7 +105,24 @@ export function useAgents() {
   );
 
   const handleStartChat = useCallback(
-    (agent: Agent) => router.push(`/chat?agentId=${agent.id}`),
+    async (agent: Agent) => {
+      try {
+        const res = await fetch("/api/chat/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId: agent.id }),
+        });
+        if (!res.ok) {
+          throw new Error("Failed to create chat");
+        }
+        const { chatId } = await res.json();
+        // Store agentId temporarily for page initialization
+        sessionStorage.setItem(`pending-chat-${chatId}`, agent.id);
+        router.push(`/chat/${chatId}`);
+      } catch {
+        toast.error("创建对话失败，请重试");
+      }
+    },
     [router]
   );
 

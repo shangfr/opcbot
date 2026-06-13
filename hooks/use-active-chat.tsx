@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   type Dispatch,
@@ -59,7 +59,6 @@ function extractChatId(pathname: string): string | null {
 
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { setDataStream } = useDataStream();
   const { mutate } = useSWRConfig();
 
@@ -68,25 +67,23 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const newChatIdRef = useRef(generateUUID());
   const prevPathnameRef = useRef(pathname);
 
-  // agentId from URL query param (for starting chat with a specific agent)
-  const agentIdFromUrl = searchParams.get("agentId");
-  const [agentId, setAgentId] = useState<string | null>(agentIdFromUrl);
-  const agentIdRef = useRef(agentIdFromUrl);
-
-  // Sync agentId with URL query param (bidirectional: set when present, clear when absent)
-  useEffect(() => {
-    agentIdRef.current = agentIdFromUrl;
-    setAgentId(agentIdFromUrl);
-  }, [agentIdFromUrl]);
+  // agentId can come from:
+  // 1. sessionStorage (pending chat, not yet saved to DB)
+  // 2. chatData (DB, after first message)
+  const getInitialAgentId = (): string | null => {
+    if (chatIdFromUrl) {
+      const pending = sessionStorage.getItem(`pending-chat-${chatIdFromUrl}`);
+      if (pending) {
+        return pending;
+      }
+    }
+    return null;
+  };
+  const [agentId, setAgentId] = useState<string | null>(getInitialAgentId);
+  const agentIdRef = useRef<string | null>(getInitialAgentId());
 
   if (isNewChat && prevPathnameRef.current !== pathname) {
     newChatIdRef.current = generateUUID();
-  }
-  // Reset agentId on any page navigation (not just new chats)
-  // so that navigating between chats doesn't carry stale agentId
-  if (prevPathnameRef.current !== pathname) {
-    agentIdRef.current = searchParams.get("agentId");
-    setAgentId(searchParams.get("agentId"));
   }
   prevPathnameRef.current = pathname;
 
@@ -114,20 +111,29 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     { revalidateOnFocus: false }
   );
 
-  // Restore agentId from chat data when loading an existing chat from history.
-  // Always sync from DB when chatData is available (including agentId = null)
-  // so that navigating to a non-agent chat correctly clears the previous agentId.
+  // Restore agentId from chat data (DB) or sessionStorage (pending).
+  // Also clear sessionStorage when DB has the agentId (first message sent).
   useEffect(() => {
-    if (!isNewChat && chatData && !agentIdFromUrl) {
-      const restoredAgentId = chatData.agentId ?? null;
-      agentIdRef.current = restoredAgentId;
-      setAgentId(restoredAgentId);
+    if (!isNewChat && chatData) {
+      if (chatData.agentId !== undefined) {
+        // DB has agentId - use it and clear pending storage
+        const restoredAgentId = chatData.agentId ?? null;
+        agentIdRef.current = restoredAgentId;
+        setAgentId(restoredAgentId);
+        sessionStorage.removeItem(`pending-chat-${chatId}`);
+      } else {
+        // DB doesn't have agentId yet - check sessionStorage
+        const pending = sessionStorage.getItem(`pending-chat-${chatId}`);
+        if (pending && !agentIdRef.current) {
+          agentIdRef.current = pending;
+          setAgentId(pending);
+        }
+      }
     }
-  }, [chatData, isNewChat, agentIdFromUrl]);
+  }, [isNewChat, chatData, chatId]);
 
-  // Validate agentId: clear if the agent was deleted or deactivated
-  const needsAgentValidation =
-    !isNewChat && !!chatData?.agentId && !agentIdFromUrl;
+  // Validate agentId: clear if the agent was deleted or deactivated.
+  const needsAgentValidation = !isNewChat && !!chatData?.agentId;
   const { data: agentsForValidation } = useSWR(
     needsAgentValidation
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`

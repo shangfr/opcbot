@@ -1,20 +1,11 @@
 "use client";
 
-import {
-  Bot,
-  MessageSquare,
-  TrendingUp,
-  Users,
-  Zap,
-} from "lucide-react";
+import { Bot, MessageSquare, TrendingUp, Users, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { getAgentGroup, getAllGroups, getAvatarChar } from "@/lib/agent-groups";
 import type { Agent } from "@/lib/db/schema";
-import {
-  getAllGroups,
-  getAgentGroup,
-  getAvatarChar,
-} from "@/lib/agent-groups";
 
 interface WelcomeDashboardProps {
   /** 可选：父组件额外操作（仅在 ChatShell 嵌入时使用） */
@@ -49,7 +40,9 @@ function StatCard({
       className="stat-enter flex items-center gap-4 rounded-xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
-      <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${c.bg}`}>
+      <div
+        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${c.bg}`}
+      >
         <Icon className={`size-4 ${c.icon}`} />
       </div>
       <div className="min-w-0">
@@ -88,7 +81,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
 
   const activeAgents = useMemo(
     () => agents.filter((a) => a.isActive),
-    [agents],
+    [agents]
   );
 
   // 按分组选出推荐代表（每组至多 2 个）
@@ -107,18 +100,46 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
       .slice(0, 8);
   }, [activeAgents]);
 
-  const handleNewChat = useCallback(() => {
+  const handleNewChat = useCallback(async () => {
     if (onNewChat) {
       onNewChat();
     }
-    router.push("/chat");
+    try {
+      const res = await fetch("/api/chat/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to create chat");
+      }
+      const { chatId } = await res.json();
+      router.push(`/chat/${chatId}`);
+    } catch {
+      toast.error("创建对话失败，请重试");
+    }
   }, [onNewChat, router]);
 
   const handleStartChatWithAgent = useCallback(
-    (agent: Agent) => {
-      router.push(`/chat?agentId=${agent.id}`);
+    async (agent: Agent) => {
+      try {
+        const res = await fetch("/api/chat/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId: agent.id }),
+        });
+        if (!res.ok) {
+          throw new Error("Failed to create chat");
+        }
+        const { chatId } = await res.json();
+        // Store agentId temporarily for page initialization
+        sessionStorage.setItem(`pending-chat-${chatId}`, agent.id);
+        router.push(`/chat/${chatId}`);
+      } catch {
+        toast.error("创建对话失败，请重试");
+      }
     },
-    [router],
+    [router]
   );
 
   return (
@@ -127,11 +148,13 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
         {/* ===== Welcome 标题 ===== */}
         <div className="mb-10 text-center">
           <div className="mx-auto mb-5 flex size-16 items-center justify-center overflow-hidden rounded-2xl ring-1 ring-primary/10">
-            <img src="/logo.jpg" alt="OPC Bot" className="size-full object-cover" />
+            <img
+              alt="OPC Bot"
+              className="size-full object-cover"
+              src="/logo.jpg"
+            />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            OPC Bot
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">OPC Bot</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             选择一位 OPC 或直接开始对话，探索 AI 助手的无限可能
           </p>
@@ -179,9 +202,9 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <button
-              type="button"
-              onClick={handleNewChat}
               className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/[0.04] to-transparent p-5 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-500/30 hover:shadow-[0_4px_24px_-4px_rgba(14,165,233,0.15)]"
+              onClick={handleNewChat}
+              type="button"
             >
               <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 transition-colors group-hover:bg-sky-500/15">
                 <MessageSquare className="size-5 text-sky-500" />
@@ -192,12 +215,24 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                   直接与 AI 开始对话
                 </p>
               </div>
-              <svg className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-sky-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg
+                className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-sky-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M9 5l7 7-7 7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
             <button
-              type="button"
-              onClick={() => router.push("/agents")}
               className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-rose-500/15 bg-gradient-to-br from-rose-500/[0.04] to-transparent p-5 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-500/30 hover:shadow-[0_4px_24px_-4px_rgba(244,63,94,0.15)]"
+              onClick={() => router.push("/agents")}
+              type="button"
             >
               <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 transition-colors group-hover:bg-rose-500/15">
                 <Bot className="size-5 text-rose-500" />
@@ -208,7 +243,19 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                   浏览和管理 OPC 角色
                 </p>
               </div>
-              <svg className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-rose-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg
+                className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-rose-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M9 5l7 7-7 7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
           </div>
         </div>
@@ -226,14 +273,14 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
 
                 return (
                   <button
-                    key={agent.id}
-                    type="button"
-                    onClick={() => handleStartChatWithAgent(agent)}
                     className={`stat-enter group flex items-center gap-4 overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br ${group.gradientFrom} to-transparent p-4 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:${group.borderHover} ${group.hoverShadow}`}
+                    key={agent.id}
+                    onClick={() => handleStartChatWithAgent(agent)}
                     style={{
                       animationDelay: `${300 + i * 80}ms`,
                       animationFillMode: "both",
                     }}
+                    type="button"
                   >
                     <div
                       className={`flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold shadow-sm transition-transform group-hover:scale-105 ${group.bg} ${group.text}`}
@@ -248,7 +295,19 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                         {agent.description || "点击开始对话"}
                       </p>
                     </div>
-                    <svg className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-foreground" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    <svg
+                      className="size-4 shrink-0 text-muted-foreground/40 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-foreground"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        d="M9 5l7 7-7 7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </button>
                 );
               })}
@@ -257,9 +316,9 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
             {/* 查看更多 */}
             {activeAgents.length > featuredAgents.length && (
               <button
-                type="button"
-                onClick={() => router.push("/agents")}
                 className="mt-4 w-full rounded-xl border border-dashed border-border/50 py-2.5 text-center text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                onClick={() => router.push("/agents")}
+                type="button"
               >
                 查看全部 {activeAgents.length} 个 OPC →
               </button>
