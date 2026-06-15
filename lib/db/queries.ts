@@ -20,6 +20,8 @@ import { ChatbotError } from "../errors";
 import { generateUUID } from "../utils";
 import {
   agent,
+  type Category,
+  category,
   type Chat,
   chat,
   type DBMessage,
@@ -675,6 +677,7 @@ export async function createAgent({
   starterQuestions,
   isActive,
   sortOrder,
+  categoryId,
   userId,
 }: {
   name: string;
@@ -685,6 +688,7 @@ export async function createAgent({
   starterQuestions?: string[];
   isActive: boolean;
   sortOrder: number;
+  categoryId?: string | null;
   userId: string;
 }) {
   try {
@@ -699,6 +703,7 @@ export async function createAgent({
         starterQuestions: starterQuestions ?? [],
         isActive,
         sortOrder,
+        categoryId: categoryId ?? null,
         userId,
       })
       .returning();
@@ -718,6 +723,7 @@ export async function updateAgent({
   starterQuestions,
   isActive,
   sortOrder,
+  categoryId,
 }: {
   id: string;
   name: string;
@@ -728,6 +734,7 @@ export async function updateAgent({
   starterQuestions?: string[];
   isActive: boolean;
   sortOrder: number;
+  categoryId?: string | null;
 }) {
   try {
     const [result] = await db
@@ -741,6 +748,7 @@ export async function updateAgent({
         starterQuestions: starterQuestions ?? [],
         isActive,
         sortOrder,
+        categoryId: categoryId ?? null,
         updatedAt: new Date(),
       })
       .where(eq(agent.id, id))
@@ -760,5 +768,88 @@ export async function deleteAgent({ id }: { id: string }) {
     return result;
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to delete agent");
+  }
+}
+
+// ============================================================
+// Category CRUD
+// ============================================================
+
+export async function getCategories() {
+  try {
+    return await db
+      .select()
+      .from(category)
+      .orderBy(asc(category.createdAt));
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to get categories");
+  }
+}
+
+export async function getCategoryById({ id }: { id: string }) {
+  try {
+    const [result] = await db
+      .select()
+      .from(category)
+      .where(eq(category.id, id));
+    return result ?? null;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get category by id"
+    );
+  }
+}
+
+export async function createCategory({
+  name,
+  color,
+  userId,
+}: {
+  name: string;
+  color: string;
+  userId: string;
+}) {
+  try {
+    const [result] = await db
+      .insert(category)
+      .values({ name, color, userId })
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to create category");
+  }
+}
+
+export async function updateCategory({
+  id,
+  name,
+  color,
+}: {
+  id: string;
+  name: string;
+  color: string;
+}) {
+  try {
+    const [result] = await db
+      .update(category)
+      .set({ name, color })
+      .where(eq(category.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to update category");
+  }
+}
+
+export async function deleteCategory({ id }: { id: string }) {
+  try {
+    const [result] = await db
+      .delete(category)
+      .where(eq(category.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to delete category");
   }
 }

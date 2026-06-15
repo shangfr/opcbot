@@ -43,6 +43,13 @@
       "when": 1781355604325,
       "tag": "0005_volatile_thunderball",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781498001835,
+      "tag": "0006_even_true_believers",
+      "breakpoints": true
     }
   ]
 }

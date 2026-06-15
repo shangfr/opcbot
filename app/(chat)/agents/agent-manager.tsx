@@ -1,8 +1,9 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { Plus, Settings2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,10 +15,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { Agent } from "@/lib/db/schema";
+import type { Agent, Category } from "@/lib/db/schema";
 import { AgentCard, GroupHeader, useAgents } from "./opc-shared";
+import { CategoryManagerDialog } from "./category-manager-dialog";
 
 type AgentFormData = {
   name: string;
@@ -28,6 +37,7 @@ type AgentFormData = {
   starterQuestions: string;
   isActive: boolean;
   sortOrder: number;
+  categoryId: string;
 };
 
 const emptyForm: AgentFormData = {
@@ -39,6 +49,7 @@ const emptyForm: AgentFormData = {
   starterQuestions: "",
   isActive: true,
   sortOrder: 0,
+  categoryId: "__none__",
 };
 
 export function AgentManager() {
@@ -48,11 +59,23 @@ export function AgentManager() {
   const [form, setForm] = useState<AgentFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Agent | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/categories");
+      if (res.ok) setCategories(await res.json());
+    } catch {
+      // silent — categories are optional
+    }
+  };
 
   const openCreate = () => {
     setEditingAgent(null);
     setForm(emptyForm);
     setDialogOpen(true);
+    fetchCategories();
   };
 
   const openEdit = (agent: Agent) => {
@@ -66,8 +89,10 @@ export function AgentManager() {
       starterQuestions: (agent.starterQuestions ?? []).join("\n"),
       isActive: agent.isActive,
       sortOrder: agent.sortOrder,
+      categoryId: agent.categoryId ?? "__none__",
     });
     setDialogOpen(true);
+    fetchCategories();
   };
 
   const handleSave = async () => {
@@ -86,6 +111,7 @@ export function AgentManager() {
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean),
+      categoryId: form.categoryId === "__none__" ? null : form.categoryId,
     };
 
     setSaving(true);
@@ -304,6 +330,68 @@ export function AgentManager() {
               </p>
             </div>
 
+            {/* 分类选择 */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>分类标签</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    fetchCategories();
+                    setCategoryDialogOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Settings2 className="size-3" />
+                  管理分类
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={form.categoryId}
+                  onValueChange={(v) => setForm({ ...form, categoryId: v })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="无分类" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-muted-foreground">无分类</span>
+                    </SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span
+                          className="inline-block size-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.categoryId && form.categoryId !== "__none__" && (() => {
+                  const cat = categories.find((c) => c.id === form.categoryId);
+                  return cat ? (
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 gap-1 px-2 py-0.5 text-[11px]"
+                      style={{
+                        borderColor: cat.color + "40",
+                        backgroundColor: cat.color + "10",
+                        color: cat.color,
+                      }}
+                    >
+                      <span
+                        className="inline-block size-2 rounded-full"
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      {cat.name}
+                    </Badge>
+                  ) : null;
+                })()}
+              </div>
+            </div>
+
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Switch
@@ -368,6 +456,13 @@ export function AgentManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 分类管理弹窗 */}
+      <CategoryManagerDialog
+        open={categoryDialogOpen}
+        onOpenChange={setCategoryDialogOpen}
+        onCategoriesChange={setCategories}
+      />
     </div>
   );
 }

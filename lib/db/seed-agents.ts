@@ -6,7 +6,7 @@ import postgres from "postgres";
 
 config({ path: ".env.local" });
 
-import { agent, user } from "./schema";
+import { agent, category, user } from "./schema";
 
 // ============================================================
 // 来自 expert-prompts.ts 的 Agent 定义 —— 总结后生成
@@ -1144,6 +1144,37 @@ const AGENTS: SeedAgent[] = [
 ];
 
 // ============================================================
+// 种子分类 —— 映射 agent-groups.ts 的七个业务域
+// ============================================================
+
+interface SeedCategory {
+  name: string;
+  color: string;
+}
+
+const SEED_CATEGORIES: SeedCategory[] = [
+  { name: "法律合规", color: "#6366f1" },
+  { name: "财税资本", color: "#f59e0b" },
+  { name: "核心战略", color: "#10b981" },
+  { name: "产业政策", color: "#8b5cf6" },
+  { name: "AI与数字化", color: "#0ea5e9" },
+  { name: "OPC孵化", color: "#f97316" },
+  { name: "三大平台", color: "#f43f5e" },
+];
+
+/** 根据 sortOrder 判断所属分类名称 */
+function getCategoryNameBySortOrder(sortOrder: number): string | undefined {
+  if (sortOrder >= 1 && sortOrder <= 4) return "法律合规";
+  if (sortOrder >= 5 && sortOrder <= 7) return "财税资本";
+  if (sortOrder >= 10 && sortOrder <= 12) return "核心战略";
+  if (sortOrder >= 13 && sortOrder <= 15) return "产业政策";
+  if (sortOrder >= 20 && sortOrder <= 22) return "AI与数字化";
+  if (sortOrder >= 30 && sortOrder <= 32) return "OPC孵化";
+  if (sortOrder >= 40 && sortOrder <= 42) return "三大平台";
+  return undefined;
+}
+
+// ============================================================
 // 种子脚本
 // ============================================================
 
@@ -1189,7 +1220,39 @@ async function seed() {
   }
 
   console.log(`Found user: ${adminUser.email} (id: ${adminUser.id})`);
-  console.log(`Upserting ${AGENTS.length} agents...\n`);
+
+  // ---- 1. Upsert 分类 ----
+  console.log(`Upserting ${SEED_CATEGORIES.length} categories...`);
+  const categoryMap = new Map<string, string>(); // name → id
+
+  for (const c of SEED_CATEGORIES) {
+    const catId = deterministicUUID(`category:${c.name}`);
+    const [existingCat] = await db
+      .select()
+      .from(category)
+      .where(eq(category.id, catId));
+
+    if (existingCat) {
+      await db
+        .update(category)
+        .set({ name: c.name, color: c.color })
+        .where(eq(category.id, catId));
+      console.log(`  ↻ ${c.name} (updated)`);
+    } else {
+      await db.insert(category).values({
+        id: catId,
+        name: c.name,
+        color: c.color,
+        userId: adminUser.id,
+        createdAt: new Date(),
+      });
+      console.log(`  + ${c.name}`);
+    }
+    categoryMap.set(c.name, catId);
+  }
+
+  // ---- 2. Upsert Agent ----
+  console.log(`\nUpserting ${AGENTS.length} agents...\n`);
 
   let createdCount = 0;
   let skipCount = 0;
@@ -1197,6 +1260,8 @@ async function seed() {
   for (const a of AGENTS) {
     // 使用确定性 UUID（基于 name + namespace）实现幂等
     const id = deterministicUUID(a.name);
+    const catName = getCategoryNameBySortOrder(a.sortOrder);
+    const categoryId = catName ? (categoryMap.get(catName) ?? null) : null;
 
     const [existing] = await db.select().from(agent).where(eq(agent.id, id));
 
@@ -1212,6 +1277,7 @@ async function seed() {
           starterQuestions: a.starterQuestions,
           sortOrder: a.sortOrder,
           isActive: true,
+          categoryId,
           updatedAt: new Date(),
         })
         .where(eq(agent.id, id));
@@ -1229,6 +1295,7 @@ async function seed() {
         starterQuestions: a.starterQuestions,
         isActive: true,
         sortOrder: a.sortOrder,
+        categoryId,
         userId: adminUser.id,
         createdAt: new Date(),
         updatedAt: new Date(),

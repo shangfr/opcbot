@@ -171,6 +171,9 @@ export const agent = pgTable("Agent", {
   starterQuestions: json("starter_questions").$type<string[]>().default([]),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  categoryId: uuid("categoryId").references(() => category.id, {
+    onDelete: "set null",
+  }),
   userId: uuid("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -179,3 +182,15 @@ export const agent = pgTable("Agent", {
 });
 
 export type Agent = InferSelectModel<typeof agent>;
+
+export const category = pgTable("Category", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  name: text("name").notNull(),
+  color: text("color").notNull().default("#6366f1"),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type Category = InferSelectModel<typeof category>;

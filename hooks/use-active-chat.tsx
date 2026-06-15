@@ -16,9 +16,7 @@ import {
   useState,
 } from "react";
 import useSWR, { useSWRConfig } from "swr";
-import { unstable_serialize } from "swr/infinite";
 import { useDataStream } from "@/components/chat/data-stream-provider";
-import { getChatHistoryPaginationKey } from "@/components/chat/sidebar-history";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { useAutoResume } from "@/hooks/use-auto-resume";
@@ -229,7 +227,13 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       setDataStream((ds) => (ds ? [...ds, dataPart] : []));
     },
     onFinish: () => {
-      mutate(unstable_serialize(getChatHistoryPaginationKey));
+      // 用 matcher 函数匹配 useSWRInfinite 的缓存键（$inf$ 前缀），
+      // 避免 unstable_serialize 在 SWR v2 下对 infinite 模式不生效的问题
+      mutate((key: unknown) =>
+        typeof key === "string" &&
+        key.startsWith("$inf$") &&
+        key.includes("/api/history")
+      );
     },
     onError: (error) => {
       if (error instanceof ChatbotError) {
@@ -243,31 +247,25 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const loadedChatIds = useRef(new Set<string>());
-
-  if (isNewChat && !loadedChatIds.current.has(newChatIdRef.current)) {
-    loadedChatIds.current.add(newChatIdRef.current);
-  }
+  // 记录上次设置过 messages 的 chatId，用于检测聊天切换。
+  // 用 ref 而非 Set，确保回访已访问过的对话时也能重新加载最新消息。
+  const prevChatIdForMessages = useRef<string | null>(null);
 
   useEffect(() => {
-    if (loadedChatIds.current.has(chatId)) {
-      return;
+    if (prevChatIdForMessages.current === chatId) {
+      return; // 同一对话，无需重复设置
     }
-    if (chatData?.messages) {
-      loadedChatIds.current.add(chatId);
+    if (isNewChat) {
+      // 新建对话：清空消息，等待用户输入
+      prevChatIdForMessages.current = chatId;
+      setMessages([]);
+    } else if (chatData?.messages) {
+      // 已有对话：从 API 加载消息
+      prevChatIdForMessages.current = chatId;
       setMessages(chatData.messages);
     }
-  }, [chatId, chatData?.messages, setMessages]);
-
-  const prevChatIdRef = useRef(chatId);
-  useEffect(() => {
-    if (prevChatIdRef.current !== chatId) {
-      prevChatIdRef.current = chatId;
-      if (isNewChat) {
-        setMessages([]);
-      }
-    }
-  }, [chatId, isNewChat, setMessages]);
+    // else: chatData 还没加载完成，等 chatData 变化后此 effect 会再次触发
+  }, [chatId, isNewChat, chatData?.messages, setMessages]);
 
   useEffect(() => {
     if (chatData && !isNewChat) {

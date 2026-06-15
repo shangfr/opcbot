@@ -19,6 +19,7 @@ const agentSchema = z.object({
   starterQuestions: z.array(z.string()).max(8, "默认问题最多 8 个").default([]),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().default(0),
+  categoryId: z.string().uuid().nullable().default(null),
 });
 
 async function checkAuth() {
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
       starterQuestions: body.starterQuestions,
       isActive: body.isActive,
       sortOrder: body.sortOrder,
+      categoryId: body.categoryId,
       userId: session.user.id,
     });
 
@@ -127,6 +129,7 @@ export async function PATCH(request: Request) {
       starterQuestions: body.starterQuestions ?? existing.starterQuestions ?? [],
       isActive: body.isActive ?? existing.isActive,
       sortOrder: body.sortOrder ?? existing.sortOrder,
+      categoryId: body.categoryId !== undefined ? body.categoryId : existing.categoryId,
     });
 
     return Response.json(result, { status: 200 });
