@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
+import { getChatCache, setChatCache } from "@/hooks/use-message-cache";
 import type { Chat } from "@/lib/db/schema";
 import {
   DropdownMenu,
@@ -42,6 +43,25 @@ const PureChatItem = ({
     initialVisibilityType: chat.visibility,
   });
 
+  // P1: Prefetch messages on hover for instant navigation
+  const handlePrefetch = useCallback(() => {
+    if (getChatCache(chat.id)) {
+      return; // Already cached
+    }
+    fetch(`/api/messages?chatId=${chat.id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setChatCache(chat.id, {
+            messages: data.messages ?? [],
+            agentId: data.agentId ?? null,
+            visibility: data.visibility ?? "private",
+          });
+        }
+      })
+      .catch((err) => console.error("Prefetch failed:", err));
+  }, [chat.id]);
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -49,7 +69,11 @@ const PureChatItem = ({
         className="h-8 rounded-none text-[13px] text-sidebar-foreground/50 transition-all duration-150 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground/50 data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary/[0.08] data-[active=true]:pl-3"
         isActive={isActive}
       >
-        <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
+        <Link
+          href={`/chat/${chat.id}`}
+          onClick={() => setOpenMobile(false)}
+          onMouseEnter={handlePrefetch}
+        >
           <span className="truncate">{chat.title}</span>
         </Link>
       </SidebarMenuButton>

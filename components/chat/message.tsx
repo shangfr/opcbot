@@ -1,10 +1,13 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
+import Image from "next/image";
+import { useActiveChat } from "@/hooks/use-active-chat";
+import { chatModels } from "@/lib/ai/models";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
-import Image from "next/image";
 import { cn, sanitizeText } from "@/lib/utils";
 import { MessageContent, MessageResponse } from "../ai-elements/message";
+import { ModelSelectorLogo } from "../ai-elements/model-selector";
 import { Shimmer } from "../ai-elements/shimmer";
 import {
   Tool,
@@ -14,11 +17,8 @@ import {
   ToolOutput,
 } from "../ai-elements/tool";
 import { useDataStream } from "./data-stream-provider";
-import { useActiveChat } from "@/hooks/use-active-chat";
 import { DocumentToolResult } from "./document";
 import { DocumentPreview } from "./document-preview";
-import { ModelSelectorLogo } from "../ai-elements/model-selector";
-import { chatModels } from "@/lib/ai/models";
 import { MessageActions } from "./message-actions";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
@@ -308,6 +308,18 @@ const PurePreviewMessage = ({
       );
     }
 
+    if (type === "data-stopped") {
+      return (
+        <div
+          className="flex items-center gap-1.5 text-muted-foreground/70 text-xs italic"
+          key={key}
+        >
+          <span className="size-1.5 rounded-full bg-muted-foreground/50" />
+          回复已停止
+        </div>
+      );
+    }
+
     return null;
   });
 
@@ -347,7 +359,9 @@ const PurePreviewMessage = ({
     >
       <div
         className={cn(
-          isUser ? "flex items-start justify-end gap-3" : "flex items-start gap-3"
+          isUser
+            ? "flex items-start justify-end gap-3"
+            : "flex items-start gap-3"
         )}
       >
         {isAssistant && (
@@ -368,7 +382,9 @@ const PurePreviewMessage = ({
           </div>
         )}
         {isAssistant ? (
-          <div className="flex min-w-0 flex-1 flex-col gap-2 rounded-xl bg-muted/25 px-3.5 py-2.5">{content}</div>
+          <div className="flex min-w-0 flex-1 flex-col gap-2 rounded-xl bg-muted/25 px-3.5 py-2.5">
+            {content}
+          </div>
         ) : (
           <>
             <div className="flex min-w-0 flex-1 flex-col gap-2 items-end">

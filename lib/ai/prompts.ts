@@ -66,6 +66,22 @@ export const getRequestPromptFromHints = (requestHints: RequestHints) => `\
 - 国家: ${requestHints.country}
 `;
 
+export const infrastructurePrompt = ({
+  requestHints,
+  supportsTools,
+}: {
+  requestHints: RequestHints;
+  supportsTools: boolean;
+}) => {
+  const requestPrompt = getRequestPromptFromHints(requestHints);
+
+  if (!supportsTools) {
+    return requestPrompt;
+  }
+
+  return `${requestPrompt}\n\n${artifactsPrompt}`;
+};
+
 export const systemPrompt = ({
   requestHints,
   supportsTools,

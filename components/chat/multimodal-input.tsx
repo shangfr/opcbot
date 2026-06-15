@@ -538,8 +538,8 @@ function PureMultimodalInput({
             />
           </PromptInputTools>
 
-          {status === "submitted" ? (
-            <StopButton setMessages={setMessages} stop={stop} />
+          {status === "submitted" || status === "streaming" ? (
+            <StopButton chatId={chatId} setMessages={setMessages} stop={stop} />
           ) : (
             <PromptInputSubmit
               className={cn(
@@ -849,9 +849,11 @@ function ThinkingToggle({
 }
 
 function PureStopButton({
+  chatId,
   stop,
   setMessages,
 }: {
+  chatId: string;
   stop: () => void;
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
 }) {
@@ -862,7 +864,31 @@ function PureStopButton({
       onClick={(event) => {
         event.preventDefault();
         stop();
-        setMessages((messages) => messages);
+        // Add a "stopped" indicator to the last assistant message and persist to DB
+        setMessages((messages) => {
+          const lastMsg = messages.at(-1);
+          if (lastMsg && lastMsg.role === "assistant") {
+            const updatedParts = [
+              ...lastMsg.parts,
+              { type: "data-stopped" as const, data: null },
+            ];
+            const updatedMsg = { ...lastMsg, parts: updatedParts };
+            // Persist the stopped marker to database
+            fetch(`/api/messages?chatId=${chatId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                messageId: lastMsg.id,
+                parts: updatedParts,
+                role: lastMsg.role,
+              }),
+            }).catch((err) =>
+              console.error("Failed to persist stopped marker:", err)
+            );
+            return [...messages.slice(0, -1), updatedMsg];
+          }
+          return messages;
+        });
       }}
     >
       <StopIcon size={14} />

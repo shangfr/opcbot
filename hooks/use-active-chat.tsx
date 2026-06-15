@@ -20,6 +20,11 @@ import { useDataStream } from "@/components/chat/data-stream-provider";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { useAutoResume } from "@/hooks/use-auto-resume";
+import {
+  getChatCache,
+  setChatCache,
+  updateChatMessages,
+} from "@/hooks/use-message-cache";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import type { Vote } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
@@ -101,37 +106,60 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const [input, setInput] = useState("");
 
+  // Check if messages for this chatId are already cached in memory
+  const cachedEntry = isNewChat ? undefined : getChatCache(chatId);
+  const hasCachedMessages = !!cachedEntry;
+
+  // Only fetch from API if chatId is not in memory cache
   const { data: chatData, isLoading } = useSWR(
-    isNewChat
+    isNewChat || hasCachedMessages
       ? null
       : `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/messages?chatId=${chatId}`,
     fetcher,
-    { revalidateOnFocus: false }
+    {
+      revalidateOnFocus: false,
+      revalidateOnMount: true,
+      onSuccess: (data) => {
+        // Cache API response for future navigations
+        if (data && chatId) {
+          setChatCache(chatId, {
+            messages: data.messages ?? [],
+            agentId: data.agentId ?? null,
+            visibility: data.visibility ?? "private",
+          });
+        }
+      },
+    }
   );
+
+  // Use cached data if available, otherwise use SWR data
+  const effectiveData = hasCachedMessages ? cachedEntry : chatData;
 
   // Restore agentId from chat data (DB) or sessionStorage (pending).
   // Also clear sessionStorage when DB has the agentId (first message sent).
   useEffect(() => {
-    if (!isNewChat && chatData) {
-      if (chatData.agentId !== undefined) {
-        // DB has agentId - use it and clear pending storage
-        const restoredAgentId = chatData.agentId ?? null;
-        agentIdRef.current = restoredAgentId;
-        setAgentId(restoredAgentId);
+    if (isNewChat) {
+      return;
+    }
+    if (effectiveData) {
+      if (effectiveData.agentId) {
+        // DB has a valid agentId - use it and clear pending storage
+        agentIdRef.current = effectiveData.agentId;
+        setAgentId(effectiveData.agentId);
         sessionStorage.removeItem(`pending-chat-${chatId}`);
       } else {
-        // DB doesn't have agentId yet - check sessionStorage
+        // DB doesn't have agentId (null or undefined) - check sessionStorage
         const pending = sessionStorage.getItem(`pending-chat-${chatId}`);
-        if (pending && !agentIdRef.current) {
+        if (pending) {
           agentIdRef.current = pending;
           setAgentId(pending);
         }
       }
     }
-  }, [isNewChat, chatData, chatId]);
+  }, [isNewChat, effectiveData, chatId]);
 
   // Validate agentId: clear if the agent was deleted or deactivated.
-  const needsAgentValidation = !isNewChat && !!chatData?.agentId;
+  const needsAgentValidation = isNewChat ? false : !!effectiveData?.agentId;
   const { data: agentsForValidation } = useSWR(
     needsAgentValidation
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`
@@ -151,21 +179,22 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             }
           ).agents ?? []);
       const match = agentList.find(
-        (a) => a.id === chatData?.agentId && a.isActive
+        (a) => a.id === effectiveData?.agentId && a.isActive
       );
-      if (!match) {
-        agentIdRef.current = null;
-        setAgentId(null);
+      if (match) {
+        return;
       }
+      agentIdRef.current = null;
+      setAgentId(null);
     }
-  }, [needsAgentValidation, agentsForValidation, chatData?.agentId]);
+  }, [needsAgentValidation, agentsForValidation, effectiveData?.agentId]);
 
   const initialMessages: ChatMessage[] = isNewChat
     ? []
-    : (chatData?.messages ?? []);
+    : (effectiveData?.messages ?? []);
   const visibility: VisibilityType = isNewChat
     ? "private"
-    : (chatData?.visibility ?? "private");
+    : (effectiveData?.visibility ?? "private");
 
   const {
     messages,
@@ -208,6 +237,51 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             })
           );
 
+        // P0: Optimistic history update — add chat to sidebar immediately
+        // when user sends first message (not a tool continuation)
+        if (!isToolApprovalContinuation && lastMessage?.role === "user") {
+          mutate(
+            (key: unknown) =>
+              typeof key === "string" &&
+              key.startsWith("$inf$") &&
+              key.includes("/api/history"),
+            (
+              currentData:
+                | Array<{
+                    chats: Array<{
+                      id: string;
+                      createdAt: string;
+                      title: string;
+                      userId: string;
+                      visibility: string;
+                    }>;
+                    hasMore: boolean;
+                  }>
+                | undefined
+            ) => {
+              if (!currentData || currentData.length === 0) {
+                return currentData;
+              }
+              const firstPage = currentData[0];
+              if (firstPage.chats.some((c) => c.id === request.id)) {
+                return currentData; // Already exists
+              }
+              const optimisticChat = {
+                id: request.id,
+                createdAt: new Date().toISOString(),
+                title: "New chat",
+                userId: "",
+                visibility: "private",
+              };
+              return [
+                { ...firstPage, chats: [optimisticChat, ...firstPage.chats] },
+                ...currentData.slice(1),
+              ];
+            },
+            { revalidate: false }
+          );
+        }
+
         return {
           body: {
             id: request.id,
@@ -229,10 +303,11 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     onFinish: () => {
       // 用 matcher 函数匹配 useSWRInfinite 的缓存键（$inf$ 前缀），
       // 避免 unstable_serialize 在 SWR v2 下对 infinite 模式不生效的问题
-      mutate((key: unknown) =>
-        typeof key === "string" &&
-        key.startsWith("$inf$") &&
-        key.includes("/api/history")
+      mutate(
+        (key: unknown) =>
+          typeof key === "string" &&
+          key.startsWith("$inf$") &&
+          key.includes("/api/history")
       );
     },
     onError: (error) => {
@@ -247,28 +322,49 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // 记录上次设置过 messages 的 chatId，用于检测聊天切换。
-  // 用 ref 而非 Set，确保回访已访问过的对话时也能重新加载最新消息。
+  // Track which chatId the messages were last set for.
   const prevChatIdForMessages = useRef<string | null>(null);
+  // Track last synced message count to avoid redundant cache writes
+  const prevMessageCountRef = useRef<number>(0);
 
+  // Sync messages FROM effectiveData (API or cache) TO useChat.
+  // Only when chatId changes (navigation) or initial load with data.
   useEffect(() => {
-    if (prevChatIdForMessages.current === chatId) {
-      return; // 同一对话，无需重复设置
-    }
     if (isNewChat) {
-      // 新建对话：清空消息，等待用户输入
       prevChatIdForMessages.current = chatId;
+      prevMessageCountRef.current = 0;
       setMessages([]);
-    } else if (chatData?.messages) {
-      // 已有对话：从 API 加载消息
-      prevChatIdForMessages.current = chatId;
-      setMessages(chatData.messages);
+    } else if (prevChatIdForMessages.current !== chatId) {
+      // Navigated to a different chat
+      if (effectiveData?.messages && effectiveData.messages.length > 0) {
+        prevChatIdForMessages.current = chatId;
+        prevMessageCountRef.current = effectiveData.messages.length;
+        setMessages(effectiveData.messages);
+      } else if (!effectiveData) {
+        // Data hasn't loaded yet — clear to avoid showing old chat
+        setMessages([]);
+      }
     }
-    // else: chatData 还没加载完成，等 chatData 变化后此 effect 会再次触发
-  }, [chatId, isNewChat, chatData?.messages, setMessages]);
+  }, [chatId, isNewChat, effectiveData, setMessages]);
+
+  // Sync messages TO cache when messages change (content or count).
+  // This is a one-way write (cache ← messages), it does NOT trigger setMessages.
+  // P0: Debounced with requestAnimationFrame to avoid excessive writes during streaming.
+  const rafRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isNewChat && messages.length > 0) {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      rafRef.current = requestAnimationFrame(() => {
+        updateChatMessages(chatId, messages);
+        rafRef.current = null;
+      });
+    }
+  }, [chatId, isNewChat, messages]);
 
   useEffect(() => {
-    if (chatData && !isNewChat) {
+    if (effectiveData && isNewChat ? false : !!effectiveData) {
       const cookieModel = document.cookie
         .split("; ")
         .find((row) => row.startsWith("chat-model="))
@@ -277,7 +373,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
         setCurrentModelId(decodeURIComponent(cookieModel));
       }
     }
-  }, [chatData, isNewChat]);
+  }, [effectiveData, isNewChat]);
 
   const hasAppendedQueryRef = useRef(false);
   useEffect(() => {
@@ -298,13 +394,13 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   }, [sendMessage, chatId]);
 
   useAutoResume({
-    autoResume: !isNewChat && !!chatData,
+    autoResume: isNewChat ? false : !!effectiveData,
     initialMessages,
     resumeStream,
     setMessages,
   });
 
-  const isReadonly = isNewChat ? false : (chatData?.isReadonly ?? false);
+  const isReadonly = isNewChat ? false : (effectiveData?.isReadonly ?? false);
 
   const { data: votes } = useSWR<Vote[]>(
     !isReadonly && messages.length >= 2

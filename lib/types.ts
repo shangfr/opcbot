@@ -40,6 +40,7 @@ export type CustomUIDataTypes = {
   kind: ArtifactKind;
   clear: null;
   finish: null;
+  stopped: null;
   "chat-title": string;
 };
 

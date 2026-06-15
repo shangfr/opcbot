@@ -1,4 +1,5 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useMessages } from "@/hooks/use-messages";
@@ -51,6 +52,20 @@ function PureMessages({
 
   useDataStream();
 
+  // P2: Virtual scrolling for long conversations
+  const virtualizer = useVirtualizer({
+    count:
+      messages.length +
+      (status === "submitted" && messages.at(-1)?.role !== "assistant"
+        ? 1
+        : 0) +
+      1, // +1 for thinking, +1 for end spacer
+    getScrollElement: () => messagesContainerRef.current,
+    estimateSize: () => 120,
+    overscan: 5,
+    enabled: messages.length > 30, // Only virtualize for long conversations
+  });
+
   const prevChatIdRef = useRef(chatId);
   useEffect(() => {
     if (prevChatIdRef.current !== chatId) {
@@ -75,39 +90,143 @@ function PureMessages({
         style={isArtifactVisible ? { scrollbarWidth: "none" } : undefined}
       >
         <div className="mx-auto flex min-h-full min-w-0 max-w-4xl flex-col gap-5 px-2 py-6 md:gap-7 md:px-4">
-          {messages.map((message, index) => (
-            <PreviewMessage
-              addToolApprovalResponse={addToolApprovalResponse}
-              chatId={chatId}
-              isLoading={
-                status === "streaming" && messages.length - 1 === index
-              }
-              isReadonly={isReadonly}
-              key={message.id}
-              message={message}
-              onEdit={onEditMessage}
-              regenerate={regenerate}
-              requiresScrollPadding={
-                hasSentMessage && index === messages.length - 1
-              }
-              selectedModelId={selectedModelId}
-              setMessages={setMessages}
-              vote={
-                votes
-                  ? votes.find((vote) => vote.messageId === message.id)
-                  : undefined
-              }
-            />
-          ))}
+          {messages.length > 30 ? (
+            <>
+              {/* Virtualized rendering for 30+ messages */}
+              <div
+                style={{
+                  height: `${virtualizer.getTotalSize()}px`,
+                  width: "100%",
+                  position: "relative",
+                }}
+              >
+                {virtualizer.getVirtualItems().map((virtualRow) => {
+                  const index = virtualRow.index;
+                  if (index < messages.length) {
+                    const message = messages[index];
+                    return (
+                      <div
+                        data-index={index}
+                        key={message.id}
+                        ref={virtualizer.measureElement}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <PreviewMessage
+                          addToolApprovalResponse={addToolApprovalResponse}
+                          chatId={chatId}
+                          isLoading={
+                            status === "streaming" &&
+                            messages.length - 1 === index
+                          }
+                          isReadonly={isReadonly}
+                          message={message}
+                          onEdit={onEditMessage}
+                          regenerate={regenerate}
+                          requiresScrollPadding={
+                            hasSentMessage && index === messages.length - 1
+                          }
+                          selectedModelId={selectedModelId}
+                          setMessages={setMessages}
+                          vote={
+                            votes
+                              ? votes.find(
+                                  (vote) => vote.messageId === message.id
+                                )
+                              : undefined
+                          }
+                        />
+                      </div>
+                    );
+                  }
+                  if (
+                    index === messages.length &&
+                    status === "submitted" &&
+                    messages.at(-1)?.role !== "assistant"
+                  ) {
+                    return (
+                      <div
+                        data-index={index}
+                        key="thinking"
+                        ref={virtualizer.measureElement}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <ThinkingMessage selectedModelId={selectedModelId} />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div
+                      data-index={index}
+                      key="spacer"
+                      ref={virtualizer.measureElement}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      <div
+                        className="min-h-[24px] min-w-[24px] shrink-0"
+                        ref={messagesEndRef}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Normal rendering for ≤ 30 messages */}
+              {messages.map((message, index) => (
+                <PreviewMessage
+                  addToolApprovalResponse={addToolApprovalResponse}
+                  chatId={chatId}
+                  isLoading={
+                    status === "streaming" && messages.length - 1 === index
+                  }
+                  isReadonly={isReadonly}
+                  key={message.id}
+                  message={message}
+                  onEdit={onEditMessage}
+                  regenerate={regenerate}
+                  requiresScrollPadding={
+                    hasSentMessage && index === messages.length - 1
+                  }
+                  selectedModelId={selectedModelId}
+                  setMessages={setMessages}
+                  vote={
+                    votes
+                      ? votes.find((vote) => vote.messageId === message.id)
+                      : undefined
+                  }
+                />
+              ))}
 
-          {status === "submitted" && messages.at(-1)?.role !== "assistant" && (
-            <ThinkingMessage selectedModelId={selectedModelId} />
+              {status === "submitted" &&
+                messages.at(-1)?.role !== "assistant" && (
+                  <ThinkingMessage selectedModelId={selectedModelId} />
+                )}
+
+              <div
+                className="min-h-[24px] min-w-[24px] shrink-0"
+                ref={messagesEndRef}
+              />
+            </>
           )}
-
-          <div
-            className="min-h-[24px] min-w-[24px] shrink-0"
-            ref={messagesEndRef}
-          />
         </div>
       </div>
 

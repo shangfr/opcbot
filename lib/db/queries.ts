@@ -11,6 +11,7 @@ import {
   inArray,
   lt,
   type SQL,
+  sql,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -20,9 +21,8 @@ import { ChatbotError } from "../errors";
 import { generateUUID } from "../utils";
 import {
   agent,
-  type Category,
-  category,
   type Chat,
+  category,
   chat,
   type DBMessage,
   document,
@@ -249,7 +249,13 @@ export async function getChatById({ id }: { id: string }) {
 
 export async function saveMessages({ messages }: { messages: DBMessage[] }) {
   try {
-    return await db.insert(message).values(messages);
+    return await db
+      .insert(message)
+      .values(messages)
+      .onConflictDoUpdate({
+        target: message.id,
+        set: { parts: sql`excluded.parts` },
+      });
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to save messages");
   }
@@ -661,10 +667,7 @@ export async function getAgentById({ id }: { id: string }) {
     const [result] = await db.select().from(agent).where(eq(agent.id, id));
     return result ?? null;
   } catch (_error) {
-    throw new ChatbotError(
-      "bad_request:database",
-      "Failed to get agent by id"
-    );
+    throw new ChatbotError("bad_request:database", "Failed to get agent by id");
   }
 }
 
@@ -761,10 +764,7 @@ export async function updateAgent({
 
 export async function deleteAgent({ id }: { id: string }) {
   try {
-    const [result] = await db
-      .delete(agent)
-      .where(eq(agent.id, id))
-      .returning();
+    const [result] = await db.delete(agent).where(eq(agent.id, id)).returning();
     return result;
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to delete agent");
@@ -777,10 +777,7 @@ export async function deleteAgent({ id }: { id: string }) {
 
 export async function getCategories() {
   try {
-    return await db
-      .select()
-      .from(category)
-      .orderBy(asc(category.createdAt));
+    return await db.select().from(category).orderBy(asc(category.createdAt));
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to get categories");
   }
