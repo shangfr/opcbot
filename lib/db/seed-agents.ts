@@ -1150,16 +1150,18 @@ const AGENTS: SeedAgent[] = [
 interface SeedCategory {
   name: string;
   color: string;
+  sortOrder: number;
+  colorKey: string;
 }
 
 const SEED_CATEGORIES: SeedCategory[] = [
-  { name: "法律合规", color: "#6366f1" },
-  { name: "财税资本", color: "#f59e0b" },
-  { name: "核心战略", color: "#10b981" },
-  { name: "产业政策", color: "#8b5cf6" },
-  { name: "AI与数字化", color: "#0ea5e9" },
-  { name: "OPC孵化", color: "#f97316" },
-  { name: "三大平台", color: "#f43f5e" },
+  { name: "法律合规", color: "#6366f1", sortOrder: 1, colorKey: "indigo" },
+  { name: "财税资本", color: "#f59e0b", sortOrder: 2, colorKey: "amber" },
+  { name: "核心战略", color: "#10b981", sortOrder: 3, colorKey: "emerald" },
+  { name: "产业政策", color: "#8b5cf6", sortOrder: 4, colorKey: "violet" },
+  { name: "AI与数字化", color: "#0ea5e9", sortOrder: 5, colorKey: "sky" },
+  { name: "OPC孵化", color: "#f97316", sortOrder: 6, colorKey: "orange" },
+  { name: "三大平台", color: "#f43f5e", sortOrder: 7, colorKey: "rose" },
 ];
 
 /** 根据 sortOrder 判断所属分类名称 */
@@ -1235,7 +1237,7 @@ async function seed() {
     if (existingCat) {
       await db
         .update(category)
-        .set({ name: c.name, color: c.color })
+        .set({ name: c.name, color: c.color, sortOrder: c.sortOrder, colorKey: c.colorKey })
         .where(eq(category.id, catId));
       console.log(`  ↻ ${c.name} (updated)`);
     } else {
@@ -1243,6 +1245,8 @@ async function seed() {
         id: catId,
         name: c.name,
         color: c.color,
+        sortOrder: c.sortOrder,
+        colorKey: c.colorKey,
         userId: adminUser.id,
         createdAt: new Date(),
       });

@@ -3,7 +3,7 @@
 import { Lightbulb, PowerOff, Search } from "lucide-react";
 import { useState } from "react";
 import { getAvatarChar } from "@/lib/agent-groups";
-import { AgentCard, GroupHeader, useAgents } from "./opc-shared";
+import { AgentCard, CategoryProvider, GroupHeader, useAgents } from "./opc-shared";
 
 export function AgentCards() {
   const {
@@ -13,6 +13,7 @@ export function AgentCards() {
     activeCount,
     searchAgents,
     handleStartChat,
+    ctxValue,
   } = useAgents();
   const [search, setSearch] = useState("");
 
@@ -32,6 +33,7 @@ export function AgentCards() {
   const { groups, inactive } = userGroups;
 
   return (
+    <CategoryProvider value={ctxValue}>
     <div className="mx-auto max-w-6xl px-6 py-8">
       {/* 页头 */}
       <div className="mb-6">
@@ -139,5 +141,6 @@ export function AgentCards() {
         </section>
       )}
     </div>
+    </CategoryProvider>
   );
 }

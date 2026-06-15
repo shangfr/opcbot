@@ -54,7 +54,8 @@ export function DocumentPreview({
     result
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${result.id}`
       : null,
-    fetcher
+    fetcher,
+    { dedupingInterval: 30_000 }
   );
 
   const previewDocument = useMemo(() => documents?.[0], [documents]);

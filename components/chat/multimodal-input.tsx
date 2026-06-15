@@ -609,7 +609,13 @@ function PureAttachmentsButton({
   const { data: modelsResponse } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
     (url: string) => fetch(url).then((r) => r.json()),
-    { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
+    {
+      revalidateOnFocus: false,
+      revalidateOnMount: false,
+      revalidateIfStale: false,
+      dedupingInterval: 3_600_000,
+      fallbackData: getCapabilities(),
+    }
   );
 
   const caps: Record<string, ModelCapabilities> =
@@ -650,7 +656,13 @@ function PureModelSelectorCompact({
   const { data: modelsData } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
     (url: string) => fetch(url).then((r) => r.json()),
-    { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
+    {
+      revalidateOnFocus: false,
+      revalidateOnMount: false,
+      revalidateIfStale: false,
+      dedupingInterval: 3_600_000,
+      fallbackData: { capabilities: getCapabilities() },
+    }
   );
 
   const capabilities: Record<string, ModelCapabilities> =
@@ -816,7 +828,13 @@ function ThinkingToggle({
   const { data: modelsData } = useSWR(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/models`,
     (url: string) => fetch(url).then((r) => r.json()),
-    { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
+    {
+      revalidateOnFocus: false,
+      revalidateOnMount: false,
+      revalidateIfStale: false,
+      dedupingInterval: 3_600_000,
+      fallbackData: { capabilities: getCapabilities() },
+    }
   );
 
   const capabilities: Record<string, ModelCapabilities> =

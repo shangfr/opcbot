@@ -100,7 +100,8 @@ function PureArtifact({
     artifact.documentId !== "init" && artifact.status !== "streaming"
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/document?id=${artifact.documentId}`
       : null,
-    fetcher
+    fetcher,
+    { dedupingInterval: 30_000 }
   );
 
   const [mode, setMode] = useState<"edit" | "diff">("edit");

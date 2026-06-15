@@ -34,7 +34,10 @@ export async function GET() {
   try {
     const session = await checkAuth();
     const config = await getSiteConfig();
-    return Response.json(config, { status: 200 });
+    return Response.json(config, {
+      status: 200,
+      headers: { "Cache-Control": "public, max-age=3600, s-maxage=3600" },
+    });
   } catch (err) {
     if (err instanceof ChatbotError) {
       return err.toResponse();

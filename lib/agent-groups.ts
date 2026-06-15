@@ -1,46 +1,38 @@
 /**
- * Agent 分组配色 —— 按 sortOrder 区间映射 7 个业务域
+ * Agent 分组配色系统
  *
- * sortOrder 范围：
- *   1-4   法律合规     Indigo / 靛青
- *   5-7   财税资本     Amber  / 琥珀
- *   10-12 核心战略     Emerald / 翡翠
- *   13-15 产业政策     Violet  / 紫罗兰
- *   20-22 AI与数字化   Sky     / 天青
- *   30-32 OPC孵化     Orange  / 橘橙
- *   40-42 三大平台     Rose    / 玫红
- *   其他  默认         Slate   / 石板灰
+ * 分组（Group）= Category 表记录，通过 categoryId 关联 Agent。
+ * 配色通过 colorKey 字段映射到下方预定义的 Tailwind class 集合。
+ * 管理员可在分组管理 UI 中选择配色方案。
  */
 
-export interface AgentGroup {
+/** 分组样式属性（纯 Tailwind class，供组件使用） */
+export interface AgentGroupStyle {
+  bg: string;
+  text: string;
+  accent: string;
+  soft: string;
+  softText: string;
+  ring: string;
+  gradientFrom: string;
+  borderHover: string;
+  hoverShadow: string;
+}
+
+/** 完整分组信息（样式 + 标识） */
+export interface AgentGroup extends AgentGroupStyle {
   key: string;
   label: string;
-  /** Tailwind 背景色 class（头像底色） */
-  bg: string;
-  /** Tailwind 文字色 class（头像文字） */
-  text: string;
-  /** Tailwind 卡片左边框装饰色 */
-  accent: string;
-  /** Tailwind 浅底色（标签/徽章） */
-  soft: string;
-  /** Tailwind 浅文字色 */
-  softText: string;
-  /** Tailwind 卡片 hover 边框色 */
-  ring: string;
-  /** 渐变起始色（用于 bg-gradient-to-br from-{color}/[0.04]） */
-  gradientFrom: string;
-  /** hover 边框色 class */
-  borderHover: string;
-  /** hover 彩色阴影（完整 class） */
-  hoverShadow: string;
-  /** 排序权重 */
   order: number;
 }
 
-const GROUPS: AgentGroup[] = [
-  {
-    key: "legal",
-    label: "法律合规",
+/* ================================================================
+ * 配色预设 —— 10 种 + 1 种默认
+ * Tailwind v4 JIT 要求完整 class 字符串，不可动态拼接
+ * ================================================================ */
+
+export const COLOR_THEMES: Record<string, AgentGroupStyle> = {
+  indigo: {
     bg: "bg-indigo-500",
     text: "text-white",
     accent: "border-l-indigo-400",
@@ -50,11 +42,8 @@ const GROUPS: AgentGroup[] = [
     gradientFrom: "bg-indigo-500/[0.04]",
     borderHover: "border-indigo-500/25",
     hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(99,102,241,0.15)]",
-    order: 1,
   },
-  {
-    key: "finance",
-    label: "财税资本",
+  amber: {
     bg: "bg-amber-500",
     text: "text-white",
     accent: "border-l-amber-400",
@@ -64,11 +53,8 @@ const GROUPS: AgentGroup[] = [
     gradientFrom: "bg-amber-500/[0.04]",
     borderHover: "border-amber-500/25",
     hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(245,158,11,0.15)]",
-    order: 2,
   },
-  {
-    key: "strategy",
-    label: "核心战略",
+  emerald: {
     bg: "bg-emerald-500",
     text: "text-white",
     accent: "border-l-emerald-400",
@@ -78,11 +64,8 @@ const GROUPS: AgentGroup[] = [
     gradientFrom: "bg-emerald-500/[0.04]",
     borderHover: "border-emerald-500/25",
     hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(16,185,129,0.15)]",
-    order: 3,
   },
-  {
-    key: "policy",
-    label: "产业政策",
+  violet: {
     bg: "bg-violet-500",
     text: "text-white",
     accent: "border-l-violet-400",
@@ -92,11 +75,8 @@ const GROUPS: AgentGroup[] = [
     gradientFrom: "bg-violet-500/[0.04]",
     borderHover: "border-violet-500/25",
     hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(139,92,246,0.15)]",
-    order: 4,
   },
-  {
-    key: "ai",
-    label: "AI与数字化",
+  sky: {
     bg: "bg-sky-500",
     text: "text-white",
     accent: "border-l-sky-400",
@@ -106,11 +86,8 @@ const GROUPS: AgentGroup[] = [
     gradientFrom: "bg-sky-500/[0.04]",
     borderHover: "border-sky-500/25",
     hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(14,165,233,0.15)]",
-    order: 5,
   },
-  {
-    key: "opc",
-    label: "OPC孵化",
+  orange: {
     bg: "bg-orange-500",
     text: "text-white",
     accent: "border-l-orange-400",
@@ -120,11 +97,8 @@ const GROUPS: AgentGroup[] = [
     gradientFrom: "bg-orange-500/[0.04]",
     borderHover: "border-orange-500/25",
     hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(249,115,22,0.15)]",
-    order: 6,
   },
-  {
-    key: "platform",
-    label: "三大平台",
+  rose: {
     bg: "bg-rose-500",
     text: "text-white",
     accent: "border-l-rose-400",
@@ -134,13 +108,44 @@ const GROUPS: AgentGroup[] = [
     gradientFrom: "bg-rose-500/[0.04]",
     borderHover: "border-rose-500/25",
     hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(244,63,94,0.15)]",
-    order: 0,
   },
-];
+  blue: {
+    bg: "bg-blue-500",
+    text: "text-white",
+    accent: "border-l-blue-400",
+    soft: "bg-blue-50 dark:bg-blue-950/40",
+    softText: "text-blue-700 dark:text-blue-300",
+    ring: "ring-blue-500/20",
+    gradientFrom: "bg-blue-500/[0.04]",
+    borderHover: "border-blue-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(59,130,246,0.15)]",
+  },
+  teal: {
+    bg: "bg-teal-500",
+    text: "text-white",
+    accent: "border-l-teal-400",
+    soft: "bg-teal-50 dark:bg-teal-950/40",
+    softText: "text-teal-700 dark:text-teal-300",
+    ring: "ring-teal-500/20",
+    gradientFrom: "bg-teal-500/[0.04]",
+    borderHover: "border-teal-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(20,184,166,0.15)]",
+  },
+  pink: {
+    bg: "bg-pink-500",
+    text: "text-white",
+    accent: "border-l-pink-400",
+    soft: "bg-pink-50 dark:bg-pink-950/40",
+    softText: "text-pink-700 dark:text-pink-300",
+    ring: "ring-pink-500/20",
+    gradientFrom: "bg-pink-500/[0.04]",
+    borderHover: "border-pink-500/25",
+    hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(236,72,153,0.15)]",
+  },
+};
 
-const DEFAULT_GROUP: AgentGroup = {
-  key: "default",
-  label: "通用",
+/** 未分组 agent 的默认配色 */
+export const DEFAULT_THEME: AgentGroupStyle = {
   bg: "bg-slate-500",
   text: "text-white",
   accent: "border-l-slate-400",
@@ -150,19 +155,29 @@ const DEFAULT_GROUP: AgentGroup = {
   gradientFrom: "bg-slate-500/[0.04]",
   borderHover: "border-slate-500/25",
   hoverShadow: "hover:shadow-[0_4px_24px_-4px_rgba(100,116,139,0.15)]",
-  order: 99,
 };
 
-/** 根据 sortOrder 判断所属分组 */
-export function getAgentGroup(sortOrder: number): AgentGroup {
-  if (sortOrder >= 1 && sortOrder <= 4) return GROUPS[0];  // 法律合规
-  if (sortOrder >= 5 && sortOrder <= 7) return GROUPS[1];  // 财税资本
-  if (sortOrder >= 10 && sortOrder <= 12) return GROUPS[2]; // 核心战略
-  if (sortOrder >= 13 && sortOrder <= 15) return GROUPS[3]; // 产业政策
-  if (sortOrder >= 20 && sortOrder <= 22) return GROUPS[4]; // AI与数字化
-  if (sortOrder >= 30 && sortOrder <= 32) return GROUPS[5]; // OPC孵化
-  if (sortOrder >= 40 && sortOrder <= 42) return GROUPS[6]; // 三大平台
-  return DEFAULT_GROUP;
+/** 所有可用的配色 key，供 UI 选择器使用 */
+export const COLOR_KEYS = Object.keys(COLOR_THEMES);
+
+/** 根据 colorKey 获取配色，未知 key 回退到 indigo */
+export function getColorTheme(colorKey: string): AgentGroupStyle {
+  return COLOR_THEMES[colorKey] ?? COLOR_THEMES.indigo;
+}
+
+/** 从 Category 记录构建完整 AgentGroup */
+export function buildGroupFromCategory(cat: {
+  id: string;
+  name: string;
+  colorKey: string;
+  sortOrder: number;
+}): AgentGroup {
+  return {
+    ...getColorTheme(cat.colorKey),
+    key: cat.id,
+    label: cat.name,
+    order: cat.sortOrder,
+  };
 }
 
 /** 取名字的首个汉字或大写字母作为头像文字 */
@@ -172,9 +187,4 @@ export function getAvatarChar(name: string): string {
   const upperMatch = name.match(/[A-Z]/);
   if (upperMatch) return upperMatch[0];
   return name.charAt(0).toUpperCase() || "?";
-}
-
-/** 所有分组（按 order 排序），用于渲染分组标题 */
-export function getAllGroups(): AgentGroup[] {
-  return [...GROUPS].sort((a, b) => a.order - b.order);
 }

@@ -9,37 +9,95 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+} from "react";
 import { toast } from "sonner";
-import { getAgentGroup, getAllGroups, getAvatarChar } from "@/lib/agent-groups";
-import type { Agent } from "@/lib/db/schema";
+import useSWR from "swr";
+import {
+  type AgentGroupStyle,
+  buildGroupFromCategory,
+  DEFAULT_THEME,
+  getAvatarChar,
+} from "@/lib/agent-groups";
+import type { Agent, Category } from "@/lib/db/schema";
+import { fetcher } from "@/lib/utils";
+
+/* ================================================================
+ * Category 上下文 —— AgentCard 通过 context 获取分组主题
+ * ================================================================ */
+
+type CategoryRecord = Category & { sortOrder: number; colorKey: string };
+
+interface CategoryContextValue {
+  categories: CategoryRecord[];
+  themeFor: (categoryId: string | null) => AgentGroupStyle;
+  labelFor: (categoryId: string | null) => string;
+}
+
+const CategoryCtx = createContext<CategoryContextValue>({
+  categories: [],
+  themeFor: () => DEFAULT_THEME,
+  labelFor: () => "未分组",
+});
+
+export function useCategoryContext() {
+  return useContext(CategoryCtx);
+}
 
 /* ================================================================
  * useAgents — 共享数据获取 + 分组逻辑
  * ================================================================ */
 
+const AGENTS_KEY = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`;
+const CATEGORIES_KEY = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/categories`;
+
 export function useAgents() {
   const router = useRouter();
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const fetchAgents = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/agents");
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      setAgents(data);
-    } catch {
-      toast.error("获取 OPC 列表失败");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: agents = [], isLoading: loading, mutate } = useSWR<Agent[]>(
+    AGENTS_KEY,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
 
-  useEffect(() => {
-    fetchAgents();
-  }, [fetchAgents]);
+  const { data: categories = [] } = useSWR<CategoryRecord[]>(
+    CATEGORIES_KEY,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
+
+  /** categoryId → category record */
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, CategoryRecord>();
+    for (const c of categories) map.set(c.id, c);
+    return map;
+  }, [categories]);
+
+  const ctxValue = useMemo<CategoryContextValue>(
+    () => ({
+      categories,
+      themeFor: (catId) => {
+        if (!catId) return DEFAULT_THEME;
+        const cat = categoryMap.get(catId);
+        if (!cat) return DEFAULT_THEME;
+        return buildGroupFromCategory(cat);
+      },
+      labelFor: (catId) => {
+        if (!catId) return "未分组";
+        return categoryMap.get(catId)?.name ?? "未分组";
+      },
+    }),
+    [categories, categoryMap]
+  );
+
+  /** Force re-fetch (used after CRUD operations) */
+  const refresh = useCallback(() => {
+    mutate();
+  }, [mutate]);
 
   /** 用户视图：仅活跃 agent，按分组归类 */
   const userGroups = useMemo(() => {
@@ -47,44 +105,66 @@ export function useAgents() {
     const inactive = agents.filter((a) => !a.isActive);
 
     const map = new Map<string, Agent[]>();
-    for (const g of getAllGroups()) map.set(g.key, []);
     for (const a of active) {
-      const group = getAgentGroup(a.sortOrder);
-      const bucket = map.get(group.key) ?? [];
+      const key = a.categoryId ?? "__ungrouped__";
+      const bucket = map.get(key) ?? [];
       bucket.push(a);
-      map.set(group.key, bucket);
+      map.set(key, bucket);
     }
 
-    const groups = getAllGroups()
-      .filter((g) => (map.get(g.key)?.length ?? 0) > 0)
-      .map((g) => ({ group: g, agents: map.get(g.key)! }));
+    // Sort categories by sortOrder, build groups
+    const groups = categories
+      .map((c) => ({
+        group: buildGroupFromCategory(c),
+        agents: (map.get(c.id) ?? []).sort(
+          (a, b) => a.sortOrder - b.sortOrder
+        ),
+      }))
+      .filter((g) => g.agents.length > 0);
+
+    // Ungrouped active agents
+    const ungroupedActive = map.get("__ungrouped__") ?? [];
+    if (ungroupedActive.length > 0) {
+      groups.push({
+        group: {
+          ...DEFAULT_THEME,
+          key: "__ungrouped__",
+          label: "未分组",
+          order: 999,
+        },
+        agents: ungroupedActive,
+      });
+    }
 
     return { groups, inactive };
-  }, [agents]);
+  }, [agents, categories]);
 
   /** 管理视图：所有 agent（含停用），按分组归类 + 未分组 */
   const adminGroups = useMemo(() => {
     const map = new Map<string, Agent[]>();
-    for (const g of getAllGroups()) map.set(g.key, []);
     const ungrouped: Agent[] = [];
 
     for (const a of agents) {
-      const group = getAgentGroup(a.sortOrder);
-      if (group.key === "default") {
+      if (!a.categoryId) {
         ungrouped.push(a);
       } else {
-        const bucket = map.get(group.key) ?? [];
+        const bucket = map.get(a.categoryId) ?? [];
         bucket.push(a);
-        map.set(group.key, bucket);
+        map.set(a.categoryId, bucket);
       }
     }
 
-    const groups = getAllGroups()
-      .filter((g) => (map.get(g.key)?.length ?? 0) > 0)
-      .map((g) => ({ group: g, agents: map.get(g.key)! }));
+    const groups = categories
+      .map((c) => ({
+        group: buildGroupFromCategory(c),
+        agents: (map.get(c.id) ?? []).sort(
+          (a, b) => a.sortOrder - b.sortOrder
+        ),
+      }))
+      .filter((g) => g.agents.length > 0);
 
     return { groups, ungrouped };
-  }, [agents]);
+  }, [agents, categories]);
 
   const activeCount = agents.filter((a) => a.isActive).length;
 
@@ -116,7 +196,6 @@ export function useAgents() {
           throw new Error("Failed to create chat");
         }
         const { chatId } = await res.json();
-        // Store agentId temporarily for page initialization
         sessionStorage.setItem(`pending-chat-${chatId}`, agent.id);
         router.push(`/chat/${chatId}`);
       } catch {
@@ -128,14 +207,32 @@ export function useAgents() {
 
   return {
     agents,
+    categories,
     loading,
-    refresh: fetchAgents,
+    refresh,
     userGroups,
     adminGroups,
     activeCount,
     searchAgents,
     handleStartChat,
+    ctxValue,
   };
+}
+
+/* ================================================================
+ * CategoryProvider — 包裹子组件以提供分组 context
+ * ================================================================ */
+
+export function CategoryProvider({
+  value,
+  children,
+}: {
+  value: CategoryContextValue;
+  children: React.ReactNode;
+}) {
+  return (
+    <CategoryCtx.Provider value={value}>{children}</CategoryCtx.Provider>
+  );
 }
 
 /* ================================================================
@@ -180,7 +277,9 @@ export function AgentCard({
   onEdit?: (agent: Agent) => void;
   onDelete?: (agent: Agent) => void;
 }) {
-  const group = getAgentGroup(agent.sortOrder);
+  const { themeFor, labelFor } = useCategoryContext();
+  const group = themeFor(agent.categoryId);
+  const groupLabel = labelFor(agent.categoryId);
   const avatarChar = getAvatarChar(agent.name);
 
   return (
@@ -228,7 +327,7 @@ export function AgentCard({
                 </>
               )}
               <span className={`font-medium ${group.softText}`}>
-                {group.label}
+                {groupLabel}
               </span>
             </div>
           </div>

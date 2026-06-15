@@ -197,6 +197,8 @@ export const category = pgTable("Category", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   name: text("name").notNull(),
   color: text("color").notNull().default("#6366f1"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  colorKey: text("color_key").notNull().default("indigo"),
   userId: uuid("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),

@@ -875,7 +875,10 @@ export async function deleteAgent({ id }: { id: string }) {
 
 export async function getCategories() {
   try {
-    return await db.select().from(category).orderBy(asc(category.createdAt));
+    return await db
+      .select()
+      .from(category)
+      .orderBy(asc(category.sortOrder), asc(category.createdAt));
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to get categories");
   }
@@ -899,16 +902,26 @@ export async function getCategoryById({ id }: { id: string }) {
 export async function createCategory({
   name,
   color,
+  sortOrder,
+  colorKey,
   userId,
 }: {
   name: string;
   color: string;
+  sortOrder?: number;
+  colorKey?: string;
   userId: string;
 }) {
   try {
     const [result] = await db
       .insert(category)
-      .values({ name, color, userId })
+      .values({
+        name,
+        color,
+        sortOrder: sortOrder ?? 0,
+        colorKey: colorKey ?? "indigo",
+        userId,
+      })
       .returning();
     return result;
   } catch (_error) {
@@ -920,15 +933,22 @@ export async function updateCategory({
   id,
   name,
   color,
+  sortOrder,
+  colorKey,
 }: {
   id: string;
   name: string;
   color: string;
+  sortOrder?: number;
+  colorKey?: string;
 }) {
   try {
+    const updates: Record<string, unknown> = { name, color };
+    if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+    if (colorKey !== undefined) updates.colorKey = colorKey;
     const [result] = await db
       .update(category)
-      .set({ name, color })
+      .set(updates)
       .where(eq(category.id, id))
       .returning();
     return result;
@@ -1091,6 +1111,106 @@ export async function updateUserPassword({
     throw new ChatbotError(
       "bad_request:database",
       "Failed to update user password"
+    );
+  }
+}
+
+// ============================================================
+// Dashboard Stats (admin only)
+// ============================================================
+
+export async function getDashboardStats() {
+  try {
+    // Overview counts
+    const [chatCount] = await db
+      .select({ value: count() })
+      .from(chat);
+    const [userCount] = await db
+      .select({ value: count() })
+      .from(user);
+    const [agentCount] = await db
+      .select({ value: count() })
+      .from(agent);
+    const [activeAgentCount] = await db
+      .select({ value: count() })
+      .from(agent)
+      .where(eq(agent.isActive, true));
+    const [messageCount] = await db
+      .select({ value: count() })
+      .from(message);
+
+    // Vote totals
+    const [upvotes] = await db
+      .select({ value: count() })
+      .from(vote)
+      .where(eq(vote.isUpvoted, true));
+    const [downvotes] = await db
+      .select({ value: count() })
+      .from(vote)
+      .where(eq(vote.isUpvoted, false));
+
+    // Period stats
+    const periods = await db.execute(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE c."createdAt" > NOW() - INTERVAL '1 day') AS "todayChats",
+        COUNT(*) FILTER (WHERE c."createdAt" > NOW() - INTERVAL '7 days') AS "weekChats",
+        COUNT(*) FILTER (WHERE c."createdAt" > NOW() - INTERVAL '30 days') AS "monthChats",
+        COUNT(DISTINCT CASE WHEN c."createdAt" > NOW() - INTERVAL '1 day' THEN c."userId" END) AS "todayUsers",
+        COUNT(DISTINCT CASE WHEN c."createdAt" > NOW() - INTERVAL '7 days' THEN c."userId" END) AS "weekUsers",
+        COUNT(DISTINCT CASE WHEN c."createdAt" > NOW() - INTERVAL '30 days' THEN c."userId" END) AS "monthUsers"
+      FROM "Chat" c
+    `);
+
+    // Per-agent stats
+    const agentStats = await db.execute(sql`
+      SELECT
+        a.name AS "agentName",
+        COUNT(DISTINCT c.id) AS "chatCount",
+        COUNT(DISTINCT m.id) AS "messageCount",
+        COUNT(DISTINCT CASE WHEN v."isUpvoted" = true THEN v."messageId" END) AS "upvotes",
+        COUNT(DISTINCT CASE WHEN v."isUpvoted" = false THEN v."messageId" END) AS "downvotes"
+      FROM "Agent" a
+      LEFT JOIN "Chat" c ON c."agentId" = a.id
+      LEFT JOIN "Message_v2" m ON m."chatId" = c.id AND m.role = 'assistant'
+      LEFT JOIN "Vote_v2" v ON v."chatId" = c.id AND v."messageId" = m.id
+      GROUP BY a.id, a.name
+      ORDER BY COUNT(DISTINCT c.id) DESC
+    `);
+
+    const periodRow = (periods as unknown as Record<string, string>[])[0] ?? {};
+
+    return {
+      overview: {
+        totalChats: chatCount.value,
+        totalUsers: userCount.value,
+        totalAgents: agentCount.value,
+        activeAgents: activeAgentCount.value,
+        totalMessages: messageCount.value,
+        totalUpvotes: upvotes.value,
+        totalDownvotes: downvotes.value,
+      },
+      periods: {
+        todayChats: Number(periodRow.todayChats ?? 0),
+        weekChats: Number(periodRow.weekChats ?? 0),
+        monthChats: Number(periodRow.monthChats ?? 0),
+        todayUsers: Number(periodRow.todayUsers ?? 0),
+        weekUsers: Number(periodRow.weekUsers ?? 0),
+        monthUsers: Number(periodRow.monthUsers ?? 0),
+      },
+      agentStats: (agentStats as unknown as Record<string, string>[]).map(
+        (row) => ({
+          agentName: row.agentName,
+          chatCount: Number(row.chatCount ?? 0),
+          messageCount: Number(row.messageCount ?? 0),
+          upvotes: Number(row.upvotes ?? 0),
+          downvotes: Number(row.downvotes ?? 0),
+        })
+      ),
+    };
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get dashboard stats"
     );
   }
 }

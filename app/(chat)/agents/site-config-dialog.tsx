@@ -3,6 +3,7 @@
 import { Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useSWRConfig } from "swr";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,12 +56,15 @@ export function SiteConfigDialog() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<SiteConfigForm>(formFromDefaults);
   const [hasDbData, setHasDbData] = useState(false);
+  const { mutate } = useSWRConfig();
+
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
   // 打开对话框时从后端加载已有配置
   const fetchConfig = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/site-config");
+      const res = await fetch(`${basePath}/api/site-config`);
       if (res.ok) {
         const data = await res.json();
         if (data && data.id) {
@@ -112,7 +116,7 @@ export function SiteConfigDialog() {
         siteDescription: form.siteDescription || null,
       };
 
-      const res = await fetch("/api/site-config", {
+      const res = await fetch(`${basePath}/api/site-config`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -132,6 +136,9 @@ export function SiteConfigDialog() {
         }
         throw new Error(cause || `HTTP ${res.status}`);
       }
+
+      // Invalidate SWR cache so other components pick up the new config
+      mutate(`${basePath}/api/site-config`);
 
       toast.success("默认配置已更新");
       setOpen(false);

@@ -4,14 +4,17 @@ import { PanelLeftIcon } from "lucide-react";
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
+import { getAvatarChar } from "@/lib/agent-groups";
 import { VisibilitySelector, type VisibilityType } from "./visibility-selector";
 
 function PureChatHeader({
   chatId,
+  agentName,
   selectedVisibilityType,
   isReadonly,
 }: {
   chatId: string;
+  agentName: string | null;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
 }) {
@@ -32,6 +35,17 @@ function PureChatHeader({
         <PanelLeftIcon className="size-4" />
       </Button>
 
+      {agentName && (
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">
+            {getAvatarChar(agentName)}
+          </div>
+          <span className="truncate text-sm font-medium text-foreground/80">
+            {agentName}
+          </span>
+        </div>
+      )}
+
       <div className="ml-auto flex items-center gap-2">
         {!isReadonly && (
           <VisibilitySelector
@@ -47,6 +61,7 @@ function PureChatHeader({
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
   return (
     prevProps.chatId === nextProps.chatId &&
+    prevProps.agentName === nextProps.agentName &&
     prevProps.selectedVisibilityType === nextProps.selectedVisibilityType &&
     prevProps.isReadonly === nextProps.isReadonly
   );

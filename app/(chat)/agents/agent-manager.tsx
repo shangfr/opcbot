@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Settings2 } from "lucide-react";
+import { Plus, Settings2, BarChart3, FolderTree } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -25,8 +25,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Agent, Category } from "@/lib/db/schema";
-import { AgentCard, GroupHeader, useAgents } from "./opc-shared";
-import { CategoryManagerDialog } from "./category-manager-dialog";
+import { AgentCard, CategoryProvider, GroupHeader, useAgents } from "./opc-shared";
+import { GroupManagerDialog } from "./group-manager-dialog";
+import { StatsDialog } from "./stats-dialog";
 import { SiteConfigDialog } from "./site-config-dialog";
 
 type AgentFormData = {
@@ -56,29 +57,19 @@ const emptyForm: AgentFormData = {
 };
 
 export function AgentManager() {
-  const { agents, loading, refresh, adminGroups, handleStartChat } = useAgents();
+  const { agents, categories, loading, refresh, adminGroups, handleStartChat, ctxValue } = useAgents();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [form, setForm] = useState<AgentFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Agent | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch("/api/categories");
-      if (res.ok) setCategories(await res.json());
-    } catch {
-      // silent — categories are optional
-    }
-  };
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
 
   const openCreate = () => {
     setEditingAgent(null);
     setForm(emptyForm);
     setDialogOpen(true);
-    fetchCategories();
   };
 
   const openEdit = (agent: Agent) => {
@@ -96,7 +87,6 @@ export function AgentManager() {
       categoryId: agent.categoryId ?? "__none__",
     });
     setDialogOpen(true);
-    fetchCategories();
   };
 
   const handleSave = async () => {
@@ -176,6 +166,7 @@ export function AgentManager() {
   const { groups, ungrouped } = adminGroups;
 
   return (
+    <CategoryProvider value={ctxValue}>
     <div className="mx-auto max-w-6xl px-6 py-8">
       {/* Header */}
       <div className="mb-10 flex items-center justify-between">
@@ -185,7 +176,25 @@ export function AgentManager() {
             管理 AI OPC 角色配置，共 {agents.length} 个
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setStatsDialogOpen(true)}
+            className="gap-1.5"
+          >
+            <BarChart3 className="size-3.5" />
+            数据看板
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setGroupDialogOpen(true)}
+            className="gap-1.5"
+          >
+            <FolderTree className="size-3.5" />
+            管理分组
+          </Button>
           <SiteConfigDialog />
           <Button onClick={openCreate} className="gap-2">
             <Plus className="size-4" />
@@ -338,20 +347,17 @@ export function AgentManager() {
               </p>
             </div>
 
-            {/* 分类选择 */}
+            {/* 分组选择 */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>分类标签</Label>
+                <Label>所属分组</Label>
                 <button
                   type="button"
-                  onClick={() => {
-                    fetchCategories();
-                    setCategoryDialogOpen(true);
-                  }}
+                  onClick={() => setGroupDialogOpen(true)}
                   className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <Settings2 className="size-3" />
-                  管理分类
+                  管理分组
                 </button>
               </div>
               <div className="flex items-center gap-2">
@@ -360,11 +366,11 @@ export function AgentManager() {
                   onValueChange={(v) => setForm({ ...form, categoryId: v })}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="无分类" />
+                    <SelectValue placeholder="无分组" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">
-                      <span className="text-muted-foreground">无分类</span>
+                      <span className="text-muted-foreground">无分组</span>
                     </SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
@@ -479,12 +485,19 @@ export function AgentManager() {
         </DialogContent>
       </Dialog>
 
-      {/* 分类管理弹窗 */}
-      <CategoryManagerDialog
-        open={categoryDialogOpen}
-        onOpenChange={setCategoryDialogOpen}
-        onCategoriesChange={setCategories}
+      {/* 分组管理弹窗 */}
+      <GroupManagerDialog
+        open={groupDialogOpen}
+        onOpenChange={setGroupDialogOpen}
+        onGroupsChange={() => {}}
+      />
+
+      {/* 数据看板弹窗 */}
+      <StatsDialog
+        open={statsDialogOpen}
+        onOpenChange={setStatsDialogOpen}
       />
     </div>
+    </CategoryProvider>
   );
 }

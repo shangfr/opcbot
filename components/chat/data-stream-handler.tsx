@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import { useActiveChat } from "@/hooks/use-active-chat";
+import { useActiveChatActions } from "@/hooks/use-active-chat";
 import { initialArtifactData, useArtifact } from "@/hooks/use-artifact";
 import { artifactDefinitions } from "./artifact";
 import { useDataStream } from "./data-stream-provider";
@@ -12,7 +12,7 @@ import { getChatHistoryPaginationKey } from "./sidebar-history";
 export function DataStreamHandler() {
   const { dataStream, setDataStream } = useDataStream();
   const { mutate } = useSWRConfig();
-  const { setTitle } = useActiveChat();
+  const { setTitle } = useActiveChatActions();
 
   const { artifact, setArtifact, setMetadata } = useArtifact();
 

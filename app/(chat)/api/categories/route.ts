@@ -13,6 +13,8 @@ import { isAdmin } from "@/lib/utils";
 const categorySchema = z.object({
   name: z.string().min(1, "名称不能为空").max(32, "名称最长 32 个字符"),
   color: z.string().default("#6366f1"),
+  sortOrder: z.number().int().default(0),
+  colorKey: z.string().default("indigo"),
 });
 
 const CATEGORY_COLORS = [
@@ -74,6 +76,8 @@ export async function POST(request: Request) {
     const result = await createCategory({
       name: body.name,
       color: body.color,
+      sortOrder: body.sortOrder,
+      colorKey: body.colorKey,
       userId: session.user.id,
     });
 
@@ -118,6 +122,8 @@ export async function PATCH(request: Request) {
       id,
       name: body.name ?? existing.name,
       color: body.color ?? existing.color,
+      sortOrder: body.sortOrder,
+      colorKey: body.colorKey,
     });
 
     return Response.json(result, { status: 200 });

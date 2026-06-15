@@ -18,7 +18,8 @@ export type Surface =
   | "suggestions"
   | "agent"
   | "category"
-  | "site-config";
+  | "site-config"
+  | "stats";
 
 export type ErrorCode = `${ErrorType}:${Surface}`;
 
@@ -37,6 +38,7 @@ export const visibilityBySurface: Record<Surface, ErrorVisibility> = {
   agent: "response",
   category: "response",
   "site-config": "response",
+  stats: "response",
 };
 
 export class ChatbotError extends Error {
@@ -128,6 +130,13 @@ export function getMessageByErrorCode(errorCode: ErrorCode): string {
       return "当前账号无权修改系统配置。仅管理员可操作。";
     case "bad_request:site-config":
       return "系统配置操作请求无效。请检查输入后重试。";
+
+    case "unauthorized:stats":
+      return "请先登录以查看数据看板。";
+    case "forbidden:stats":
+      return "当前账号无权查看数据看板。仅管理员可操作。";
+    case "bad_request:stats":
+      return "获取统计数据失败。请稍后重试。";
 
     default:
       return "出了点问题，请稍后重试。";

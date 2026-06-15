@@ -2,10 +2,18 @@
 
 import { Bot, MessageSquare, TrendingUp, Users, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { getAgentGroup, getAllGroups, getAvatarChar } from "@/lib/agent-groups";
-import type { Agent } from "@/lib/db/schema";
+import useSWR from "swr";
+import {
+  buildGroupFromCategory,
+  DEFAULT_THEME,
+  getAvatarChar,
+} from "@/lib/agent-groups";
+import type { Agent, Category } from "@/lib/db/schema";
+import { fetcher } from "@/lib/utils";
+
+type CategoryRecord = Category & { sortOrder: number; colorKey: string };
 
 interface WelcomeDashboardProps {
   /** 可选：父组件额外操作（仅在 ChatShell 嵌入时使用） */
@@ -70,22 +78,27 @@ function StatCard({
 
 export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
   const router = useRouter();
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [siteConfig, setSiteConfig] = useState<{
+
+  const { data: agents = [] } = useSWR<Agent[]>(
+    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
+
+  const { data: siteConfig = null } = useSWR<{
     siteName?: string | null;
     siteDescription?: string | null;
-  } | null>(null);
+  } | null>(
+    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/site-config`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
 
-  useEffect(() => {
-    fetch("/api/agents")
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setAgents)
-      .catch(() => {});
-    fetch("/api/site-config")
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setSiteConfig)
-      .catch(() => {});
-  }, []);
+  const { data: categories = [] } = useSWR<CategoryRecord[]>(
+    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/categories`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
 
   const activeAgents = useMemo(
     () => agents.filter((a) => a.isActive),
@@ -97,21 +110,34 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
     [agents]
   );
 
-  // 按分组选出推荐代表（每组至多 2 个）
+  // 按分组选出推荐代表（每组至多 2 个，按 category sortOrder 排列）
   const featuredAgents = useMemo(() => {
+    const catMap = new Map<string, CategoryRecord>();
+    for (const c of categories) catMap.set(c.id, c);
+
     const map = new Map<string, Agent[]>();
     for (const a of activeAgents) {
-      const g = getAgentGroup(a.sortOrder);
-      const bucket = map.get(g.key) ?? [];
+      const key = a.categoryId ?? "__ungrouped__";
+      const bucket = map.get(key) ?? [];
       if (bucket.length < 2) {
         bucket.push(a);
-        map.set(g.key, bucket);
+        map.set(key, bucket);
       }
     }
-    return getAllGroups()
-      .flatMap((g) => (map.get(g.key) ?? []).slice(0, 2))
-      .slice(0, 8);
-  }, [activeAgents]);
+
+    const result: Agent[] = [];
+    for (const cat of categories) {
+      const bucket = map.get(cat.id) ?? [];
+      result.push(...bucket.slice(0, 2));
+      if (result.length >= 8) break;
+    }
+    // Add ungrouped if still under 8
+    if (result.length < 8) {
+      const ungrouped = map.get("__ungrouped__") ?? [];
+      result.push(...ungrouped.slice(0, 8 - result.length));
+    }
+    return result.slice(0, 8);
+  }, [activeAgents, categories]);
 
   const handleNewChat = useCallback(async () => {
     if (onNewChat) {
@@ -296,7 +322,12 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {featuredAgents.map((agent, i) => {
-                const group = getAgentGroup(agent.sortOrder);
+                const cat = agent.categoryId
+                  ? categories.find((c) => c.id === agent.categoryId)
+                  : null;
+                const group = cat
+                  ? buildGroupFromCategory(cat)
+                  : { ...DEFAULT_THEME, key: "__none__", label: "未分组", order: 999 };
                 const avatarChar = getAvatarChar(agent.name);
 
                 return (

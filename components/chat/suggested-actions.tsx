@@ -2,15 +2,21 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { motion } from "motion/react";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import useSWR from "swr";
-import { getAgentGroup, getAvatarChar } from "@/lib/agent-groups";
+import {
+  buildGroupFromCategory,
+  DEFAULT_THEME,
+  getAvatarChar,
+} from "@/lib/agent-groups";
 import { suggestions } from "@/lib/constants";
-import type { Agent } from "@/lib/db/schema";
+import type { Agent, Category } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { fetcher } from "@/lib/utils";
 import { Suggestion } from "../ai-elements/suggestion";
 import type { VisibilityType } from "./visibility-selector";
+
+type CategoryRecord = Category & { sortOrder: number; colorKey: string };
 
 type SuggestedActionsProps = {
   chatId: string;
@@ -30,6 +36,12 @@ function PureSuggestedActions({
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
 
+  const { data: categories = [] } = useSWR<CategoryRecord[]>(
+    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/categories`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
+
   const { data: siteConfig } = useSWR<{ defaultStarterQuestions?: string[]; siteName?: string; siteDescription?: string }>(
     !agentId ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/site-config` : null,
     fetcher,
@@ -37,6 +49,13 @@ function PureSuggestedActions({
   );
 
   const currentAgent = agentId ? agents?.find((a) => a.id === agentId) : null;
+
+  const agentGroupStyle = useMemo(() => {
+    if (!currentAgent?.categoryId) return DEFAULT_THEME;
+    const cat = categories.find((c) => c.id === currentAgent.categoryId);
+    if (!cat) return DEFAULT_THEME;
+    return buildGroupFromCategory(cat);
+  }, [currentAgent, categories]);
 
   const agentQuestions = currentAgent?.starterQuestions ?? null;
 
@@ -63,7 +82,7 @@ function PureSuggestedActions({
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
           <div
-            className={`mb-3 flex size-14 items-center justify-center rounded-2xl text-lg font-bold shadow-sm ${getAgentGroup(currentAgent.sortOrder).bg} ${getAgentGroup(currentAgent.sortOrder).text}`}
+            className={`mb-3 flex size-14 items-center justify-center rounded-2xl text-lg font-bold shadow-sm ${agentGroupStyle.bg} ${agentGroupStyle.text}`}
           >
             {getAvatarChar(currentAgent.name)}
           </div>

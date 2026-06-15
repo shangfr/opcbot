@@ -1,7 +1,12 @@
 /**
  * Message cache with two tiers:
- *   1. In-memory Map (fast, survives React re-mounts)
- *   2. localStorage (survives page refresh, limited to MAX_CACHED chats)
+ *   1. In-memory Map (fast, survives React re-mounts, keeps ALL messages)
+ *   2. localStorage (survives page refresh, limited entries + truncated messages)
+ *
+ * Optimizations:
+ *   - Memory tier: unlimited messages per chat (no truncation)
+ *   - Storage tier: only last STORAGE_MSG_LIMIT messages per chat to reduce serialization cost
+ *   - Throttled writes: localStorage persists at most once per THROTTLE_MS
  */
 import type { ChatMessage } from "@/lib/types";
 
@@ -13,11 +18,32 @@ export interface ChatCacheEntry {
   agentName?: string | null;
 }
 
-const MAX_CACHED = 20;
+const MAX_CACHED = 10;
 const STORAGE_KEY = "opc-chat-cache";
+const STORAGE_MSG_LIMIT = 5; // Only persist last N messages per chat in localStorage
+const THROTTLE_MS = 2000; // Min interval between localStorage writes
 
 // ── In-memory tier ──────────────────────────────────────
 const messageCache = new Map<string, ChatCacheEntry>();
+
+// ── Throttle state ──────────────────────────────────────
+let lastWriteTs = 0;
+let pendingWriteTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingData: Record<string, ChatCacheEntry & { _ts?: number }> | null = null;
+
+// Flush pending writes on page unload to avoid data loss
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    if (pendingWriteTimer !== null) {
+      clearTimeout(pendingWriteTimer);
+      pendingWriteTimer = null;
+    }
+    if (pendingData) {
+      saveToStorage(pendingData);
+      pendingData = null;
+    }
+  });
+}
 
 // ── localStorage helpers ────────────────────────────────
 function loadFromStorage(): Record<string, ChatCacheEntry & { _ts?: number }> {
@@ -56,6 +82,52 @@ function saveToStorage(
   }
 }
 
+/**
+ * Throttled wrapper around saveToStorage.
+ * If called within THROTTLE_MS of the last write, defers to a timer.
+ */
+function saveToStorageThrottled(
+  data: Record<string, ChatCacheEntry & { _ts?: number }>
+): void {
+  const now = Date.now();
+  const elapsed = now - lastWriteTs;
+
+  // Always track the latest data for beforeunload flush
+  pendingData = data;
+
+  if (elapsed >= THROTTLE_MS) {
+    lastWriteTs = now;
+    pendingData = null;
+    saveToStorage(data);
+    return;
+  }
+
+  // Schedule a deferred write
+  if (pendingWriteTimer !== null) {
+    clearTimeout(pendingWriteTimer);
+  }
+  pendingWriteTimer = setTimeout(() => {
+    lastWriteTs = Date.now();
+    pendingWriteTimer = null;
+    pendingData = null;
+    saveToStorage(data);
+  }, THROTTLE_MS - elapsed);
+}
+
+/**
+ * Truncate messages for localStorage persistence.
+ * Only keeps the last STORAGE_MSG_LIMIT messages to reduce serialization cost.
+ */
+function truncateForStorage(entry: ChatCacheEntry): ChatCacheEntry {
+  if (entry.messages.length <= STORAGE_MSG_LIMIT) {
+    return entry;
+  }
+  return {
+    ...entry,
+    messages: entry.messages.slice(-STORAGE_MSG_LIMIT),
+  };
+}
+
 // ── Public API ──────────────────────────────────────────
 export function getChatCache(chatId: string): ChatCacheEntry | undefined {
   // Check memory first
@@ -77,10 +149,10 @@ export function getChatCache(chatId: string): ChatCacheEntry | undefined {
 
 export function setChatCache(chatId: string, entry: ChatCacheEntry): void {
   messageCache.set(chatId, entry);
-  // Persist to localStorage with timestamp
+  // Persist to localStorage with timestamp (truncated messages)
   const storage = loadFromStorage();
-  storage[chatId] = { ...entry, _ts: Date.now() };
-  saveToStorage(storage);
+  storage[chatId] = { ...truncateForStorage(entry), _ts: Date.now() };
+  saveToStorageThrottled(storage);
 }
 
 export function updateChatMessages(
@@ -92,12 +164,15 @@ export function updateChatMessages(
     messages,
     agentId: existing?.agentId ?? null,
     visibility: existing?.visibility ?? "private",
+    title: existing?.title,
+    agentName: existing?.agentName,
   };
+  // Memory tier: always write full messages (no truncation)
   messageCache.set(chatId, entry);
-  // Persist to localStorage
+  // Storage tier: truncated + throttled
   const storage = loadFromStorage();
-  storage[chatId] = { ...entry, _ts: Date.now() };
-  saveToStorage(storage);
+  storage[chatId] = { ...truncateForStorage(entry), _ts: Date.now() };
+  saveToStorageThrottled(storage);
 }
 
 export function hasChatCache(chatId: string): boolean {

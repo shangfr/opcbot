@@ -34,29 +34,33 @@ import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 type ActiveChatContextValue = {
   chatId: string;
   title: string;
-  setTitle: Dispatch<SetStateAction<string>>;
   agentName: string | null;
   messages: ChatMessage[];
-  setMessages: UseChatHelpers<ChatMessage>["setMessages"];
-  sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
   status: UseChatHelpers<ChatMessage>["status"];
-  stop: UseChatHelpers<ChatMessage>["stop"];
-  regenerate: UseChatHelpers<ChatMessage>["regenerate"];
-  addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
   input: string;
-  setInput: Dispatch<SetStateAction<string>>;
   visibilityType: VisibilityType;
   isReadonly: boolean;
   isLoading: boolean;
   votes: Vote[] | undefined;
   currentModelId: string;
-  setCurrentModelId: (id: string) => void;
   thinkingEnabled: boolean;
-  setThinkingEnabled: Dispatch<SetStateAction<boolean>>;
   agentId: string | null;
 };
 
+type ActiveChatActionsContextValue = {
+  setTitle: Dispatch<SetStateAction<string>>;
+  setMessages: UseChatHelpers<ChatMessage>["setMessages"];
+  sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
+  stop: UseChatHelpers<ChatMessage>["stop"];
+  regenerate: UseChatHelpers<ChatMessage>["regenerate"];
+  addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
+  setInput: Dispatch<SetStateAction<string>>;
+  setCurrentModelId: (id: string) => void;
+  setThinkingEnabled: Dispatch<SetStateAction<boolean>>;
+};
+
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
+const ActiveChatActionsContext = createContext<ActiveChatActionsContextValue | null>(null);
 
 function extractChatId(pathname: string): string | null {
   const match = pathname.match(/\/chat\/([^/]+)/);
@@ -181,7 +185,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`
       : null,
     fetcher,
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
   useEffect(() => {
     if (needsAgentValidation && agentsForValidation) {
@@ -499,43 +503,28 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     { revalidateOnFocus: false }
   );
 
-  const value = useMemo<ActiveChatContextValue>(
+  const stateValue = useMemo<ActiveChatContextValue>(
     () => ({
       chatId,
       title,
-      setTitle,
       agentName,
       messages,
-      setMessages,
-      sendMessage,
       status,
-      stop,
-      regenerate,
-      addToolApprovalResponse,
       input,
-      setInput,
       visibilityType: visibility,
       isReadonly,
       isLoading: !isNewChat && isLoading,
       votes,
       currentModelId,
-      setCurrentModelId,
       thinkingEnabled,
-      setThinkingEnabled,
       agentId,
     }),
     [
       chatId,
       title,
-      setTitle,
       agentName,
       messages,
-      setMessages,
-      sendMessage,
       status,
-      stop,
-      regenerate,
-      addToolApprovalResponse,
       input,
       visibility,
       isReadonly,
@@ -548,17 +537,58 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     ]
   );
 
+  const actionsValue = useMemo<ActiveChatActionsContextValue>(
+    () => ({
+      setTitle,
+      setMessages,
+      sendMessage,
+      stop,
+      regenerate,
+      addToolApprovalResponse,
+      setInput,
+      setCurrentModelId,
+      setThinkingEnabled,
+    }),
+    [
+      setTitle,
+      setMessages,
+      sendMessage,
+      stop,
+      regenerate,
+      addToolApprovalResponse,
+      setInput,
+      setCurrentModelId,
+      setThinkingEnabled,
+    ]
+  );
+
   return (
-    <ActiveChatContext.Provider value={value}>
-      {children}
-    </ActiveChatContext.Provider>
+    <ActiveChatActionsContext.Provider value={actionsValue}>
+      <ActiveChatContext.Provider value={stateValue}>
+        {children}
+      </ActiveChatContext.Provider>
+    </ActiveChatActionsContext.Provider>
   );
 }
 
 export function useActiveChat() {
-  const context = useContext(ActiveChatContext);
-  if (!context) {
+  const state = useContext(ActiveChatContext);
+  const actions = useContext(ActiveChatActionsContext);
+  if (!state || !actions) {
     throw new Error("useActiveChat must be used within ActiveChatProvider");
   }
-  return context;
+  return { ...state, ...actions };
+}
+
+/**
+ * Returns only the stable action references (setMessages, sendMessage, stop, etc.).
+ * Use this instead of useActiveChat() when you only need actions, to avoid
+ * re-renders triggered by state changes (messages, status, input).
+ */
+export function useActiveChatActions() {
+  const actions = useContext(ActiveChatActionsContext);
+  if (!actions) {
+    throw new Error("useActiveChatActions must be used within ActiveChatProvider");
+  }
+  return actions;
 }

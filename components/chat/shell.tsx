@@ -19,6 +19,7 @@ import { MultimodalInput } from "./multimodal-input";
 export function ChatShell() {
   const {
     chatId,
+    agentName,
     messages,
     setMessages,
     sendMessage,
@@ -69,6 +70,7 @@ export function ChatShell() {
           )}
         >
           <ChatHeader
+            agentName={agentName}
             chatId={chatId}
             isReadonly={isReadonly}
             selectedVisibilityType={visibilityType}
