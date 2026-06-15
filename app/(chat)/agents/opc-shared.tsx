@@ -216,9 +216,16 @@ export function AgentCard({
             </h3>
             <div className="mt-0.5 flex items-center gap-2 text-[10px]">
               {admin && (
-                <span className="text-muted-foreground">
-                  #{agent.sortOrder}
-                </span>
+                <>
+                  <span className="text-muted-foreground">
+                    #{agent.sortOrder}
+                  </span>
+                  {agent.isDefault && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
+                      ★ 默认
+                    </span>
+                  )}
+                </>
               )}
               <span className={`font-medium ${group.softText}`}>
                 {group.label}

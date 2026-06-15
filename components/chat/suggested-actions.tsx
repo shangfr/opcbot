@@ -30,12 +30,27 @@ function PureSuggestedActions({
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
 
+  const { data: siteConfig } = useSWR<{ defaultStarterQuestions?: string[]; siteName?: string; siteDescription?: string }>(
+    !agentId ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/site-config` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
+
   const currentAgent = agentId ? agents?.find((a) => a.id === agentId) : null;
 
   const agentQuestions = currentAgent?.starterQuestions ?? null;
 
+  const configQuestions = siteConfig?.defaultStarterQuestions ?? null;
+
   const suggestedActions =
-    agentQuestions && agentQuestions.length > 0 ? agentQuestions : suggestions;
+    agentQuestions && agentQuestions.length > 0
+      ? agentQuestions
+      : configQuestions && configQuestions.length > 0
+        ? configQuestions
+        : suggestions;
+
+  const displayName = currentAgent?.name ?? siteConfig?.siteName ?? "OPC Bot";
+  const displayDescription = currentAgent?.description ?? siteConfig?.siteDescription ?? "智能助手，随时为您提供帮助";
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
@@ -67,13 +82,13 @@ function PureSuggestedActions({
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
           <img
-            alt="OPC Bot"
+            alt={displayName}
             className="mb-3 size-14 rounded-2xl object-cover shadow-sm"
             src="/logo.jpg"
           />
-          <h2 className="text-lg font-semibold tracking-tight">OPC Bot</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{displayName}</h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
-            智能助手，随时为您提供帮助
+            {displayDescription}
           </p>
         </motion.div>
       )}

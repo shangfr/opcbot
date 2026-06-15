@@ -71,16 +71,29 @@ function StatCard({
 export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
   const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [siteConfig, setSiteConfig] = useState<{
+    siteName?: string | null;
+    siteDescription?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/agents")
       .then((r) => (r.ok ? r.json() : []))
       .then(setAgents)
       .catch(() => {});
+    fetch("/api/site-config")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setSiteConfig)
+      .catch(() => {});
   }, []);
 
   const activeAgents = useMemo(
     () => agents.filter((a) => a.isActive),
+    [agents]
+  );
+
+  const defaultAgent = useMemo(
+    () => agents.find((a) => a.isDefault),
     [agents]
   );
 
@@ -113,7 +126,10 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
       if (!res.ok) {
         throw new Error("Failed to create chat");
       }
-      const { chatId } = await res.json();
+      const { chatId, agentId } = await res.json();
+      if (agentId) {
+        sessionStorage.setItem(`pending-chat-${chatId}`, agentId);
+      }
       router.push(`/chat/${chatId}`);
     } catch {
       toast.error("创建对话失败，请重试");
@@ -148,15 +164,27 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
         {/* ===== Welcome 标题 ===== */}
         <div className="mb-10 text-center">
           <div className="mx-auto mb-5 flex size-16 items-center justify-center overflow-hidden rounded-2xl ring-1 ring-primary/10">
-            <img
-              alt="OPC Bot"
-              className="size-full object-cover"
-              src="/logo.jpg"
-            />
+            {defaultAgent ? (
+              <span className="flex size-full items-center justify-center text-xl font-bold text-foreground">
+                {getAvatarChar(defaultAgent.name)}
+              </span>
+            ) : (
+              <img
+                alt="OPC Bot"
+                className="size-full object-cover"
+                src="/logo.jpg"
+              />
+            )}
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">OPC Bot</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {defaultAgent
+              ? defaultAgent.name
+              : siteConfig?.siteName || "OPC Bot"}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            选择一位 OPC 或直接开始对话，探索 AI 助手的无限可能
+            {defaultAgent
+              ? defaultAgent.description
+              : siteConfig?.siteDescription || "选择一位 OPC 或直接开始对话，探索 AI 助手的无限可能"}
           </p>
         </div>
 

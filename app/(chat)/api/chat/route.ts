@@ -18,8 +18,8 @@ import {
   DEFAULT_CHAT_MODEL,
   getCapabilities,
 } from "@/lib/ai/models";
-import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
-import { getAgentById } from "@/lib/db/queries";
+import { type RequestHints, infrastructurePrompt, systemPrompt } from "@/lib/ai/prompts";
+import { getAgentById, getSiteConfig } from "@/lib/db/queries";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
@@ -191,11 +191,18 @@ export async function POST(request: Request) {
     const modelMessages = await convertToModelMessages(uiMessages);
 
     // 如果指定了 agentId，加载 agent 的系统提示词
+    // 否则检查 site_config 中是否有自定义默认 system prompt
     let systemMessage = systemPrompt({ requestHints, supportsTools });
     if (agentId) {
       const agentRecord = await getAgentById({ id: agentId });
       if (agentRecord?.isActive) {
         systemMessage = `${agentRecord.systemPrompt}\n\n${systemMessage}`;
+      }
+    } else {
+      const config = await getSiteConfig();
+      if (config?.defaultSystemPrompt) {
+        const infrastructure = infrastructurePrompt({ requestHints, supportsTools });
+        systemMessage = `${config.defaultSystemPrompt}\n\n${infrastructure}`;
       }
     }
 

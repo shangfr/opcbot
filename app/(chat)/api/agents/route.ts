@@ -18,6 +18,7 @@ const agentSchema = z.object({
   phone: z.string().max(20, "手机号最长 20 个字符").nullable().default(null),
   starterQuestions: z.array(z.string()).max(8, "默认问题最多 8 个").default([]),
   isActive: z.boolean().default(true),
+  isDefault: z.boolean().default(false),
   sortOrder: z.number().int().default(0),
   categoryId: z.string().uuid().nullable().default(null),
 });
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
       phone: body.phone,
       starterQuestions: body.starterQuestions,
       isActive: body.isActive,
+      isDefault: body.isDefault,
       sortOrder: body.sortOrder,
       categoryId: body.categoryId,
       userId: session.user.id,
@@ -128,6 +130,7 @@ export async function PATCH(request: Request) {
       phone: body.phone ?? existing.phone,
       starterQuestions: body.starterQuestions ?? existing.starterQuestions ?? [],
       isActive: body.isActive ?? existing.isActive,
+      isDefault: body.isDefault,
       sortOrder: body.sortOrder ?? existing.sortOrder,
       categoryId: body.categoryId !== undefined ? body.categoryId : existing.categoryId,
     });

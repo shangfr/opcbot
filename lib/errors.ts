@@ -17,7 +17,8 @@ export type Surface =
   | "document"
   | "suggestions"
   | "agent"
-  | "category";
+  | "category"
+  | "site-config";
 
 export type ErrorCode = `${ErrorType}:${Surface}`;
 
@@ -35,6 +36,7 @@ export const visibilityBySurface: Record<Surface, ErrorVisibility> = {
   suggestions: "response",
   agent: "response",
   category: "response",
+  "site-config": "response",
 };
 
 export class ChatbotError extends Error {
@@ -119,6 +121,13 @@ export function getMessageByErrorCode(errorCode: ErrorCode): string {
       return "未找到该 Agent。请检查 ID 后重试。";
     case "bad_request:agent":
       return "Agent 操作请求无效。请检查输入后重试。";
+
+    case "unauthorized:site-config":
+      return "请先登录以访问系统配置。";
+    case "forbidden:site-config":
+      return "当前账号无权修改系统配置。仅管理员可操作。";
+    case "bad_request:site-config":
+      return "系统配置操作请求无效。请检查输入后重试。";
 
     default:
       return "出了点问题，请稍后重试。";

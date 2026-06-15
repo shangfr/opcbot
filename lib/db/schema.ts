@@ -1,4 +1,4 @@
-import type { InferSelectModel } from "drizzle-orm";
+import { sql, type InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
@@ -161,25 +161,34 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
-export const agent = pgTable("Agent", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  avatar: text("avatar").notNull().default("/icon.png"),
-  systemPrompt: text("system_prompt").notNull(),
-  phone: text("phone"),
-  starterQuestions: json("starter_questions").$type<string[]>().default([]),
-  isActive: boolean("is_active").notNull().default(true),
-  sortOrder: integer("sort_order").notNull().default(0),
-  categoryId: uuid("categoryId").references(() => category.id, {
-    onDelete: "set null",
-  }),
-  userId: uuid("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-});
+export const agent = pgTable(
+  "Agent",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    avatar: text("avatar").notNull().default("/icon.png"),
+    systemPrompt: text("system_prompt").notNull(),
+    phone: text("phone"),
+    starterQuestions: json("starter_questions").$type<string[]>().default([]),
+    isActive: boolean("is_active").notNull().default(true),
+    isDefault: boolean("is_default").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    categoryId: uuid("categoryId").references(() => category.id, {
+      onDelete: "set null",
+    }),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    defaultUnique: uniqueIndex("agent_default_idx")
+      .on(table.isDefault)
+      .where(sql`${table.isDefault} = true`),
+  })
+);
 
 export type Agent = InferSelectModel<typeof agent>;
 
@@ -194,3 +203,15 @@ export const category = pgTable("Category", {
 });
 
 export type Category = InferSelectModel<typeof category>;
+
+export const siteConfig = pgTable("SiteConfig", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  defaultSystemPrompt: text("default_system_prompt"),
+  defaultStarterQuestions: json("default_starter_questions").$type<string[]>(),
+  siteName: text("site_name"),
+  siteDescription: text("site_description"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type SiteConfig = InferSelectModel<typeof siteConfig>;

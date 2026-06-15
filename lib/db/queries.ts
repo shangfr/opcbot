@@ -27,6 +27,7 @@ import {
   type DBMessage,
   document,
   message,
+  siteConfig,
   type Suggestion,
   stream,
   suggestion,
@@ -679,6 +680,7 @@ export async function createAgent({
   phone,
   starterQuestions,
   isActive,
+  isDefault,
   sortOrder,
   categoryId,
   userId,
@@ -690,11 +692,41 @@ export async function createAgent({
   phone?: string | null;
   starterQuestions?: string[];
   isActive: boolean;
+  isDefault?: boolean;
   sortOrder: number;
   categoryId?: string | null;
   userId: string;
 }) {
   try {
+    if (isDefault === true) {
+      const [result] = await db.transaction(async (tx) => {
+        await tx
+          .update(agent)
+          .set({ isDefault: false })
+          .where(eq(agent.isDefault, true));
+
+        const [created] = await tx
+          .insert(agent)
+          .values({
+            name,
+            description,
+            avatar,
+            systemPrompt,
+            phone: phone || null,
+            starterQuestions: starterQuestions ?? [],
+            isActive,
+            isDefault: true,
+            sortOrder,
+            categoryId: categoryId ?? null,
+            userId,
+          })
+          .returning();
+
+        return [created];
+      });
+      return result;
+    }
+
     const [result] = await db
       .insert(agent)
       .values({
@@ -705,6 +737,7 @@ export async function createAgent({
         phone: phone || null,
         starterQuestions: starterQuestions ?? [],
         isActive,
+        isDefault: false,
         sortOrder,
         categoryId: categoryId ?? null,
         userId,
@@ -713,6 +746,22 @@ export async function createAgent({
     return result;
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to create agent");
+  }
+}
+
+export async function getDefaultAgent() {
+  try {
+    const [result] = await db
+      .select()
+      .from(agent)
+      .where(eq(agent.isDefault, true))
+      .limit(1);
+    return result ?? null;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get default agent"
+    );
   }
 }
 
@@ -725,6 +774,7 @@ export async function updateAgent({
   phone,
   starterQuestions,
   isActive,
+  isDefault,
   sortOrder,
   categoryId,
 }: {
@@ -736,10 +786,42 @@ export async function updateAgent({
   phone?: string | null;
   starterQuestions?: string[];
   isActive: boolean;
+  isDefault?: boolean;
   sortOrder: number;
   categoryId?: string | null;
 }) {
   try {
+    // When setting as default, use a transaction to ensure only one default exists
+    if (isDefault === true) {
+      const [result] = await db.transaction(async (tx) => {
+        await tx
+          .update(agent)
+          .set({ isDefault: false })
+          .where(eq(agent.isDefault, true));
+
+        const [updated] = await tx
+          .update(agent)
+          .set({
+            name,
+            description,
+            avatar,
+            systemPrompt,
+            phone: phone ?? null,
+            starterQuestions: starterQuestions ?? [],
+            isActive,
+            isDefault: true,
+            sortOrder,
+            categoryId: categoryId ?? null,
+            updatedAt: new Date(),
+          })
+          .where(eq(agent.id, id))
+          .returning();
+
+        return [updated];
+      });
+      return result;
+    }
+
     const [result] = await db
       .update(agent)
       .set({
@@ -750,6 +832,7 @@ export async function updateAgent({
         phone: phone ?? null,
         starterQuestions: starterQuestions ?? [],
         isActive,
+        ...(isDefault !== undefined ? { isDefault } : {}),
         sortOrder,
         categoryId: categoryId ?? null,
         updatedAt: new Date(),
@@ -848,5 +931,64 @@ export async function deleteCategory({ id }: { id: string }) {
     return result;
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to delete category");
+  }
+}
+
+// ============================================================
+// SiteConfig CRUD
+// ============================================================
+
+export async function getSiteConfig() {
+  try {
+    const [result] = await db.select().from(siteConfig).limit(1);
+    return result ?? null;
+  } catch (_error) {
+    console.error("getSiteConfig error:", _error);
+    throw new ChatbotError("bad_request:database", "Failed to get site config");
+  }
+}
+
+export async function upsertSiteConfig({
+  defaultSystemPrompt,
+  defaultStarterQuestions,
+  siteName,
+  siteDescription,
+}: {
+  defaultSystemPrompt?: string | null;
+  defaultStarterQuestions?: string[] | null;
+  siteName?: string | null;
+  siteDescription?: string | null;
+}) {
+  try {
+    const existing = await db.select({ id: siteConfig.id }).from(siteConfig).limit(1);
+
+    if (existing.length > 0) {
+      const [result] = await db
+        .update(siteConfig)
+        .set({
+          ...(defaultSystemPrompt !== undefined ? { defaultSystemPrompt: defaultSystemPrompt || null } : {}),
+          ...(defaultStarterQuestions !== undefined ? { defaultStarterQuestions: defaultStarterQuestions || null } : {}),
+          ...(siteName !== undefined ? { siteName: siteName || null } : {}),
+          ...(siteDescription !== undefined ? { siteDescription: siteDescription || null } : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(siteConfig.id, existing[0].id))
+        .returning();
+      return result;
+    }
+
+    const [result] = await db
+      .insert(siteConfig)
+      .values({
+        defaultSystemPrompt: defaultSystemPrompt ?? null,
+        defaultStarterQuestions: defaultStarterQuestions ?? null,
+        siteName: siteName ?? null,
+        siteDescription: siteDescription ?? null,
+      })
+      .returning();
+    return result;
+  } catch (_error) {
+    console.error("upsertSiteConfig error:", _error);
+    throw new ChatbotError("bad_request:database", "Failed to upsert site config");
   }
 }

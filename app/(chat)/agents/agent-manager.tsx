@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Agent, Category } from "@/lib/db/schema";
 import { AgentCard, GroupHeader, useAgents } from "./opc-shared";
 import { CategoryManagerDialog } from "./category-manager-dialog";
+import { SiteConfigDialog } from "./site-config-dialog";
 
 type AgentFormData = {
   name: string;
@@ -36,6 +37,7 @@ type AgentFormData = {
   phone: string;
   starterQuestions: string;
   isActive: boolean;
+  isDefault: boolean;
   sortOrder: number;
   categoryId: string;
 };
@@ -48,6 +50,7 @@ const emptyForm: AgentFormData = {
   phone: "",
   starterQuestions: "",
   isActive: true,
+  isDefault: false,
   sortOrder: 0,
   categoryId: "__none__",
 };
@@ -88,6 +91,7 @@ export function AgentManager() {
       phone: agent.phone ?? "",
       starterQuestions: (agent.starterQuestions ?? []).join("\n"),
       isActive: agent.isActive,
+      isDefault: agent.isDefault,
       sortOrder: agent.sortOrder,
       categoryId: agent.categoryId ?? "__none__",
     });
@@ -111,6 +115,7 @@ export function AgentManager() {
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean),
+      isDefault: form.isDefault,
       categoryId: form.categoryId === "__none__" ? null : form.categoryId,
     };
 
@@ -180,10 +185,13 @@ export function AgentManager() {
             管理 AI OPC 角色配置，共 {agents.length} 个
           </p>
         </div>
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="size-4" />
-          新建 OPC
-        </Button>
+        <div className="flex items-center gap-3">
+          <SiteConfigDialog />
+          <Button onClick={openCreate} className="gap-2">
+            <Plus className="size-4" />
+            新建 OPC
+          </Button>
+        </div>
       </div>
 
       {/* Empty state */}
@@ -390,6 +398,20 @@ export function AgentManager() {
                   ) : null;
                 })()}
               </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.03] px-3 py-2.5">
+              <Switch
+                id="isDefault"
+                checked={form.isDefault}
+                onCheckedChange={(v) => setForm({ ...form, isDefault: v })}
+              />
+              <Label htmlFor="isDefault" className="cursor-pointer text-sm">
+                设为默认 OPC
+              </Label>
+              <span className="ml-auto text-[11px] text-muted-foreground">
+                「开始对话」将使用此 OPC 的配置
+              </span>
             </div>
 
             <div className="flex items-center gap-6">

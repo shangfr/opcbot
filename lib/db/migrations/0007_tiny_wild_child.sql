@@ -1,0 +1,2 @@
+ALTER TABLE "Agent" ADD COLUMN "is_default" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "agent_default_idx" ON "Agent" USING btree ("is_default") WHERE "Agent"."is_default" = true;

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
+import { getDefaultAgent } from "@/lib/db/queries";
 import { ChatbotError } from "@/lib/errors";
 import { generateUUID } from "@/lib/utils";
 
@@ -20,9 +21,18 @@ export async function POST(request: Request) {
     return new ChatbotError("unauthorized:chat").toResponse();
   }
 
+  // If no agentId is specified, use the default agent if one exists
+  let resolvedAgentId = body.agentId ?? null;
+  if (!resolvedAgentId) {
+    const defaultAgent = await getDefaultAgent();
+    if (defaultAgent) {
+      resolvedAgentId = defaultAgent.id;
+    }
+  }
+
   // Only generate chatId, don't save to DB yet.
   // DB record is created when the first message is sent.
   const chatId = generateUUID();
 
-  return Response.json({ chatId, agentId: body.agentId ?? null });
+  return Response.json({ chatId, agentId: resolvedAgentId });
 }
