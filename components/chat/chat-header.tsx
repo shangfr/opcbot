@@ -32,10 +32,6 @@ function PureChatHeader({
         <PanelLeftIcon className="size-4" />
       </Button>
 
-      <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-        <span className="text-foreground/60 font-medium">对话</span>
-      </div>
-
       <div className="ml-auto flex items-center gap-2">
         {!isReadonly && (
           <VisibilitySelector

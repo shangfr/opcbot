@@ -24,12 +24,19 @@ export default function Page() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
-    if (state.status === "failed") {
-      toast({ type: "error", description: "账号或密码错误" });
+    if (state.status === "user_not_found") {
+      toast({ type: "error", description: "该账号未注册，请先注册" });
+    } else if (state.status === "wrong_password") {
+      toast({ type: "error", description: "密码错误，请重试" });
+    } else if (state.status === "failed") {
+      toast({
+        type: "error",
+        description: state.message || "登录失败，请稍后重试",
+      });
     } else if (state.status === "invalid_data") {
       toast({
         type: "error",
-        description: "提交数据验证失败",
+        description: state.message || "提交数据验证失败",
       });
     } else if (state.status === "success") {
       setIsSuccessful(true);
@@ -49,18 +56,25 @@ export default function Page() {
       <p className="auth-slide-in text-sm text-muted-foreground text-center" style={{ animationDelay: "0.18s" }}>
         登录您的账号以继续
       </p>
-      <div className="auth-slide-in" style={{ animationDelay: "0.28s" }}>
-        <AuthForm action={handleSubmit} defaultEmail={email}>
-          <SubmitButton isSuccessful={isSuccessful}>登录</SubmitButton>
-          <p className="text-center text-[13px] text-muted-foreground">
-            {"没有账号？"}
-            <Link
-              className="text-foreground underline-offset-4 hover:underline"
-              href="/register"
-            >
-              注册
-            </Link>
-          </p>
+      <div className="auth-slide-in w-full" style={{ animationDelay: "0.28s" }}>
+        <AuthForm action={handleSubmit} defaultEmail={email} error={state.message}>
+          <div className="flex flex-col gap-3">
+            <SubmitButton isSuccessful={isSuccessful}>登录</SubmitButton>
+            <div className="flex items-center justify-between text-[13px]">
+              <Link
+                className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                href="/forgot-password"
+              >
+                忘记密码？
+              </Link>
+              <Link
+                className="text-foreground underline-offset-4 hover:underline"
+                href="/register"
+              >
+                注册
+              </Link>
+            </div>
+          </div>
         </AuthForm>
       </div>
     </>

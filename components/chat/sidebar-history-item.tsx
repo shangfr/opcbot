@@ -56,6 +56,8 @@ const PureChatItem = ({
             messages: data.messages ?? [],
             agentId: data.agentId ?? null,
             visibility: data.visibility ?? "private",
+            title: data.title,
+            agentName: data.agentName,
           });
         }
       })

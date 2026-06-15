@@ -24,13 +24,16 @@ export default function Page() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: router and updateSession are stable refs
   useEffect(() => {
     if (state.status === "user_exists") {
-      toast({ type: "error", description: "账号已存在" });
+      toast({ type: "error", description: state.message || "该邮箱已被注册" });
     } else if (state.status === "failed") {
-      toast({ type: "error", description: "创建账号失败" });
+      toast({
+        type: "error",
+        description: state.message || "创建账号失败",
+      });
     } else if (state.status === "invalid_data") {
       toast({
         type: "error",
-        description: "提交数据验证失败",
+        description: state.message || "提交数据验证失败",
       });
     } else if (state.status === "success") {
       toast({ type: "success", description: "账号创建成功" });
@@ -49,8 +52,8 @@ export default function Page() {
     <>
       <h1 className="auth-slide-in text-2xl font-semibold tracking-tight text-center" style={{ animationDelay: "0.1s" }}>创建账号</h1>
       <p className="auth-slide-in text-sm text-muted-foreground text-center" style={{ animationDelay: "0.18s" }}>免费注册，立即体验</p>
-      <div className="auth-slide-in" style={{ animationDelay: "0.28s" }}>
-        <AuthForm action={handleSubmit} defaultEmail={email}>
+      <div className="auth-slide-in w-full" style={{ animationDelay: "0.28s" }}>
+        <AuthForm action={handleSubmit} defaultEmail={email} error={state.message}>
           <SubmitButton isSuccessful={isSuccessful}>注册</SubmitButton>
           <p className="text-center text-[13px] text-muted-foreground">
             {"已有账号？"}

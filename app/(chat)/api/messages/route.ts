@@ -2,6 +2,7 @@ import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
 import {
   getChatById,
+  getChatWithAgent,
   getMessagesByChatId,
   saveMessages,
 } from "@/lib/db/queries";
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
 
   const [session, chat, messages] = await Promise.all([
     auth(),
-    getChatById({ id: chatId }),
+    getChatWithAgent({ id: chatId }),
     getMessagesByChatId({ id: chatId }),
   ]);
 
@@ -41,9 +42,11 @@ export async function GET(request: Request) {
 
   return Response.json({
     messages: convertToUIMessages(messages),
+    title: chat.title,
     visibility: chat.visibility,
     userId: chat.userId,
     agentId: chat.agentId,
+    agentName: chat.agentName,
     isReadonly,
   });
 }

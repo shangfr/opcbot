@@ -9,6 +9,8 @@ export interface ChatCacheEntry {
   messages: ChatMessage[];
   agentId: string | null;
   visibility: string;
+  title?: string;
+  agentName?: string | null;
 }
 
 const MAX_CACHED = 20;

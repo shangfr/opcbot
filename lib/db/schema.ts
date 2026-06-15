@@ -49,6 +49,7 @@ export const chat = pgTable(
     agentId: uuid("agentId").references(() => agent.id, {
       onDelete: "set null",
     }),
+    agentName: text("agentName"),
   },
   (table) => ({
     userIdIdx: index("Chat_userId_idx").on(table.userId),
@@ -215,3 +216,14 @@ export const siteConfig = pgTable("SiteConfig", {
 });
 
 export type SiteConfig = InferSelectModel<typeof siteConfig>;
+
+export const passwordResetToken = pgTable("PasswordResetToken", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  email: varchar("email", { length: 64 }).notNull(),
+  token: text("token").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type PasswordResetToken = InferSelectModel<typeof passwordResetToken>;

@@ -1,5 +1,6 @@
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
+import { Toaster } from "sonner";
 import { AuthPanel } from "@/components/chat/auth-panel";
 
 export default function AuthLayout({
@@ -9,6 +10,14 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex h-dvh w-screen bg-sidebar">
+      <Toaster
+        position="top-center"
+        theme="system"
+        toastOptions={{
+          className:
+            "!bg-card !text-foreground !border-border/50 !shadow-lg",
+        }}
+      />
       {/* ===== 左侧表单区 ===== */}
       <div className="relative flex w-full flex-col overflow-hidden bg-background p-8 xl:w-[600px] xl:shrink-0 xl:rounded-r-2xl xl:border-r xl:border-border/40 md:p-16">
         {/* 环境光效 */}

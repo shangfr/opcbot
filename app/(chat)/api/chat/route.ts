@@ -110,12 +110,19 @@ export async function POST(request: Request) {
       }
       messagesFromDb = await getMessagesByChatId({ id });
     } else if (message?.role === "user") {
+      // Look up agent name if agentId is provided
+      let agentName: string | null = null;
+      if (agentId) {
+        const agentRecord = await getAgentById({ id: agentId });
+        agentName = agentRecord?.name ?? null;
+      }
       await saveChat({
         id,
         userId: session.user.id,
         title: "New chat",
         visibility: selectedVisibilityType,
         agentId,
+        agentName,
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }

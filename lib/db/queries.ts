@@ -9,6 +9,7 @@ import {
   gt,
   gte,
   inArray,
+  isNull,
   lt,
   type SQL,
   sql,
@@ -27,6 +28,7 @@ import {
   type DBMessage,
   document,
   message,
+  passwordResetToken,
   siteConfig,
   type Suggestion,
   stream,
@@ -84,12 +86,14 @@ export async function saveChat({
   title,
   visibility,
   agentId,
+  agentName,
 }: {
   id: string;
   userId: string;
   title: string;
   visibility: VisibilityType;
   agentId?: string | null;
+  agentName?: string | null;
 }) {
   try {
     return await db.insert(chat).values({
@@ -99,6 +103,7 @@ export async function saveChat({
       title,
       visibility,
       agentId: agentId ?? null,
+      agentName: agentName ?? null,
     });
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to save chat");
@@ -173,7 +178,7 @@ export async function getChatsByUserId({
   try {
     const extendedLimit = limit + 1;
 
-    const query = (whereCondition?: SQL<unknown>) =>
+    const baseQuery = (whereCondition?: SQL<unknown>) =>
       db
         .select()
         .from(chat)
@@ -201,7 +206,7 @@ export async function getChatsByUserId({
         );
       }
 
-      filteredChats = await query(gt(chat.createdAt, selectedChat.createdAt));
+      filteredChats = await baseQuery(gt(chat.createdAt, selectedChat.createdAt));
     } else if (endingBefore) {
       const [selectedChat] = await db
         .select()
@@ -216,9 +221,9 @@ export async function getChatsByUserId({
         );
       }
 
-      filteredChats = await query(lt(chat.createdAt, selectedChat.createdAt));
+      filteredChats = await baseQuery(lt(chat.createdAt, selectedChat.createdAt));
     } else {
-      filteredChats = await query();
+      filteredChats = await baseQuery();
     }
 
     const hasMore = filteredChats.length > limit;
@@ -245,6 +250,16 @@ export async function getChatById({ id }: { id: string }) {
     return selectedChat;
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to get chat by id");
+  }
+}
+
+export async function getChatWithAgent({ id }: { id: string }) {
+  try {
+    const [row] = await db.select().from(chat).where(eq(chat.id, id));
+    if (!row) return null;
+    return row;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to get chat with agent");
   }
 }
 
@@ -990,5 +1005,92 @@ export async function upsertSiteConfig({
   } catch (_error) {
     console.error("upsertSiteConfig error:", _error);
     throw new ChatbotError("bad_request:database", "Failed to upsert site config");
+  }
+}
+
+// ============================================================
+// Password Reset
+// ============================================================
+
+export async function createPasswordResetToken({
+  email,
+  token,
+  expiresAt,
+}: {
+  email: string;
+  token: string;
+  expiresAt: Date;
+}) {
+  try {
+    const [result] = await db
+      .insert(passwordResetToken)
+      .values({ email, token, expiresAt })
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create password reset token"
+    );
+  }
+}
+
+export async function getPasswordResetToken({
+  token,
+}: {
+  token: string;
+}) {
+  try {
+    const [result] = await db
+      .select()
+      .from(passwordResetToken)
+      .where(
+        and(
+          eq(passwordResetToken.token, token),
+          isNull(passwordResetToken.usedAt),
+          gt(passwordResetToken.expiresAt, new Date())
+        )
+      );
+    return result ?? null;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get password reset token"
+    );
+  }
+}
+
+export async function markResetTokenAsUsed({ id }: { id: string }) {
+  try {
+    await db
+      .update(passwordResetToken)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetToken.id, id));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to mark reset token as used"
+    );
+  }
+}
+
+export async function updateUserPassword({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}) {
+  try {
+    const hashedPassword = generateHashedPassword(password);
+    await db
+      .update(user)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(user.email, email));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update user password"
+    );
   }
 }
