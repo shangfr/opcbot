@@ -1,4 +1,4 @@
-import { geolocation, ipAddress } from "@vercel/functions";
+import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -7,7 +7,6 @@ import {
   stepCountIs,
   streamText,
 } from "ai";
-import { checkBotId } from "botid/server";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
@@ -40,7 +39,6 @@ import {
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
-import { checkIpRateLimit } from "@/lib/ratelimit";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
@@ -69,12 +67,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType, agentId, thinkingEnabled } =
+    const { id, message, messages, selectedChatModel, selectedVisibilityType, agentId, thinkingEnabled, isNewChat } =
       requestBody;
 
-    const [, session] = await Promise.all([
-      checkBotId().catch(() => null),
+    // ── Parallel pre-flight: auth + chat/agent lookup ──
+    const [session, chat, agentRecord] = await Promise.all([
       auth(),
+      isNewChat ? Promise.resolve(null) : getChatById({ id }),
+      agentId ? getAgentById({ id: agentId }) : Promise.resolve(null),
     ]);
 
     if (!session?.user) {
@@ -85,48 +85,44 @@ export async function POST(request: Request) {
       ? selectedChatModel
       : DEFAULT_CHAT_MODEL;
 
-    await checkIpRateLimit(ipAddress(request));
-
     const userType: UserType = session.user.type;
 
-    const messageCount = await getMessageCountByUserId({
-      id: session.user.id,
-      differenceInHours: 1,
-    });
+    if (userType === "guest") {
+      const messageCount = await getMessageCountByUserId({
+        id: session.user.id,
+        differenceInHours: 1,
+      });
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
-      return new ChatbotError("rate_limit:chat").toResponse();
+      if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
+        return new ChatbotError("rate_limit:chat").toResponse();
+      }
     }
 
+    // ── Chat setup ──
     const isToolApprovalFlow = Boolean(messages);
-
-    const chat = await getChatById({ id });
     let messagesFromDb: DBMessage[] = [];
     let titlePromise: Promise<string> | null = null;
 
     if (chat) {
+      // Existing chat — verify ownership and load history
       if (chat.userId !== session.user.id) {
         return new ChatbotError("forbidden:chat").toResponse();
       }
       messagesFromDb = await getMessagesByChatId({ id });
     } else if (message?.role === "user") {
-      // Look up agent name if agentId is provided
-      let agentName: string | null = null;
-      if (agentId) {
-        const agentRecord = await getAgentById({ id: agentId });
-        agentName = agentRecord?.name ?? null;
-      }
+      // New chat — create record
       await saveChat({
         id,
         userId: session.user.id,
         title: "New chat",
         visibility: selectedVisibilityType,
         agentId,
-        agentName,
+        agentName: agentRecord?.name ?? null,
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }
 
+    // ── Assemble UI messages ──
     let uiMessages: ChatMessage[];
 
     if (isToolApprovalFlow && messages) {
@@ -165,17 +161,30 @@ export async function POST(request: Request) {
       ];
     }
 
+    // ── System message (reuse agentRecord from parallel fetch) ──
     const { longitude, latitude, city, country } = geolocation(request);
+    const requestHints: RequestHints = { longitude, latitude, city, country };
+    const modelConfig = chatModels.find((m) => m.id === chatModel);
+    const capabilities = getCapabilities()[chatModel];
+    const isReasoningModel = capabilities?.reasoning === true;
+    const supportsTools = capabilities?.tools === true;
 
-    const requestHints: RequestHints = {
-      longitude,
-      latitude,
-      city,
-      country,
-    };
+    let systemMessage = systemPrompt({ requestHints, supportsTools });
+    if (agentRecord?.isActive) {
+      systemMessage = `${agentRecord.systemPrompt}\n\n${systemMessage}`;
+    } else if (!agentId) {
+      const config = await getSiteConfig();
+      if (config?.defaultSystemPrompt) {
+        const infrastructure = infrastructurePrompt({ requestHints, supportsTools });
+        systemMessage = `${config.defaultSystemPrompt}\n\n${infrastructure}`;
+      }
+    }
 
+    const modelMessages = await convertToModelMessages(uiMessages);
+
+    // Save user message without blocking streaming response
     if (message?.role === "user") {
-      await saveMessages({
+      saveMessages({
         messages: [
           {
             chatId: id,
@@ -186,31 +195,7 @@ export async function POST(request: Request) {
             createdAt: new Date(),
           },
         ],
-      });
-    }
-
-    const modelConfig = chatModels.find((m) => m.id === chatModel);
-    const modelCapabilities = getCapabilities();
-    const capabilities = modelCapabilities[chatModel];
-    const isReasoningModel = capabilities?.reasoning === true;
-    const supportsTools = capabilities?.tools === true;
-
-    const modelMessages = await convertToModelMessages(uiMessages);
-
-    // 如果指定了 agentId，加载 agent 的系统提示词
-    // 否则检查 site_config 中是否有自定义默认 system prompt
-    let systemMessage = systemPrompt({ requestHints, supportsTools });
-    if (agentId) {
-      const agentRecord = await getAgentById({ id: agentId });
-      if (agentRecord?.isActive) {
-        systemMessage = `${agentRecord.systemPrompt}\n\n${systemMessage}`;
-      }
-    } else {
-      const config = await getSiteConfig();
-      if (config?.defaultSystemPrompt) {
-        const infrastructure = infrastructurePrompt({ requestHints, supportsTools });
-        systemMessage = `${config.defaultSystemPrompt}\n\n${infrastructure}`;
-      }
+      }).catch(() => {});
     }
 
     // 调试：打印转换后的消息格式

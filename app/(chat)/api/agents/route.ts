@@ -5,6 +5,7 @@ import {
   deleteAgent,
   getAgentById,
   getAgents,
+  invalidateAgentCache,
   updateAgent,
 } from "@/lib/db/queries";
 import { ChatbotError } from "@/lib/errors";
@@ -135,6 +136,7 @@ export async function PATCH(request: Request) {
       categoryId: body.categoryId !== undefined ? body.categoryId : existing.categoryId,
     });
 
+    invalidateAgentCache(id);
     return Response.json(result, { status: 200 });
   } catch (err) {
     if (err instanceof ChatbotError) {
@@ -163,6 +165,7 @@ export async function DELETE(request: Request) {
     }
 
     const result = await deleteAgent({ id });
+    invalidateAgentCache(id);
     return Response.json(result, { status: 200 });
   } catch (err) {
     if (err instanceof ChatbotError) {

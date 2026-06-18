@@ -214,41 +214,6 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
           </p>
         </div>
 
-        {/* ===== 统计卡片 ===== */}
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard
-            color="cyan"
-            delay={0}
-            icon={MessageSquare}
-            label="对话数"
-            trend={{ up: true, value: "12%" }}
-            value="--"
-          />
-          <StatCard
-            color="orange"
-            delay={80}
-            icon={Users}
-            label="活跃用户"
-            trend={{ up: true, value: "8%" }}
-            value="--"
-          />
-          <StatCard
-            color="amber"
-            delay={160}
-            icon={Zap}
-            label="响应速度"
-            trend={{ up: true, value: "5%" }}
-            value="--"
-          />
-          <StatCard
-            color="green"
-            delay={240}
-            icon={TrendingUp}
-            label="OPC 数"
-            value={String(activeAgents.length)}
-          />
-        </div>
-
         {/* ===== 快速开始 ===== */}
         <div className="mb-8">
           <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

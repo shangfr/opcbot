@@ -111,6 +111,11 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     thinkingEnabledRef.current = thinkingEnabled;
   }, [thinkingEnabled]);
 
+  const isNewChatRef = useRef(isNewChat);
+  useEffect(() => {
+    isNewChatRef.current = isNewChat;
+  }, [isNewChat]);
+
   const [input, setInput] = useState("");
 
   // Check if messages for this chatId are already cached in memory.
@@ -384,6 +389,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibility,
             thinkingEnabled: thinkingEnabledRef.current,
+            isNewChat: isNewChatRef.current,
             ...(agentIdRef.current ? { agentId: agentIdRef.current } : {}),
             ...request.body,
           },

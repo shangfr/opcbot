@@ -678,7 +678,27 @@ export async function getAgents() {
   }
 }
 
+// ── Agent cache (5-min TTL, invalidated on CRUD mutations) ──
+const agentCache = new Map<string, { data: unknown; ts: number }>();
+const AGENT_CACHE_TTL = 5 * 60 * 1000;
+
+export function invalidateAgentCache(id: string): void {
+  agentCache.delete(id);
+}
+
 export async function getAgentById({ id }: { id: string }) {
+  const cached = agentCache.get(id);
+  if (cached && Date.now() - cached.ts < AGENT_CACHE_TTL) {
+    return cached.data as Awaited<ReturnType<typeof getAgentByIdFromDb>>;
+  }
+  const result = await getAgentByIdFromDb({ id });
+  if (result) {
+    agentCache.set(id, { data: result, ts: Date.now() });
+  }
+  return result;
+}
+
+async function getAgentByIdFromDb({ id }: { id: string }) {
   try {
     const [result] = await db.select().from(agent).where(eq(agent.id, id));
     return result ?? null;

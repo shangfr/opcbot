@@ -2,8 +2,8 @@
 
 import {
   BarChart3,
+  Bot,
   MessageSquare,
-  ThumbsDown,
   ThumbsUp,
   Users,
 } from "lucide-react";
@@ -43,25 +43,47 @@ interface DashboardStats {
   }>;
 }
 
+const colorMap: Record<string, { bg: string; icon: string }> = {
+  cyan: { bg: "bg-sky-500/10", icon: "text-sky-500" },
+  orange: { bg: "bg-orange-500/10", icon: "text-orange-500" },
+  amber: { bg: "bg-amber-500/10", icon: "text-amber-500" },
+  green: { bg: "bg-emerald-500/10", icon: "text-emerald-500" },
+};
+
 function StatCard({
   label,
   value,
   sub,
   icon: Icon,
+  color,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   icon?: React.ComponentType<{ className?: string }>;
+  color: string;
 }) {
+  const c = colorMap[color] ?? colorMap.cyan;
   return (
-    <div className="rounded-xl border border-border/50 bg-card p-4">
-      <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-        {Icon && <Icon className="size-3.5" />}
-        {label}
+    <div className="flex items-center gap-4 rounded-xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]">
+      {Icon && (
+        <div
+          className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${c.bg}`}
+        >
+          <Icon className={`size-4 ${c.icon}`} />
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        <p className="text-lg font-semibold tracking-tight tabular-nums">
+          {value}
+        </p>
+        {sub && (
+          <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>
+        )}
       </div>
-      <div className="text-2xl font-bold tracking-tight">{value}</div>
-      {sub && <div className="mt-0.5 text-[10px] text-muted-foreground">{sub}</div>}
     </div>
   );
 }
@@ -82,9 +104,7 @@ function PeriodCard({
       </div>
       <div className="flex items-baseline gap-3">
         <span className="text-lg font-semibold">{chats}</span>
-        <span className="text-[10px] text-muted-foreground">
-          对话
-        </span>
+        <span className="text-[10px] text-muted-foreground">对话</span>
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className="text-sm font-medium">{users}</span>
@@ -93,6 +113,15 @@ function PeriodCard({
     </div>
   );
 }
+
+const defaultPeriods = {
+  todayChats: 0,
+  weekChats: 0,
+  monthChats: 0,
+  todayUsers: 0,
+  weekUsers: 0,
+  monthUsers: 0,
+};
 
 export function StatsDialog({
   open,
@@ -116,7 +145,7 @@ export function StatsDialog({
       .finally(() => setLoading(false));
   }, [open]);
 
-  const { overview, periods, agentStats } = stats ?? {};
+  const { overview, periods = defaultPeriods, agentStats = [] } = stats ?? {};
   const totalVotes = (overview?.totalUpvotes ?? 0) + (overview?.totalDownvotes ?? 0);
   const satisfactionRate =
     totalVotes > 0
@@ -125,7 +154,7 @@ export function StatsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[90vw] sm:max-w-[1200px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="size-4" />
@@ -146,33 +175,38 @@ export function StatsDialog({
           </div>
         ) : (
           <div className="space-y-5 py-2">
-            {/* 概览卡片 */}
+            {/* 概览卡片 — 与首页统计卡片同风格 */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <StatCard
-                label="总对话数"
-                value={overview.totalChats}
-                sub={`${overview.totalMessages} 条消息`}
+                color="cyan"
                 icon={MessageSquare}
+                label="总对话数"
+                sub={`${overview.totalMessages} 条消息`}
+                value={overview.totalChats}
               />
               <StatCard
+                color="orange"
+                icon={Users}
                 label="注册用户"
                 value={overview.totalUsers}
-                icon={Users}
               />
               <StatCard
+                color="green"
+                icon={Bot}
                 label="活跃 OPC"
-                value={overview.activeAgents}
                 sub={`共 ${overview.totalAgents} 个`}
+                value={overview.activeAgents}
               />
               <StatCard
+                color="amber"
+                icon={ThumbsUp}
                 label="用户满意度"
-                value={satisfactionRate !== null ? `${satisfactionRate}%` : "—"}
                 sub={
                   totalVotes > 0
                     ? `${overview.totalUpvotes} 好评 / ${overview.totalDownvotes} 差评`
                     : "暂无投票"
                 }
-                icon={satisfactionRate !== null && satisfactionRate >= 50 ? ThumbsUp : ThumbsDown}
+                value={satisfactionRate !== null ? `${satisfactionRate}%` : "—"}
               />
             </div>
 
