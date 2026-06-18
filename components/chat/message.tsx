@@ -55,20 +55,9 @@ const PurePreviewMessage = ({
   );
 
   useDataStream();
-  const { thinkingEnabled } = useActiveChat();
 
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
-
-  const hasAnyContent = message.parts?.some(
-    (part) =>
-      (part.type === "text" && part.text?.trim().length > 0) ||
-      (part.type === "reasoning" &&
-        "text" in part &&
-        part.text?.trim().length > 0) ||
-      part.type.startsWith("tool-")
-  );
-  const isThinking = isAssistant && isLoading && !hasAnyContent;
 
   const attachments = attachmentsFromMessage.length > 0 && (
     <div
@@ -334,13 +323,7 @@ const PurePreviewMessage = ({
     />
   );
 
-  const content = isThinking ? (
-    <div className="flex h-[calc(13px*1.65)] items-center text-[13px] leading-[1.65]">
-      <Shimmer className="font-medium" duration={1}>
-        {thinkingEnabled ? "思考中..." : "生成中..."}
-      </Shimmer>
-    </div>
-  ) : (
+  const content = (
     <>
       {attachments}
       {parts}
