@@ -27,7 +27,7 @@
 - **密码找回** — 基于令牌的密码重置流程（1 小时有效期，一次性使用）
 
 ### 性能优化
-- **双层消息缓存** — 内存 Map + localStorage（带节流写入和 beforeunload 刷新），刷新页面秒开
+- **内存消息缓存** — 模块级 Map 缓存，SPA 导航切聊天零延迟，刷新后由 SWR 重新拉取
 - **SWR 数据获取** — Agent/Model/Document/SiteConfig 全部使用 SWR，共享跨页面缓存（60s 去重）
 - **Context 分层** — ActiveChatProvider 拆分为 state + actions 双 Context，减少不必要的重渲染
 - **hover 预加载** — 鼠标悬停历史记录项时预取消息
@@ -128,7 +128,7 @@ opcbot/
 │   └── ui/                  # shadcn/ui 基础组件
 ├── hooks/                   # 自定义 Hooks
 │   ├── use-active-chat      # 核心：消息状态、缓存同步、Agent 上下文（state/actions 分离）
-│   ├── use-message-cache    # 双层消息缓存（内存 + localStorage，节流写入）
+│   ├── use-message-cache    # 内存消息缓存（模块级 Map）
 │   ├── use-messages         # 滚动管理（自动滚底、位置追踪）
 │   ├── use-artifact         # Artifact 状态管理
 │   ├── use-auto-resume      # 断流自动恢复
@@ -227,8 +227,7 @@ pnpm fix          # 自动修复代码风格
   └─ 本地状态更新
         │
         ├─ useChat (React state) → UI 渲染
-        ├─ 节流写入(2s) → 内存缓存 → localStorage 持久化
-        └─ beforeunload 刷新 → 确保缓存完整
+        └─ rAF 去抖 → 内存 Map 缓存
 
 页面导航
   │
