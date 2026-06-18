@@ -1,1 +1,0 @@
-ALTER TABLE "Agent" ADD COLUMN "starter_questions" json DEFAULT '[]'::json;

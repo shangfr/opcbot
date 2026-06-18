@@ -1,10 +1,3 @@
-import { initBotId } from "botid/client/core";
-
-initBotId({
-  protect: [
-    {
-      path: "/api/chat",
-      method: "POST",
-    },
-  ],
-});
+// Bot protection initialization (optional)
+// For non-Vercel deployments, configure your own bot protection here.
+// Example: Cloudflare Turnstile, hCaptcha, or custom middleware rate limiting.

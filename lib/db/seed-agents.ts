@@ -138,8 +138,7 @@ const AGENTS: SeedAgent[] = [
   },
   {
     name: "劳动用工法务",
-    description:
-      "专注用工合规、人事风控、劳动纠纷处理的专业AI劳动法律顾问",
+    description: "专注用工合规、人事风控、劳动纠纷处理的专业AI劳动法律顾问",
     systemPrompt: `# 角色
 你是专业AI劳动法律顾问，专注于用工合规、人事风控、劳动纠纷处理。
 
@@ -1166,13 +1165,27 @@ const SEED_CATEGORIES: SeedCategory[] = [
 
 /** 根据 sortOrder 判断所属分类名称 */
 function getCategoryNameBySortOrder(sortOrder: number): string | undefined {
-  if (sortOrder >= 1 && sortOrder <= 4) return "法律合规";
-  if (sortOrder >= 5 && sortOrder <= 7) return "财税资本";
-  if (sortOrder >= 10 && sortOrder <= 12) return "核心战略";
-  if (sortOrder >= 13 && sortOrder <= 15) return "产业政策";
-  if (sortOrder >= 20 && sortOrder <= 22) return "AI与数字化";
-  if (sortOrder >= 30 && sortOrder <= 32) return "OPC孵化";
-  if (sortOrder >= 40 && sortOrder <= 42) return "三大平台";
+  if (sortOrder >= 1 && sortOrder <= 4) {
+    return "法律合规";
+  }
+  if (sortOrder >= 5 && sortOrder <= 7) {
+    return "财税资本";
+  }
+  if (sortOrder >= 10 && sortOrder <= 12) {
+    return "核心战略";
+  }
+  if (sortOrder >= 13 && sortOrder <= 15) {
+    return "产业政策";
+  }
+  if (sortOrder >= 20 && sortOrder <= 22) {
+    return "AI与数字化";
+  }
+  if (sortOrder >= 30 && sortOrder <= 32) {
+    return "OPC孵化";
+  }
+  if (sortOrder >= 40 && sortOrder <= 42) {
+    return "三大平台";
+  }
   return undefined;
 }
 
@@ -1200,12 +1213,14 @@ function deterministicUUID(name: string): string {
 }
 
 async function seed() {
-  if (!process.env.POSTGRES_URL) {
+  if (!process.env.POSTGRES_URL_NON_POOLING && !process.env.POSTGRES_URL) {
     console.log("POSTGRES_URL not defined, skipping seed");
     process.exit(0);
   }
 
-  const connection = postgres(process.env.POSTGRES_URL, { max: 1 });
+  const connectionString =
+    process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_URL ?? "";
+  const connection = postgres(connectionString, { max: 1 });
   const db = drizzle(connection);
 
   // 查找管理员用户作为 owner
@@ -1216,7 +1231,9 @@ async function seed() {
     .limit(1);
 
   if (!adminUser) {
-    console.log("No user found in database, skipping seed. Create a user first.");
+    console.log(
+      "No user found in database, skipping seed. Create a user first."
+    );
     await connection.end();
     process.exit(0);
   }
@@ -1237,7 +1254,12 @@ async function seed() {
     if (existingCat) {
       await db
         .update(category)
-        .set({ name: c.name, color: c.color, sortOrder: c.sortOrder, colorKey: c.colorKey })
+        .set({
+          name: c.name,
+          color: c.color,
+          sortOrder: c.sortOrder,
+          colorKey: c.colorKey,
+        })
         .where(eq(category.id, catId));
       console.log(`  ↻ ${c.name} (updated)`);
     } else {
@@ -1310,7 +1332,7 @@ async function seed() {
   }
 
   console.log(
-    `\nDone: ${createdCount} created, ${skipCount} updated, ${AGENTS.length} total.`,
+    `\nDone: ${createdCount} created, ${skipCount} updated, ${AGENTS.length} total.`
   );
 
   await connection.end();

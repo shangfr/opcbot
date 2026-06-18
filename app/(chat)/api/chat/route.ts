@@ -1,4 +1,3 @@
-import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -45,6 +44,32 @@ import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
 export const maxDuration = 60;
+
+/**
+ * Extract geolocation from request headers.
+ * Supports Cloudflare (cf-ip*), Vercel (x-vercel-ip-*), and standard proxy headers.
+ */
+function geolocation(request: Request) {
+  const h = request.headers;
+  return {
+    latitude:
+      h.get("cf-iplatitude") ??
+      h.get("x-vercel-ip-latitude") ??
+      undefined,
+    longitude:
+      h.get("cf-iplongitude") ??
+      h.get("x-vercel-ip-longitude") ??
+      undefined,
+    city:
+      h.get("cf-ipcity") ??
+      h.get("x-vercel-ip-city") ??
+      undefined,
+    country:
+      h.get("cf-ipcountry") ??
+      h.get("x-vercel-ip-country") ??
+      undefined,
+  };
+}
 
 function getStreamContext() {
   try {
@@ -346,7 +371,8 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const vercelId = request.headers.get("x-vercel-id");
+    const requestId =
+      request.headers.get("x-request-id") ?? generateUUID();
 
     if (error instanceof ChatbotError) {
       return error.toResponse();
@@ -359,7 +385,7 @@ export async function POST(request: Request) {
       return new ChatbotError("bad_request:api").toResponse();
     }
 
-    console.error("Unhandled error in chat API:", error, { vercelId });
+    console.error("Unhandled error in chat API:", error, { requestId });
     return new ChatbotError("offline:chat").toResponse();
   }
 }

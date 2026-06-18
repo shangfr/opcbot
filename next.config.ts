@@ -1,4 +1,3 @@
-import { withBotId } from "botid/next/config";
 import type { NextConfig } from "next";
 
 const basePath = process.env.IS_DEMO === "1" ? "/demo" : "";
@@ -18,6 +17,7 @@ const nextConfig: NextConfig = {
         ],
       }
     : {}),
+  output: "standalone",
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
@@ -51,4 +51,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBotId(nextConfig);
+export default nextConfig;
