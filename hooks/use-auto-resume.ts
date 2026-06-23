@@ -30,7 +30,7 @@ export function useAutoResume({
     if (mostRecentMessage?.role === "user") {
       resumeStream();
     }
-  }, [autoResume, initialMessages.at, resumeStream]);
+  }, [autoResume, initialMessages, resumeStream]);
 
   useEffect(() => {
     if (!dataStream) {

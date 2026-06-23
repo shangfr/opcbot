@@ -1,12 +1,16 @@
 "use client";
 
-import { Check, FolderTree, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+  Check,
+  FolderTree,
+  GripVertical,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import {
-  COLOR_KEYS,
-  COLOR_THEMES,
-} from "@/lib/agent-groups";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { COLOR_KEYS, COLOR_THEMES } from "@/lib/agent-groups";
 import type { Category } from "@/lib/db/schema";
 
 type GroupRecord = Category & { sortOrder: number; colorKey: string };
@@ -78,9 +83,7 @@ export function GroupManagerDialog({
       setNewName("");
       setNewColorKey(COLOR_KEYS[0]);
       setNewSortOrder(
-        groups.length > 0
-          ? Math.max(...groups.map((g) => g.sortOrder)) + 1
-          : 0
+        groups.length > 0 ? Math.max(...groups.map((g) => g.sortOrder)) + 1 : 0
       );
       await loadGroups();
     } catch {
@@ -135,7 +138,7 @@ export function GroupManagerDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -153,26 +156,26 @@ export function GroupManagerDialog({
             <p className="text-xs font-medium text-foreground">新建分组</p>
             <div className="flex items-center gap-2">
               <Input
-                placeholder="分组名称"
-                value={newName}
+                className="h-8 flex-1 text-sm"
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleCreate();
                 }}
-                className="h-8 flex-1 text-sm"
+                placeholder="分组名称"
+                value={newName}
               />
               <Input
-                type="number"
-                placeholder="排序"
-                value={newSortOrder}
-                onChange={(e) => setNewSortOrder(Number(e.target.value))}
                 className="h-8 w-20 text-sm"
+                onChange={(e) => setNewSortOrder(Number(e.target.value))}
+                placeholder="排序"
+                type="number"
+                value={newSortOrder}
               />
               <Button
-                size="sm"
-                onClick={handleCreate}
-                disabled={loading || !newName.trim()}
                 className="h-8 shrink-0 gap-1"
+                disabled={loading || !newName.trim()}
+                onClick={handleCreate}
+                size="sm"
               >
                 <Plus className="size-3" />
                 添加
@@ -184,16 +187,16 @@ export function GroupManagerDialog({
                 const theme = COLOR_THEMES[key];
                 return (
                   <button
-                    key={key}
-                    type="button"
-                    onClick={() => setNewColorKey(key)}
+                    aria-label={key}
                     className={`flex size-7 items-center justify-center rounded-lg transition-all ${theme.bg} ${
                       newColorKey === key
                         ? "scale-110 ring-2 ring-offset-1 ring-foreground/40"
                         : "opacity-60 hover:opacity-100 hover:scale-110"
                     }`}
+                    key={key}
+                    onClick={() => setNewColorKey(key)}
                     title={key}
-                    aria-label={key}
+                    type="button"
                   >
                     <span className="text-[8px] font-bold text-white uppercase">
                       {key.slice(0, 2)}
@@ -215,8 +218,8 @@ export function GroupManagerDialog({
                 const theme = COLOR_THEMES[cat.colorKey] ?? COLOR_THEMES.indigo;
                 return (
                   <div
-                    key={cat.id}
                     className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50"
+                    key={cat.id}
                   >
                     <GripVertical className="size-3.5 shrink-0 text-muted-foreground/40" />
 
@@ -228,15 +231,15 @@ export function GroupManagerDialog({
                             const t = COLOR_THEMES[key];
                             return (
                               <button
-                                key={key}
-                                type="button"
-                                onClick={() => setEditColorKey(key)}
                                 className={`flex size-6 items-center justify-center rounded-md transition-all ${t.bg} ${
                                   editColorKey === key
                                     ? "scale-110 ring-2 ring-offset-1 ring-foreground/40"
                                     : "opacity-60 hover:opacity-100"
                                 }`}
+                                key={key}
+                                onClick={() => setEditColorKey(key)}
                                 title={key}
+                                type="button"
                               >
                                 <span className="text-[7px] font-bold text-white uppercase">
                                   {key.slice(0, 2)}
@@ -246,31 +249,33 @@ export function GroupManagerDialog({
                           })}
                         </div>
                         <Input
-                          value={editName}
+                          className="h-7 flex-1 text-sm"
                           onChange={(e) => setEditName(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") handleUpdate(cat.id);
                             if (e.key === "Escape") setEditingId(null);
                           }}
-                          className="h-7 flex-1 text-sm"
+                          value={editName}
                         />
                         <Input
+                          className="h-7 w-16 text-sm"
+                          onChange={(e) =>
+                            setEditSortOrder(Number(e.target.value))
+                          }
                           type="number"
                           value={editSortOrder}
-                          onChange={(e) => setEditSortOrder(Number(e.target.value))}
-                          className="h-7 w-16 text-sm"
                         />
                         <button
-                          type="button"
-                          onClick={() => handleUpdate(cat.id)}
                           className="rounded-md p-1 text-emerald-600 transition-colors hover:bg-emerald-50"
+                          onClick={() => handleUpdate(cat.id)}
+                          type="button"
                         >
                           <Check className="size-3.5" />
                         </button>
                         <button
-                          type="button"
-                          onClick={() => setEditingId(null)}
                           className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted"
+                          onClick={() => setEditingId(null)}
+                          type="button"
                         >
                           <X className="size-3.5" />
                         </button>
@@ -292,14 +297,14 @@ export function GroupManagerDialog({
                           #{cat.sortOrder}
                         </span>
                         <button
-                          type="button"
-                          onClick={() => startEdit(cat)}
                           className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted"
+                          onClick={() => startEdit(cat)}
+                          type="button"
                         >
                           <Pencil className="size-3.5" />
                         </button>
                         <button
-                          type="button"
+                          className="rounded-md p-1 text-destructive/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => {
                             if (
                               window.confirm(
@@ -309,7 +314,7 @@ export function GroupManagerDialog({
                               handleDelete(cat.id);
                             }
                           }}
-                          className="rounded-md p-1 text-destructive/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          type="button"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
@@ -323,7 +328,7 @@ export function GroupManagerDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button onClick={() => onOpenChange(false)} variant="outline">
             完成
           </Button>
         </DialogFooter>

@@ -51,10 +51,7 @@ export const login = async (
       return { status: "user_not_found" };
     }
 
-    const passwordsMatch = await compare(
-      validatedData.password,
-      user.password
-    );
+    const passwordsMatch = await compare(validatedData.password, user.password);
 
     if (!passwordsMatch) {
       return { status: "wrong_password" };

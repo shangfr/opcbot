@@ -35,6 +35,7 @@ function PureArtifactActions({
   }
 
   const actionContext: ArtifactActionContext = {
+    title: artifact.title,
     content: artifact.content,
     handleVersionChange,
     currentVersionIndex,
@@ -99,6 +100,9 @@ export const ArtifactActions = memo(
   PureArtifactActions,
   (prevProps, nextProps) => {
     if (prevProps.artifact.status !== nextProps.artifact.status) {
+      return false;
+    }
+    if (prevProps.artifact.title !== nextProps.artifact.title) {
       return false;
     }
     if (prevProps.currentVersionIndex !== nextProps.currentVersionIndex) {

@@ -13,7 +13,10 @@ import { isAdmin } from "@/lib/utils";
 
 const agentSchema = z.object({
   name: z.string().min(1, "名称不能为空").max(64, "名称最长 64 个字符"),
-  description: z.string().min(1, "描述不能为空").max(512, "描述最长 512 个字符"),
+  description: z
+    .string()
+    .min(1, "描述不能为空")
+    .max(512, "描述最长 512 个字符"),
   avatar: z.string().default("/icon.png"),
   systemPrompt: z.string().min(1, "系统提示词不能为空"),
   phone: z.string().max(20, "手机号最长 20 个字符").nullable().default(null),
@@ -101,10 +104,7 @@ export async function PATCH(request: Request) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return new ChatbotError(
-        "bad_request:agent",
-        "缺少参数 id"
-      ).toResponse();
+      return new ChatbotError("bad_request:agent", "缺少参数 id").toResponse();
     }
 
     const existing = await getAgentById({ id });
@@ -129,11 +129,13 @@ export async function PATCH(request: Request) {
       avatar: body.avatar ?? existing.avatar,
       systemPrompt: body.systemPrompt ?? existing.systemPrompt,
       phone: body.phone ?? existing.phone,
-      starterQuestions: body.starterQuestions ?? existing.starterQuestions ?? [],
+      starterQuestions:
+        body.starterQuestions ?? existing.starterQuestions ?? [],
       isActive: body.isActive ?? existing.isActive,
       isDefault: body.isDefault,
       sortOrder: body.sortOrder ?? existing.sortOrder,
-      categoryId: body.categoryId !== undefined ? body.categoryId : existing.categoryId,
+      categoryId:
+        body.categoryId !== undefined ? body.categoryId : existing.categoryId,
     });
 
     invalidateAgentCache(id);
@@ -153,10 +155,7 @@ export async function DELETE(request: Request) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return new ChatbotError(
-        "bad_request:agent",
-        "缺少参数 id"
-      ).toResponse();
+      return new ChatbotError("bad_request:agent", "缺少参数 id").toResponse();
     }
 
     const existing = await getAgentById({ id });

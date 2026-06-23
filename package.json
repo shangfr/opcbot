@@ -40,7 +40,6 @@
     "ai": "6.0.116",
     "bcrypt-ts": "^5.0.2",
     "class-variance-authority": "^0.7.1",
-    "classnames": "^2.5.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "codemirror": "^6.0.1",
@@ -100,5 +99,11 @@
     "typescript": "^5.6.3",
     "ultracite": "^7.0.11"
   },
-  "packageManager": "pnpm@10.32.1"
+  "packageManager": "pnpm@10.32.1",
+  "optionalDependencies": {
+    "@opentelemetry/auto-instrumentations-node": "^0.77.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+    "@opentelemetry/sdk-node": "^0.219.0",
+    "@opentelemetry/sdk-trace-node": "^2.8.0"
+  }
 }

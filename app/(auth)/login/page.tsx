@@ -52,12 +52,24 @@ export default function Page() {
 
   return (
     <>
-      <h1 className="auth-slide-in text-2xl font-semibold tracking-tight text-center" style={{ animationDelay: "0.1s" }}>欢迎回来</h1>
-      <p className="auth-slide-in text-sm text-muted-foreground text-center" style={{ animationDelay: "0.18s" }}>
+      <h1
+        className="auth-slide-in text-2xl font-semibold tracking-tight text-center"
+        style={{ animationDelay: "0.1s" }}
+      >
+        欢迎回来
+      </h1>
+      <p
+        className="auth-slide-in text-sm text-muted-foreground text-center"
+        style={{ animationDelay: "0.18s" }}
+      >
         登录您的账号以继续
       </p>
       <div className="auth-slide-in w-full" style={{ animationDelay: "0.28s" }}>
-        <AuthForm action={handleSubmit} defaultEmail={email} error={state.message}>
+        <AuthForm
+          action={handleSubmit}
+          defaultEmail={email}
+          error={state.message}
+        >
           <div className="flex flex-col gap-3">
             <SubmitButton isSuccessful={isSuccessful}>登录</SubmitButton>
             <div className="flex items-center justify-between text-[13px]">

@@ -1,7 +1,13 @@
 import { toast } from "sonner";
 import { Artifact } from "@/components/chat/create-artifact";
-import { CopyIcon, RedoIcon, UndoIcon } from "@/components/chat/icons";
+import {
+  CopyIcon,
+  DownloadIcon,
+  RedoIcon,
+  UndoIcon,
+} from "@/components/chat/icons";
 import { ImageEditor } from "@/components/chat/image-editor";
+import { downloadImage } from "@/lib/artifact-export";
 
 export const imageArtifact = new Artifact({
   kind: "image",
@@ -69,6 +75,14 @@ export const imageArtifact = new Artifact({
         };
 
         toast.success("图片已复制到剪贴板！");
+      },
+    },
+    {
+      icon: <DownloadIcon size={18} />,
+      description: "下载图片",
+      onClick: ({ title, content }) => {
+        downloadImage(content, title);
+        toast.success("图片已下载！");
       },
     },
   ],

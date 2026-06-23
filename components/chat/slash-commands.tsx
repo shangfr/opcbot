@@ -96,8 +96,16 @@ export function SlashCommandMenu({
 
   return (
     <div
+      aria-activedescendant={
+        filtered[selectedIndex]
+          ? `slash-cmd-${filtered[selectedIndex].name}`
+          : undefined
+      }
+      aria-label="斜杠命令"
       className="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-xl border border-border/50 bg-card/95 shadow-[var(--shadow-float)] backdrop-blur-xl"
       ref={menuRef}
+      role="listbox"
+      tabIndex={-1}
     >
       <div className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/40">
         命令
@@ -105,14 +113,17 @@ export function SlashCommandMenu({
       <div className="max-h-64 overflow-y-auto pb-1 no-scrollbar">
         {filtered.map((cmd, index) => (
           <button
+            aria-selected={index === selectedIndex}
             className={cn(
               "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors",
               index === selectedIndex ? "bg-muted/70" : "hover:bg-muted/40"
             )}
             data-selected={index === selectedIndex}
+            id={`slash-cmd-${cmd.name}`}
             key={cmd.name}
             onClick={() => onSelect(cmd)}
             onMouseDown={(e) => e.preventDefault()}
+            role="option"
             type="button"
           >
             <div className="flex size-6 shrink-0 items-center justify-center text-muted-foreground/60">

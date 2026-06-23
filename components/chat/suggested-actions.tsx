@@ -42,8 +42,14 @@ function PureSuggestedActions({
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
 
-  const { data: siteConfig } = useSWR<{ defaultStarterQuestions?: string[]; siteName?: string; siteDescription?: string }>(
-    !agentId ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/site-config` : null,
+  const { data: siteConfig } = useSWR<{
+    defaultStarterQuestions?: string[];
+    siteName?: string;
+    siteDescription?: string;
+  }>(
+    agentId
+      ? null
+      : `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/site-config`,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
@@ -69,7 +75,10 @@ function PureSuggestedActions({
         : suggestions;
 
   const displayName = currentAgent?.name ?? siteConfig?.siteName ?? "OPC Bot";
-  const displayDescription = currentAgent?.description ?? siteConfig?.siteDescription ?? "智能助手，随时为您提供帮助";
+  const displayDescription =
+    currentAgent?.description ??
+    siteConfig?.siteDescription ??
+    "智能助手，随时为您提供帮助";
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
@@ -105,7 +114,9 @@ function PureSuggestedActions({
             className="mb-3 size-14 rounded-2xl object-cover shadow-sm"
             src="/logo.jpg"
           />
-          <h2 className="text-lg font-semibold tracking-tight">{displayName}</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {displayName}
+          </h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
             {displayDescription}
           </p>

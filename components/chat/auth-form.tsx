@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Form from "next/form";
+import { useState } from "react";
 
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -46,25 +46,21 @@ export function AuthForm({
         </Label>
         <div className="relative">
           <Input
+            className="pr-10"
             id="password"
             name="password"
             placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
             required
             type={showPassword ? "text" : "password"}
-            className="pr-10"
           />
           <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 transition-colors hover:text-foreground"
-            tabIndex={-1}
             aria-label={showPassword ? "隐藏密码" : "显示密码"}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 transition-colors hover:text-foreground"
+            onClick={() => setShowPassword((v) => !v)}
+            tabIndex={-1}
+            type="button"
           >
-            {showPassword ? (
-              <EyeOffIcon size={16} />
-            ) : (
-              <EyeIcon size={16} />
-            )}
+            {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
           </button>
         </div>
       </div>

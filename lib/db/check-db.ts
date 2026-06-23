@@ -37,13 +37,21 @@ async function main() {
       console.log("  Category table DOES NOT EXIST!");
     } else {
       for (const c of cols) {
-        console.log("  -", c.column_name, ":", c.data_type,
+        console.log(
+          "  -",
+          c.column_name,
+          ":",
+          c.data_type,
           c.is_nullable === "YES" ? "NULL" : "NOT NULL",
-          c.column_default ? `DEFAULT ${c.column_default}` : "");
+          c.column_default ? `DEFAULT ${c.column_default}` : ""
+        );
       }
     }
   } catch (e) {
-    console.log("  Error checking Category:", e instanceof Error ? e.message : e);
+    console.log(
+      "  Error checking Category:",
+      e instanceof Error ? e.message : e
+    );
   }
 
   console.log("\n=== Drizzle migrations log ===");
@@ -58,12 +66,16 @@ async function main() {
     }
     console.log(`Total migrations recorded: ${migrations.length}`);
   } catch (e) {
-    console.log("  Error reading migrations:", e instanceof Error ? e.message : e);
+    console.log(
+      "  Error reading migrations:",
+      e instanceof Error ? e.message : e
+    );
   }
 
   console.log("\n=== Migration files on disk ===");
   const fs = await import("fs");
-  const files = fs.readdirSync("./lib/db/migrations")
+  const files = fs
+    .readdirSync("./lib/db/migrations")
     .filter((f: string) => f.endsWith(".sql"))
     .sort();
   for (const f of files) {

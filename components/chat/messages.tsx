@@ -1,9 +1,8 @@
-import type { UseChatHelpers } from "@ai-sdk/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useActiveChat } from "@/hooks/use-active-chat";
 import { useMessages } from "@/hooks/use-messages";
-import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
@@ -11,34 +10,21 @@ import { Greeting } from "./greeting";
 import { PreviewMessage, ThinkingMessage } from "./message";
 
 type MessagesProps = {
-  addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
-  chatId: string;
-  status: UseChatHelpers<ChatMessage>["status"];
-  votes: Vote[] | undefined;
-  messages: ChatMessage[];
-  setMessages: UseChatHelpers<ChatMessage>["setMessages"];
-  regenerate: UseChatHelpers<ChatMessage>["regenerate"];
-  isReadonly: boolean;
   isArtifactVisible: boolean;
-  isLoading?: boolean;
-  selectedModelId: string;
   onEditMessage?: (message: ChatMessage) => void;
 };
 
-function PureMessages({
-  addToolApprovalResponse,
-  chatId,
-  status,
-  votes,
-  messages,
-  setMessages,
-  regenerate,
-  isReadonly,
-  isArtifactVisible,
-  isLoading,
-  selectedModelId,
-  onEditMessage,
-}: MessagesProps) {
+function PureMessages({ isArtifactVisible, onEditMessage }: MessagesProps) {
+  const {
+    chatId,
+    messages,
+    status,
+    votes,
+    isReadonly,
+    isLoading,
+    currentModelId: selectedModelId,
+  } = useActiveChat();
+  const { addToolApprovalResponse, setMessages, regenerate } = useActiveChat();
   const {
     containerRef: messagesContainerRef,
     endRef: messagesEndRef,

@@ -5,12 +5,14 @@ import { DocumentSkeleton } from "@/components/chat/document-skeleton";
 import {
   ClockRewind,
   CopyIcon,
+  DownloadIcon,
   MessageIcon,
   PenIcon,
   RedoIcon,
   UndoIcon,
 } from "@/components/chat/icons";
 import { Editor } from "@/components/chat/text-editor";
+import { exportTextAsPDF } from "@/lib/artifact-export";
 import type { Suggestion } from "@/lib/db/schema";
 import { getSuggestions } from "../actions";
 
@@ -148,6 +150,13 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
         toast.success("Copied to clipboard!");
+      },
+    },
+    {
+      icon: <DownloadIcon size={18} />,
+      description: "导出为 PDF",
+      onClick: ({ title, content }) => {
+        exportTextAsPDF(title, content);
       },
     },
   ],

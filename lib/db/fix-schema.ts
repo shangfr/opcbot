@@ -73,7 +73,8 @@ async function main() {
     console.log(`  ✓ 登记 ${entry.tag} (hash=${hash.slice(0, 12)}...)`);
   }
 
-  const count = await sql`SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations`;
+  const count =
+    await sql`SELECT count(*)::int AS n FROM drizzle.__drizzle_migrations`;
   console.log(`\n  __drizzle_migrations 现有记录: ${count[0].n} 条`);
 
   console.log("\n=== 完成 ===");

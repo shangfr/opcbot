@@ -46,9 +46,11 @@ export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
   }, []);
 
   const resize = useCallback(
-    (e: MouseEvent) => {
+    (e: MouseEvent | TouchEvent) => {
       if (isResizing) {
-        const newHeight = window.innerHeight - e.clientY;
+        const clientY =
+          "touches" in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+        const newHeight = window.innerHeight - clientY;
         if (newHeight >= minHeight && newHeight <= maxHeight) {
           setHeight(newHeight);
         }
@@ -60,9 +62,13 @@ export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
   useEffect(() => {
     window.addEventListener("mousemove", resize);
     window.addEventListener("mouseup", stopResizing);
+    window.addEventListener("touchmove", resize, { passive: false });
+    window.addEventListener("touchend", stopResizing);
     return () => {
       window.removeEventListener("mousemove", resize);
       window.removeEventListener("mouseup", stopResizing);
+      window.removeEventListener("touchmove", resize);
+      window.removeEventListener("touchend", stopResizing);
     };
   }, [resize, stopResizing]);
 
@@ -97,6 +103,7 @@ export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
           }
         }}
         onMouseDown={startResizing}
+        onTouchStart={startResizing}
         role="slider"
         style={{ bottom: height - 4 }}
         tabIndex={0}

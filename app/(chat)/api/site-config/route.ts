@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
-import {
-  getSiteConfig,
-  upsertSiteConfig,
-} from "@/lib/db/queries";
+import { getSiteConfig, upsertSiteConfig } from "@/lib/db/queries";
 import { ChatbotError } from "@/lib/errors";
 import { isAdmin } from "@/lib/utils";
 

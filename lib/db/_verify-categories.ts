@@ -13,7 +13,16 @@ async function main() {
   `;
   console.log("Category rows:", rows.length);
   for (const r of rows) {
-    console.log("  -", r.name, "| color:", r.color, "| sort:", r.sort_order, "| key:", r.color_key);
+    console.log(
+      "  -",
+      r.name,
+      "| color:",
+      r.color,
+      "| sort:",
+      r.sort_order,
+      "| key:",
+      r.color_key
+    );
   }
   await sql.end();
   process.exit(0);

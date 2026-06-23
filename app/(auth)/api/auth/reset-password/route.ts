@@ -16,29 +16,20 @@ export async function POST(request: Request) {
   try {
     body = resetPasswordSchema.parse(await request.json());
   } catch {
-    return Response.json(
-      { message: "请求数据格式不正确" },
-      { status: 400 }
-    );
+    return Response.json({ message: "请求数据格式不正确" }, { status: 400 });
   }
 
   // 查找有效 token
   const resetToken = await getPasswordResetToken({ token: body.token });
 
   if (!resetToken) {
-    return Response.json(
-      { message: "重置链接无效或已过期" },
-      { status: 400 }
-    );
+    return Response.json({ message: "重置链接无效或已过期" }, { status: 400 });
   }
 
   // 验证用户仍然存在
   const users = await getUser(resetToken.email);
   if (users.length === 0) {
-    return Response.json(
-      { message: "该账号已不存在" },
-      { status: 400 }
-    );
+    return Response.json({ message: "该账号已不存在" }, { status: 400 });
   }
 
   // 更新密码

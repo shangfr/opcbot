@@ -8,12 +8,14 @@ import {
 import { Artifact } from "@/components/chat/create-artifact";
 import {
   CopyIcon,
+  DownloadIcon,
   LogsIcon,
   MessageIcon,
   PlayIcon,
   RedoIcon,
   UndoIcon,
 } from "@/components/chat/icons";
+import { downloadCode } from "@/lib/artifact-export";
 import { generateUUID } from "@/lib/utils";
 
 const OUTPUT_HANDLERS = {
@@ -68,8 +70,7 @@ type Metadata = {
 
 export const codeArtifact = new Artifact<"code", Metadata>({
   kind: "code",
-  description:
-    "适用于代码生成；代码执行仅支持 Python。",
+  description: "适用于代码生成；代码执行仅支持 Python。",
   initialize: ({ setMetadata }) => {
     setMetadata({
       outputs: [],
@@ -248,6 +249,14 @@ export const codeArtifact = new Artifact<"code", Metadata>({
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
         toast.success("已复制到剪贴板！");
+      },
+    },
+    {
+      icon: <DownloadIcon size={18} />,
+      description: "下载代码文件",
+      onClick: ({ title, content }) => {
+        downloadCode(content, title);
+        toast.success("代码文件已下载！");
       },
     },
   ],

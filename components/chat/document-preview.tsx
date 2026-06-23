@@ -1,6 +1,7 @@
 "use client";
 
 import equal from "fast-deep-equal";
+import dynamic from "next/dynamic";
 import {
   type MouseEvent,
   memo,
@@ -14,7 +15,6 @@ import { useArtifact } from "@/hooks/use-artifact";
 import type { Document } from "@/lib/db/schema";
 import { cn, fetcher } from "@/lib/utils";
 import type { ArtifactKind, UIArtifact } from "./artifact";
-import { CodeEditor } from "./code-editor";
 import { InlineDocumentSkeleton } from "./document-skeleton";
 import {
   CodeIcon,
@@ -24,9 +24,34 @@ import {
   ImageIcon,
   LoaderIcon,
 } from "./icons";
-import { ImageEditor } from "./image-editor";
-import { SpreadsheetEditor } from "./sheet-editor";
-import { Editor } from "./text-editor";
+
+const EditorLoadingFallback = () => (
+  <div className="flex h-full w-full items-center justify-center">
+    <div className="animate-spin text-muted-foreground">
+      <LoaderIcon size={18} />
+    </div>
+  </div>
+);
+
+const CodeEditor = dynamic(
+  () => import("./code-editor").then((mod) => ({ default: mod.CodeEditor })),
+  { loading: EditorLoadingFallback, ssr: false }
+);
+const Editor = dynamic(
+  () => import("./text-editor").then((mod) => ({ default: mod.Editor })),
+  { loading: EditorLoadingFallback, ssr: false }
+);
+const SpreadsheetEditor = dynamic(
+  () =>
+    import("./sheet-editor").then((mod) => ({
+      default: mod.SpreadsheetEditor,
+    })),
+  { loading: EditorLoadingFallback, ssr: false }
+);
+const ImageEditor = dynamic(
+  () => import("./image-editor").then((mod) => ({ default: mod.ImageEditor })),
+  { loading: EditorLoadingFallback, ssr: false }
+);
 
 type DocumentToolOutput = {
   id: string;
@@ -318,5 +343,3 @@ const DocumentContent = ({ document }: { document: Document }) => {
     </div>
   );
 };
-
-

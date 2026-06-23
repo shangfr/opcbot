@@ -1,9 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import {
-  createPasswordResetToken,
-  getUser,
-} from "@/lib/db/queries";
+import { createPasswordResetToken, getUser } from "@/lib/db/queries";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("邮箱格式不正确"),
@@ -14,10 +11,7 @@ export async function POST(request: Request) {
   try {
     body = forgotPasswordSchema.parse(await request.json());
   } catch {
-    return Response.json(
-      { message: "邮箱格式不正确" },
-      { status: 400 }
-    );
+    return Response.json({ message: "邮箱格式不正确" }, { status: 400 });
   }
 
   const users = await getUser(body.email);

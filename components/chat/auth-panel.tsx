@@ -29,23 +29,30 @@ export function AuthPanel() {
       {/* 浮动光球 — 蓝 */}
       <div
         className="auth-float-1 absolute -top-24 -left-24 size-[420px] rounded-full opacity-25 blur-[120px]"
-        style={{ background: "radial-gradient(circle, #3b82f6, transparent 70%)" }}
+        style={{
+          background: "radial-gradient(circle, #3b82f6, transparent 70%)",
+        }}
       />
 
       {/* 浮动光球 — 青 */}
       <div
         className="auth-float-2 absolute -right-20 -bottom-20 size-[340px] rounded-full opacity-20 blur-[100px]"
-        style={{ background: "radial-gradient(circle, #06b6d4, transparent 70%)" }}
+        style={{
+          background: "radial-gradient(circle, #06b6d4, transparent 70%)",
+        }}
       />
 
       {/* 浮动光球 — 紫 */}
       <div
         className="auth-float-3 absolute top-1/2 left-1/2 size-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-15 blur-[80px]"
-        style={{ background: "radial-gradient(circle, #8b5cf6, transparent 70%)" }}
+        style={{
+          background: "radial-gradient(circle, #8b5cf6, transparent 70%)",
+        }}
       />
 
       {/* 扫描线 */}
-      <div className="auth-scan pointer-events-none absolute inset-x-0 h-28 opacity-[0.07]"
+      <div
+        className="auth-scan pointer-events-none absolute inset-x-0 h-28 opacity-[0.07]"
         style={{
           background:
             "linear-gradient(to bottom, transparent, rgba(59,130,246,0.8), transparent)",
@@ -60,9 +67,9 @@ export function AuthPanel() {
           <div className="auth-pulse-glow absolute -inset-3 rounded-2xl bg-cyan-500/10 blur-lg" />
           <div className="relative flex size-20 items-center justify-center overflow-hidden rounded-2xl ring-1 ring-white/10">
             <img
-              src="/logo.jpg"
               alt="OPC Bot"
               className="size-full object-cover"
+              src="/logo.jpg"
             />
           </div>
         </div>

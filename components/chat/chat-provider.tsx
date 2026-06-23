@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SWRConfig } from "swr";
-import useSWR from "swr";
+import useSWR, { SWRConfig } from "swr";
 import { ActiveChatProvider } from "@/hooks/use-active-chat";
 import { fetcher } from "@/lib/utils";
 

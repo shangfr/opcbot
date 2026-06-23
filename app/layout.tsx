@@ -17,7 +17,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  maximumScale: 1,
+  width: "device-width",
+  initialScale: 1,
 };
 
 const LIGHT_THEME_COLOR = "hsl(0 0% 100%)";
@@ -46,10 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-    >
+    <html lang="zh-CN" suppressHydrationWarning>
       <head>
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: "Required"

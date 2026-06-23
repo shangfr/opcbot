@@ -82,9 +82,11 @@
   --sidebar-ring: oklch(0.708 0 0);
 
   --shadow-card: 0 1px 3px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
-  --shadow-float: 0 4px 16px -4px oklch(0 0 0 / 0.1), 0 2px 6px -2px oklch(0 0 0 / 0.06);
+  --shadow-float:
+    0 4px 16px -4px oklch(0 0 0 / 0.1), 0 2px 6px -2px oklch(0 0 0 / 0.06);
   --shadow-composer: 0 1px 2px oklch(0 0 0 / 0.05);
-  --shadow-composer-focus: 0 0 0 2px oklch(0.205 0 0 / 0.15), 0 4px 16px -4px oklch(0.205 0 0 / 0.1);
+  --shadow-composer-focus:
+    0 0 0 2px oklch(0.205 0 0 / 0.15), 0 4px 16px -4px oklch(0.205 0 0 / 0.1);
   --shadow-inset: inset 0 1px 1px oklch(0 0 0 / 0.04);
   --shadow-glow: 0 0 32px oklch(0.205 0 0 / 0.08);
   --shadow-sidebar: 2px 0 24px oklch(0 0 0 / 0.06);
@@ -129,9 +131,11 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 0.5px 1px oklch(0 0 0 / 0.2);
-  --shadow-float: 0 8px 32px -4px oklch(0 0 0 / 0.4), 0 4px 8px -2px oklch(0 0 0 / 0.25);
+  --shadow-float:
+    0 8px 32px -4px oklch(0 0 0 / 0.4), 0 4px 8px -2px oklch(0 0 0 / 0.25);
   --shadow-composer: 0 1px 3px oklch(0 0 0 / 0.25);
-  --shadow-composer-focus: 0 0 0 2px oklch(0.922 0 0 / 0.2), 0 4px 20px -4px oklch(0.922 0 0 / 0.15);
+  --shadow-composer-focus:
+    0 0 0 2px oklch(0.922 0 0 / 0.2), 0 4px 20px -4px oklch(0.922 0 0 / 0.15);
   --shadow-sidebar: 2px 0 32px oklch(0 0 0 / 0.3);
   --accent-glow: rgba(255, 90, 30, 0.18);
 }
@@ -188,7 +192,9 @@ button:focus-visible,
 select:focus-visible,
 [role="button"]:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px oklch(0.55 0.16 250 / 0.5);
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px oklch(0.55 0.16 250 / 0.5);
 }
 
 @utility text-balance {
@@ -264,33 +270,68 @@ select:focus-visible,
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes dot-pulse {
-  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-  30% { opacity: 1; transform: translateY(-3px); }
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
 }
 
 @keyframes message-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes thinking-dot {
-  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-  30% { opacity: 1; transform: translateY(-3px); }
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.55 0.16 250 / 0%); }
-  50% { box-shadow: 0 0 0 4px oklch(0.55 0.16 250 / 10%); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.55 0.16 250 / 0%);
+  }
+  50% {
+    box-shadow: 0 0 0 4px oklch(0.55 0.16 250 / 10%);
+  }
 }
 
 @keyframes stat-enter {
@@ -316,7 +357,8 @@ select:focus-visible,
 }
 
 @keyframes border-glow {
-  0%, 100% {
+  0%,
+  100% {
     border-color: oklch(0.55 0.18 250 / 0.3);
   }
   50% {
@@ -325,42 +367,82 @@ select:focus-visible,
 }
 
 @keyframes scan-line {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
 }
 
 /* ===== Auth 页面动画 ===== */
 
 @keyframes auth-float-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(40px, -30px) scale(1.05); }
-  66% { transform: translate(-20px, 20px) scale(0.95); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(40px, -30px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
 }
 
 @keyframes auth-float-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(-35px, 25px) scale(0.95); }
-  66% { transform: translate(25px, -15px) scale(1.05); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-35px, 25px) scale(0.95);
+  }
+  66% {
+    transform: translate(25px, -15px) scale(1.05);
+  }
 }
 
 @keyframes auth-float-3 {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-45%, -55%) scale(1.1); }
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-45%, -55%) scale(1.1);
+  }
 }
 
 @keyframes auth-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.06); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.06);
+  }
 }
 
 @keyframes auth-scan {
-  0% { transform: translateY(-120%); }
-  100% { transform: translateY(1200%); }
+  0% {
+    transform: translateY(-120%);
+  }
+  100% {
+    transform: translateY(1200%);
+  }
 }
 
 @keyframes auth-slide-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @utility fade-up {

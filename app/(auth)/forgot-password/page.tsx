@@ -48,10 +48,16 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <>
-        <h1 className="auth-slide-in text-2xl font-semibold tracking-tight text-center" style={{ animationDelay: "0.1s" }}>
+        <h1
+          className="auth-slide-in text-2xl font-semibold tracking-tight text-center"
+          style={{ animationDelay: "0.1s" }}
+        >
           邮件已发送
         </h1>
-        <div className="auth-slide-in mt-4 text-center" style={{ animationDelay: "0.2s" }}>
+        <div
+          className="auth-slide-in mt-4 text-center"
+          style={{ animationDelay: "0.2s" }}
+        >
           <p className="text-sm text-muted-foreground leading-relaxed">
             如果该邮箱已注册，您将收到一封包含重置密码链接的邮件。
           </p>
@@ -70,16 +76,25 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <h1 className="auth-slide-in text-2xl font-semibold tracking-tight text-center" style={{ animationDelay: "0.1s" }}>
+      <h1
+        className="auth-slide-in text-2xl font-semibold tracking-tight text-center"
+        style={{ animationDelay: "0.1s" }}
+      >
         忘记密码
       </h1>
-      <p className="auth-slide-in text-sm text-muted-foreground text-center" style={{ animationDelay: "0.18s" }}>
+      <p
+        className="auth-slide-in text-sm text-muted-foreground text-center"
+        style={{ animationDelay: "0.18s" }}
+      >
         输入您的邮箱，我们将发送重置密码的链接
       </p>
       <div className="auth-slide-in w-full" style={{ animationDelay: "0.28s" }}>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
-            <Label className="font-normal text-muted-foreground" htmlFor="email">
+            <Label
+              className="font-normal text-muted-foreground"
+              htmlFor="email"
+            >
               邮箱
             </Label>
             <Input

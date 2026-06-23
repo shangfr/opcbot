@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  BarChart3,
-  Bot,
-  MessageSquare,
-  ThumbsUp,
-  Users,
-} from "lucide-react";
+import { BarChart3, Bot, MessageSquare, ThumbsUp, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -146,14 +140,15 @@ export function StatsDialog({
   }, [open]);
 
   const { overview, periods = defaultPeriods, agentStats = [] } = stats ?? {};
-  const totalVotes = (overview?.totalUpvotes ?? 0) + (overview?.totalDownvotes ?? 0);
+  const totalVotes =
+    (overview?.totalUpvotes ?? 0) + (overview?.totalDownvotes ?? 0);
   const satisfactionRate =
     totalVotes > 0
       ? Math.round(((overview?.totalUpvotes ?? 0) / totalVotes) * 100)
       : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="w-[90vw] sm:max-w-[1200px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -169,11 +164,7 @@ export function StatsDialog({
           <div className="py-12 text-center text-sm text-muted-foreground">
             加载数据中...
           </div>
-        ) : !overview ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            暂无数据
-          </div>
-        ) : (
+        ) : overview ? (
           <div className="space-y-5 py-2">
             {/* 概览卡片 — 与首页统计卡片同风格 */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -217,18 +208,18 @@ export function StatsDialog({
               </p>
               <div className="grid grid-cols-3 gap-2">
                 <PeriodCard
-                  label="今日"
                   chats={periods.todayChats}
+                  label="今日"
                   users={periods.todayUsers}
                 />
                 <PeriodCard
-                  label="近 7 天"
                   chats={periods.weekChats}
+                  label="近 7 天"
                   users={periods.weekUsers}
                 />
                 <PeriodCard
-                  label="近 30 天"
                   chats={periods.monthChats}
+                  label="近 30 天"
                   users={periods.monthUsers}
                 />
               </div>
@@ -246,12 +237,8 @@ export function StatsDialog({
                       <th className="px-3 py-2 text-left font-medium">
                         OPC 名称
                       </th>
-                      <th className="px-3 py-2 text-right font-medium">
-                        对话
-                      </th>
-                      <th className="px-3 py-2 text-right font-medium">
-                        消息
-                      </th>
+                      <th className="px-3 py-2 text-right font-medium">对话</th>
+                      <th className="px-3 py-2 text-right font-medium">消息</th>
                       <th className="px-3 py-2 text-right font-medium">
                         满意度
                       </th>
@@ -261,8 +248,8 @@ export function StatsDialog({
                     {agentStats.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={4}
                           className="px-3 py-6 text-center text-xs text-muted-foreground"
+                          colSpan={4}
                         >
                           暂无数据
                         </td>
@@ -277,10 +264,10 @@ export function StatsDialog({
                         const hasData = row.chatCount > 0;
                         return (
                           <tr
-                            key={row.agentName}
                             className={`border-b border-border/20 last:border-0 ${
-                              !hasData ? "opacity-40" : ""
+                              hasData ? "" : "opacity-40"
                             }`}
+                            key={row.agentName}
                           >
                             <td className="px-3 py-2 font-medium">
                               {row.agentName}
@@ -324,6 +311,10 @@ export function StatsDialog({
                 </table>
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            暂无数据
           </div>
         )}
       </DialogContent>

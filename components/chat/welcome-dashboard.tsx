@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, MessageSquare, TrendingUp, Users, Zap } from "lucide-react";
+import { Bot, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
@@ -105,10 +105,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
     [agents]
   );
 
-  const defaultAgent = useMemo(
-    () => agents.find((a) => a.isDefault),
-    [agents]
-  );
+  const defaultAgent = useMemo(() => agents.find((a) => a.isDefault), [agents]);
 
   // 按分组选出推荐代表（每组至多 2 个，按 category sortOrder 排列）
   const featuredAgents = useMemo(() => {
@@ -210,7 +207,8 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
           <p className="mt-2 text-sm text-muted-foreground">
             {defaultAgent
               ? defaultAgent.description
-              : siteConfig?.siteDescription || "选择一位 OPC 或直接开始对话，探索 AI 助手的无限可能"}
+              : siteConfig?.siteDescription ||
+                "选择一位 OPC 或直接开始对话，探索 AI 助手的无限可能"}
           </p>
         </div>
 
@@ -292,7 +290,12 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                   : null;
                 const group = cat
                   ? buildGroupFromCategory(cat)
-                  : { ...DEFAULT_THEME, key: "__none__", label: "未分组", order: 999 };
+                  : {
+                      ...DEFAULT_THEME,
+                      key: "__none__",
+                      label: "未分组",
+                      order: 999,
+                    };
                 const avatarChar = getAvatarChar(agent.name);
 
                 return (

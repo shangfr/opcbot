@@ -50,10 +50,16 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <>
-        <h1 className="auth-slide-in text-2xl font-semibold tracking-tight text-center" style={{ animationDelay: "0.1s" }}>
+        <h1
+          className="auth-slide-in text-2xl font-semibold tracking-tight text-center"
+          style={{ animationDelay: "0.1s" }}
+        >
           密码已重置
         </h1>
-        <div className="auth-slide-in mt-4 text-center" style={{ animationDelay: "0.2s" }}>
+        <div
+          className="auth-slide-in mt-4 text-center"
+          style={{ animationDelay: "0.2s" }}
+        >
           <p className="text-sm text-muted-foreground leading-relaxed">
             密码已重置成功，请使用新密码登录。
           </p>
@@ -72,10 +78,16 @@ function ResetPasswordForm() {
 
   return (
     <>
-      <h1 className="auth-slide-in text-2xl font-semibold tracking-tight text-center" style={{ animationDelay: "0.1s" }}>
+      <h1
+        className="auth-slide-in text-2xl font-semibold tracking-tight text-center"
+        style={{ animationDelay: "0.1s" }}
+      >
         设置新密码
       </h1>
-      <p className="auth-slide-in text-sm text-muted-foreground text-center" style={{ animationDelay: "0.18s" }}>
+      <p
+        className="auth-slide-in text-sm text-muted-foreground text-center"
+        style={{ animationDelay: "0.18s" }}
+      >
         请输入您的新密码
       </p>
       <div className="auth-slide-in w-full" style={{ animationDelay: "0.28s" }}>

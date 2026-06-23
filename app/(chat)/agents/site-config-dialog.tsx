@@ -42,9 +42,8 @@ type SiteConfigForm = {
 function formFromDefaults(): SiteConfigForm {
   return {
     defaultSystemPrompt: HARDCODED_DEFAULTS.defaultSystemPrompt,
-    defaultStarterQuestions: HARDCODED_DEFAULTS.defaultStarterQuestions.join(
-      "\n"
-    ),
+    defaultStarterQuestions:
+      HARDCODED_DEFAULTS.defaultStarterQuestions.join("\n"),
     siteName: HARDCODED_DEFAULTS.siteName,
     siteDescription: HARDCODED_DEFAULTS.siteDescription,
   };
@@ -71,11 +70,11 @@ export function SiteConfigDialog() {
           // DB 有数据 → 用 DB 值覆盖表单
           setForm({
             defaultSystemPrompt:
-              data.defaultSystemPrompt ?? HARDCODED_DEFAULTS.defaultSystemPrompt,
-            defaultStarterQuestions:
-              (data.defaultStarterQuestions?.length
-                ? data.defaultStarterQuestions.join("\n")
-                : HARDCODED_DEFAULTS.defaultStarterQuestions.join("\n")),
+              data.defaultSystemPrompt ??
+              HARDCODED_DEFAULTS.defaultSystemPrompt,
+            defaultStarterQuestions: data.defaultStarterQuestions?.length
+              ? data.defaultStarterQuestions.join("\n")
+              : HARDCODED_DEFAULTS.defaultStarterQuestions.join("\n"),
             siteName: data.siteName ?? HARDCODED_DEFAULTS.siteName,
             siteDescription:
               data.siteDescription ?? HARDCODED_DEFAULTS.siteDescription,
@@ -156,9 +155,9 @@ export function SiteConfigDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button className="gap-2" variant="outline">
           <Settings2 className="size-4" />
           默认配置
         </Button>
@@ -182,11 +181,9 @@ export function SiteConfigDialog() {
               <Label htmlFor="sc-name">默认名称</Label>
               <Input
                 id="sc-name"
+                onChange={(e) => setForm({ ...form, siteName: e.target.value })}
                 placeholder={HARDCODED_DEFAULTS.siteName}
                 value={form.siteName}
-                onChange={(e) =>
-                  setForm({ ...form, siteName: e.target.value })
-                }
               />
               <p className="text-[11px] text-muted-foreground">
                 未设置默认 OPC 时首页展示的名称
@@ -196,26 +193,26 @@ export function SiteConfigDialog() {
             <div className="space-y-2">
               <Label htmlFor="sc-desc">默认描述</Label>
               <Textarea
-                id="sc-desc"
                 className="min-h-[60px]"
-                placeholder={HARDCODED_DEFAULTS.siteDescription}
-                value={form.siteDescription}
+                id="sc-desc"
                 onChange={(e) =>
                   setForm({ ...form, siteDescription: e.target.value })
                 }
+                placeholder={HARDCODED_DEFAULTS.siteDescription}
+                value={form.siteDescription}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="sc-prompt">默认系统提示词</Label>
               <Textarea
-                id="sc-prompt"
                 className="min-h-[200px] font-mono text-xs"
-                placeholder={HARDCODED_DEFAULTS.defaultSystemPrompt}
-                value={form.defaultSystemPrompt}
+                id="sc-prompt"
                 onChange={(e) =>
                   setForm({ ...form, defaultSystemPrompt: e.target.value })
                 }
+                placeholder={HARDCODED_DEFAULTS.defaultSystemPrompt}
+                value={form.defaultSystemPrompt}
               />
               <p className="text-[11px] text-muted-foreground">
                 此提示词会在「开始对话」时发给 AI
@@ -226,18 +223,18 @@ export function SiteConfigDialog() {
             <div className="space-y-2">
               <Label htmlFor="sc-questions">默认引导问题</Label>
               <Textarea
-                id="sc-questions"
                 className="min-h-[80px] text-xs"
-                placeholder={HARDCODED_DEFAULTS.defaultStarterQuestions.join(
-                  "\n"
-                )}
-                value={form.defaultStarterQuestions}
+                id="sc-questions"
                 onChange={(e) =>
                   setForm({
                     ...form,
                     defaultStarterQuestions: e.target.value,
                   })
                 }
+                placeholder={HARDCODED_DEFAULTS.defaultStarterQuestions.join(
+                  "\n"
+                )}
+                value={form.defaultStarterQuestions}
               />
               <p className="text-[11px] text-muted-foreground">
                 新对话时展示的建议问题，每行一个，最多 8 个
@@ -247,14 +244,18 @@ export function SiteConfigDialog() {
         )}
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="ghost" onClick={handleReset} disabled={saving || loading}>
+          <Button
+            disabled={saving || loading}
+            onClick={handleReset}
+            variant="ghost"
+          >
             恢复默认
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button onClick={() => setOpen(false)} variant="outline">
               取消
             </Button>
-            <Button onClick={handleSave} disabled={saving || loading}>
+            <Button disabled={saving || loading} onClick={handleSave}>
               {saving ? "保存中..." : "保存配置"}
             </Button>
           </div>

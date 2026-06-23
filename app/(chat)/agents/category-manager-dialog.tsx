@@ -126,7 +126,7 @@ export function CategoryManagerDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -144,19 +144,19 @@ export function CategoryManagerDialog({
             <p className="text-xs font-medium text-foreground">新建分类</p>
             <div className="flex items-center gap-2">
               <Input
-                placeholder="分类名称"
-                value={newName}
+                className="h-8 text-sm"
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleCreate();
                 }}
-                className="h-8 text-sm"
+                placeholder="分类名称"
+                value={newName}
               />
               <Button
-                size="sm"
-                onClick={handleCreate}
-                disabled={loading || !newName.trim()}
                 className="h-8 shrink-0 gap-1"
+                disabled={loading || !newName.trim()}
+                onClick={handleCreate}
+                size="sm"
               >
                 <Plus className="size-3" />
                 添加
@@ -166,16 +166,16 @@ export function CategoryManagerDialog({
             <div className="flex flex-wrap gap-1.5">
               {CATEGORY_COLORS.map((color) => (
                 <button
-                  key={color}
-                  type="button"
-                  onClick={() => setNewColor(color)}
+                  aria-label={color}
                   className={`size-6 rounded-full transition-all ${
                     newColor === color
                       ? "scale-110 ring-2 ring-offset-1 ring-foreground/40"
                       : "hover:scale-110"
                   }`}
+                  key={color}
+                  onClick={() => setNewColor(color)}
                   style={{ backgroundColor: color }}
-                  aria-label={color}
+                  type="button"
                 />
               ))}
             </div>
@@ -190,8 +190,8 @@ export function CategoryManagerDialog({
             ) : (
               categories.map((cat) => (
                 <div
-                  key={cat.id}
                   className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50"
+                  key={cat.id}
                 >
                   {editingId === cat.id ? (
                     /* 编辑模式 */
@@ -199,39 +199,39 @@ export function CategoryManagerDialog({
                       <div className="flex flex-wrap gap-1">
                         {CATEGORY_COLORS.map((color) => (
                           <button
-                            key={color}
-                            type="button"
-                            onClick={() => setEditColor(color)}
+                            aria-label={color}
                             className={`size-5 rounded-full transition-all ${
                               editColor === color
                                 ? "scale-110 ring-2 ring-offset-1 ring-foreground/40"
                                 : "hover:scale-110"
                             }`}
+                            key={color}
+                            onClick={() => setEditColor(color)}
                             style={{ backgroundColor: color }}
-                            aria-label={color}
+                            type="button"
                           />
                         ))}
                       </div>
                       <Input
-                        value={editName}
+                        className="h-7 flex-1 text-sm"
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleUpdate(cat.id);
                           if (e.key === "Escape") setEditingId(null);
                         }}
-                        className="h-7 flex-1 text-sm"
+                        value={editName}
                       />
                       <button
-                        type="button"
-                        onClick={() => handleUpdate(cat.id)}
                         className="rounded-md p-1 text-emerald-600 transition-colors hover:bg-emerald-50"
+                        onClick={() => handleUpdate(cat.id)}
+                        type="button"
                       >
                         <Check className="size-3.5" />
                       </button>
                       <button
-                        type="button"
-                        onClick={() => setEditingId(null)}
                         className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted"
+                        onClick={() => setEditingId(null)}
+                        type="button"
                       >
                         <X className="size-3.5" />
                       </button>
@@ -245,14 +245,14 @@ export function CategoryManagerDialog({
                       />
                       <span className="flex-1 text-sm">{cat.name}</span>
                       <button
-                        type="button"
-                        onClick={() => startEdit(cat)}
                         className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted"
+                        onClick={() => startEdit(cat)}
+                        type="button"
                       >
                         <Pencil className="size-3.5" />
                       </button>
                       <button
-                        type="button"
+                        className="rounded-md p-1 text-destructive/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => {
                           if (
                             window.confirm(
@@ -262,7 +262,7 @@ export function CategoryManagerDialog({
                             handleDelete(cat.id);
                           }
                         }}
-                        className="rounded-md p-1 text-destructive/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        type="button"
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -275,7 +275,7 @@ export function CategoryManagerDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button onClick={() => onOpenChange(false)} variant="outline">
             完成
           </Button>
         </DialogFooter>

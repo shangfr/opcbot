@@ -5,10 +5,12 @@ import { CodeEditor } from "@/components/chat/code-editor";
 import { Artifact } from "@/components/chat/create-artifact";
 import {
   CopyIcon,
+  DownloadIcon,
   PlayIcon,
   RedoIcon,
   UndoIcon,
 } from "@/components/chat/icons";
+import { exportHtmlAsPDF } from "@/lib/artifact-export";
 
 type Metadata = Record<string, never>;
 
@@ -34,8 +36,7 @@ export const htmlArtifact = new Artifact<"html", Metadata>({
         ...draftArtifact,
         content: streamPart.data,
         isVisible:
-          draftArtifact.status === "streaming" &&
-          streamPart.data.length > 300
+          draftArtifact.status === "streaming" && streamPart.data.length > 300
             ? true
             : draftArtifact.isVisible,
         status: "streaming",
@@ -94,6 +95,13 @@ export const htmlArtifact = new Artifact<"html", Metadata>({
       onClick: ({ content }) => {
         navigator.clipboard.writeText(content);
         toast.success("HTML 代码已复制到剪贴板！");
+      },
+    },
+    {
+      icon: <DownloadIcon size={18} />,
+      description: "导出为 PDF",
+      onClick: ({ title, content }) => {
+        exportHtmlAsPDF(title, content);
       },
     },
   ],

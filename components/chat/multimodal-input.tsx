@@ -845,6 +845,9 @@ function ThinkingToggle({
 
   return (
     <button
+      aria-label={
+        enabled ? "思考模式已开启，点击关闭" : "思考模式已关闭，点击开启"
+      }
       className={cn(
         "inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg px-2 text-[12px] font-medium transition-colors",
         enabled
@@ -857,7 +860,6 @@ function ThinkingToggle({
         e.stopPropagation();
         onChange?.(!enabled);
       }}
-      title={enabled ? "思考模式已开启" : "思考模式已关闭"}
       type="button"
     >
       <BrainIcon className="size-3.5" />

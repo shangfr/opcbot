@@ -182,6 +182,7 @@ const PurePreviewMessage = ({
               {state === "approval-requested" && approvalId && (
                 <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
                   <button
+                    aria-label="拒绝此工具调用"
                     className="rounded-md px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
                     onClick={() => {
                       addToolApprovalResponse({
@@ -195,6 +196,7 @@ const PurePreviewMessage = ({
                     拒绝
                   </button>
                   <button
+                    aria-label="允许此工具调用"
                     className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
                     onClick={() => {
                       addToolApprovalResponse({

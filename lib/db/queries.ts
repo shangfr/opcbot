@@ -29,8 +29,8 @@ import {
   document,
   message,
   passwordResetToken,
-  siteConfig,
   type Suggestion,
+  siteConfig,
   stream,
   suggestion,
   type User,
@@ -206,7 +206,9 @@ export async function getChatsByUserId({
         );
       }
 
-      filteredChats = await baseQuery(gt(chat.createdAt, selectedChat.createdAt));
+      filteredChats = await baseQuery(
+        gt(chat.createdAt, selectedChat.createdAt)
+      );
     } else if (endingBefore) {
       const [selectedChat] = await db
         .select()
@@ -221,7 +223,9 @@ export async function getChatsByUserId({
         );
       }
 
-      filteredChats = await baseQuery(lt(chat.createdAt, selectedChat.createdAt));
+      filteredChats = await baseQuery(
+        lt(chat.createdAt, selectedChat.createdAt)
+      );
     } else {
       filteredChats = await baseQuery();
     }
@@ -259,7 +263,10 @@ export async function getChatWithAgent({ id }: { id: string }) {
     if (!row) return null;
     return row;
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to get chat with agent");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get chat with agent"
+    );
   }
 }
 
@@ -1015,16 +1022,25 @@ export async function upsertSiteConfig({
   siteDescription?: string | null;
 }) {
   try {
-    const existing = await db.select({ id: siteConfig.id }).from(siteConfig).limit(1);
+    const existing = await db
+      .select({ id: siteConfig.id })
+      .from(siteConfig)
+      .limit(1);
 
     if (existing.length > 0) {
       const [result] = await db
         .update(siteConfig)
         .set({
-          ...(defaultSystemPrompt !== undefined ? { defaultSystemPrompt: defaultSystemPrompt || null } : {}),
-          ...(defaultStarterQuestions !== undefined ? { defaultStarterQuestions: defaultStarterQuestions || null } : {}),
+          ...(defaultSystemPrompt !== undefined
+            ? { defaultSystemPrompt: defaultSystemPrompt || null }
+            : {}),
+          ...(defaultStarterQuestions !== undefined
+            ? { defaultStarterQuestions: defaultStarterQuestions || null }
+            : {}),
           ...(siteName !== undefined ? { siteName: siteName || null } : {}),
-          ...(siteDescription !== undefined ? { siteDescription: siteDescription || null } : {}),
+          ...(siteDescription !== undefined
+            ? { siteDescription: siteDescription || null }
+            : {}),
           updatedAt: new Date(),
         })
         .where(eq(siteConfig.id, existing[0].id))
@@ -1044,7 +1060,10 @@ export async function upsertSiteConfig({
     return result;
   } catch (_error) {
     console.error("upsertSiteConfig error:", _error);
-    throw new ChatbotError("bad_request:database", "Failed to upsert site config");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to upsert site config"
+    );
   }
 }
 
@@ -1075,11 +1094,7 @@ export async function createPasswordResetToken({
   }
 }
 
-export async function getPasswordResetToken({
-  token,
-}: {
-  token: string;
-}) {
+export async function getPasswordResetToken({ token }: { token: string }) {
   try {
     const [result] = await db
       .select()
@@ -1142,22 +1157,14 @@ export async function updateUserPassword({
 export async function getDashboardStats() {
   try {
     // Overview counts
-    const [chatCount] = await db
-      .select({ value: count() })
-      .from(chat);
-    const [userCount] = await db
-      .select({ value: count() })
-      .from(user);
-    const [agentCount] = await db
-      .select({ value: count() })
-      .from(agent);
+    const [chatCount] = await db.select({ value: count() }).from(chat);
+    const [userCount] = await db.select({ value: count() }).from(user);
+    const [agentCount] = await db.select({ value: count() }).from(agent);
     const [activeAgentCount] = await db
       .select({ value: count() })
       .from(agent)
       .where(eq(agent.isActive, true));
-    const [messageCount] = await db
-      .select({ value: count() })
-      .from(message);
+    const [messageCount] = await db.select({ value: count() }).from(message);
 
     // Vote totals
     const [upvotes] = await db

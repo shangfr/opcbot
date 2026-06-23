@@ -19,6 +19,7 @@ import useSWR, { useSWRConfig } from "swr";
 import { useDataStream } from "@/components/chat/data-stream-provider";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
+import { useAgentBinding } from "@/hooks/use-agent-binding";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import {
   getChatCache,
@@ -60,7 +61,8 @@ type ActiveChatActionsContextValue = {
 };
 
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
-const ActiveChatActionsContext = createContext<ActiveChatActionsContextValue | null>(null);
+const ActiveChatActionsContext =
+  createContext<ActiveChatActionsContextValue | null>(null);
 
 function extractChatId(pathname: string): string | null {
   const match = pathname.match(/\/chat\/([^/]+)/);
@@ -76,21 +78,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const isNewChat = !chatIdFromUrl;
   const newChatIdRef = useRef(generateUUID());
   const prevPathnameRef = useRef(pathname);
-
-  // agentId can come from:
-  // 1. sessionStorage (pending chat, not yet saved to DB)
-  // 2. chatData (DB, after first message)
-  const getInitialAgentId = (): string | null => {
-    if (chatIdFromUrl && typeof window !== "undefined") {
-      const pending = sessionStorage.getItem(`pending-chat-${chatIdFromUrl}`);
-      if (pending) {
-        return pending;
-      }
-    }
-    return null;
-  };
-  const [agentId, setAgentId] = useState<string | null>(getInitialAgentId);
-  const agentIdRef = useRef<string | null>(getInitialAgentId());
 
   if (isNewChat && prevPathnameRef.current !== pathname) {
     newChatIdRef.current = generateUUID();
@@ -153,11 +140,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const effectiveData = hasCachedMessages ? cachedEntry : chatData;
 
   // Title is stateful so it can be updated in real-time (via data-chat-title stream).
-  // Initial value is derived from effectiveData (API or cache).
   const [title, setTitle] = useState<string>(
-    isNewChat
-      ? ""
-      : ((effectiveData as { title?: string })?.title ?? "")
+    isNewChat ? "" : ((effectiveData as { title?: string })?.title ?? "")
   );
 
   // Sync title from effectiveData when navigating to a different chat.
@@ -171,7 +155,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   }, [chatId, isNewChat, effectiveData]);
 
   // Reset title when navigating to a different chat, before new data loads.
-  // Prevents showing the previous chat's title during transition.
   useEffect(() => {
     if (isNewChat) return;
     const cached = getChatCache(chatId);
@@ -182,110 +165,13 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     }
   }, [chatId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Validate agentId: clear if the agent was deleted or deactivated.
-  // Declared early so agentName fallback derivation can use the agents list.
-  const needsAgentValidation = isNewChat ? false : !!effectiveData?.agentId;
-  const { data: agentsForValidation } = useSWR(
-    needsAgentValidation
-      ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`
-      : null,
-    fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 60_000 }
-  );
-  useEffect(() => {
-    if (needsAgentValidation && agentsForValidation) {
-      const agentList: Array<{ id: string; isActive: boolean }> = Array.isArray(
-        agentsForValidation
-      )
-        ? agentsForValidation
-        : ((
-            agentsForValidation as {
-              agents?: Array<{ id: string; isActive: boolean }>;
-            }
-          ).agents ?? []);
-      const match = agentList.find(
-        (a) => a.id === effectiveData?.agentId && a.isActive
-      );
-      if (match) {
-        return;
-      }
-      agentIdRef.current = null;
-      setAgentId(null);
-    }
-  }, [needsAgentValidation, agentsForValidation, effectiveData?.agentId]);
-
-  // Derive agentName from effectiveData (cache or API), falling back to
-  // the agents list when available (already fetched for validation above).
-  // Using useState so it updates when agentsForValidation arrives.
-  const [agentName, setAgentName] = useState<string | null>(
-    isNewChat
-      ? null
-      : ((effectiveData as { agentName?: string | null })?.agentName ?? null)
-  );
-
-  useEffect(() => {
-    if (isNewChat) {
-      setAgentName(null);
-      return;
-    }
-
-    // Primary: from effectiveData (cache or API)
-    const fromData = (effectiveData as { agentName?: string | null })?.agentName;
-    if (fromData !== undefined && fromData !== null) {
-      setAgentName(fromData);
-      return;
-    }
-
-    // Fallback: derive from agents list (already fetched for validation)
-    if (effectiveData?.agentId && agentsForValidation) {
-      const agentList: Array<{ id: string; name: string }> = Array.isArray(
-        agentsForValidation
-      )
-        ? agentsForValidation
-        : (agentsForValidation as { agents?: Array<{ id: string; name: string }> })
-            .agents ?? [];
-      const match = agentList.find((a) => a.id === effectiveData.agentId);
-      if (match?.name) {
-        setAgentName(match.name);
-        return;
-      }
-    }
-
-    setAgentName(null);
-  }, [isNewChat, effectiveData, agentsForValidation]);
-
-  // Restore agentId from chat data (DB) or sessionStorage (pending).
-  // Also clear sessionStorage when DB has the agentId (first message sent).
-
-  // Reset agentId when navigating to a different chat, before new data loads.
-  // This prevents showing the previous chat's agent name during the transition.
-  useEffect(() => {
-    if (!chatIdFromUrl) return;
-    const pending = sessionStorage.getItem(`pending-chat-${chatId}`);
-    agentIdRef.current = pending ?? null;
-    setAgentId(pending ?? null);
-  }, [chatId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (isNewChat) {
-      return;
-    }
-    if (effectiveData) {
-      if (effectiveData.agentId) {
-        // DB has a valid agentId - use it and clear pending storage
-        agentIdRef.current = effectiveData.agentId;
-        setAgentId(effectiveData.agentId);
-        sessionStorage.removeItem(`pending-chat-${chatId}`);
-      } else {
-        // DB doesn't have agentId (null or undefined) - check sessionStorage
-        const pending = sessionStorage.getItem(`pending-chat-${chatId}`);
-        if (pending) {
-          agentIdRef.current = pending;
-          setAgentId(pending);
-        }
-      }
-    }
-  }, [isNewChat, effectiveData, chatId]);
+  // ── Agent binding (agentId, agentName, validation, sessionStorage) ──
+  const { agentId, agentName, agentIdRef } = useAgentBinding({
+    chatId,
+    chatIdFromUrl,
+    isNewChat,
+    effectiveData,
+  });
 
   const initialMessages: ChatMessage[] = isNewChat
     ? []
@@ -594,7 +480,9 @@ export function useActiveChat() {
 export function useActiveChatActions() {
   const actions = useContext(ActiveChatActionsContext);
   if (!actions) {
-    throw new Error("useActiveChatActions must be used within ActiveChatProvider");
+    throw new Error(
+      "useActiveChatActions must be used within ActiveChatProvider"
+    );
   }
   return actions;
 }

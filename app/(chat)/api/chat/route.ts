@@ -16,9 +16,13 @@ import {
   DEFAULT_CHAT_MODEL,
   getCapabilities,
 } from "@/lib/ai/models";
-import { type RequestHints, infrastructurePrompt, systemPrompt } from "@/lib/ai/prompts";
-import { getAgentById, getSiteConfig } from "@/lib/db/queries";
+import {
+  infrastructurePrompt,
+  type RequestHints,
+  systemPrompt,
+} from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
+import { withRetry } from "@/lib/ai/retry";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -28,9 +32,11 @@ import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
   deleteChatById,
+  getAgentById,
   getChatById,
   getMessageCountByUserId,
   getMessagesByChatId,
+  getSiteConfig,
   saveChat,
   saveMessages,
   updateChatTitleById,
@@ -46,6 +52,12 @@ import { type PostRequestBody, postRequestBodySchema } from "./schema";
 export const maxDuration = 60;
 
 /**
+ * Maximum number of messages sent to the LLM as context.
+ * Longer conversations keep only the most recent messages.
+ */
+const MAX_CONTEXT_MESSAGES = 40;
+
+/**
  * Extract geolocation from request headers.
  * Supports Cloudflare (cf-ip*), Vercel (x-vercel-ip-*), and standard proxy headers.
  */
@@ -53,21 +65,11 @@ function geolocation(request: Request) {
   const h = request.headers;
   return {
     latitude:
-      h.get("cf-iplatitude") ??
-      h.get("x-vercel-ip-latitude") ??
-      undefined,
+      h.get("cf-iplatitude") ?? h.get("x-vercel-ip-latitude") ?? undefined,
     longitude:
-      h.get("cf-iplongitude") ??
-      h.get("x-vercel-ip-longitude") ??
-      undefined,
-    city:
-      h.get("cf-ipcity") ??
-      h.get("x-vercel-ip-city") ??
-      undefined,
-    country:
-      h.get("cf-ipcountry") ??
-      h.get("x-vercel-ip-country") ??
-      undefined,
+      h.get("cf-iplongitude") ?? h.get("x-vercel-ip-longitude") ?? undefined,
+    city: h.get("cf-ipcity") ?? h.get("x-vercel-ip-city") ?? undefined,
+    country: h.get("cf-ipcountry") ?? h.get("x-vercel-ip-country") ?? undefined,
   };
 }
 
@@ -92,8 +94,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, messages, selectedChatModel, selectedVisibilityType, agentId, thinkingEnabled, isNewChat } =
-      requestBody;
+    const {
+      id,
+      message,
+      messages,
+      selectedChatModel,
+      selectedVisibilityType,
+      agentId,
+      thinkingEnabled,
+      isNewChat,
+    } = requestBody;
 
     // ── Parallel pre-flight: auth + chat/agent lookup ──
     const [session, chat, agentRecord] = await Promise.all([
@@ -112,15 +122,13 @@ export async function POST(request: Request) {
 
     const userType: UserType = session.user.type;
 
-    if (userType === "guest") {
-      const messageCount = await getMessageCountByUserId({
-        id: session.user.id,
-        differenceInHours: 1,
-      });
+    const messageCount = await getMessageCountByUserId({
+      id: session.user.id,
+      differenceInHours: 1,
+    });
 
-      if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
-        return new ChatbotError("rate_limit:chat").toResponse();
-      }
+    if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
+      return new ChatbotError("rate_limit:chat").toResponse();
     }
 
     // ── Chat setup ──
@@ -200,12 +208,20 @@ export async function POST(request: Request) {
     } else if (!agentId) {
       const config = await getSiteConfig();
       if (config?.defaultSystemPrompt) {
-        const infrastructure = infrastructurePrompt({ requestHints, supportsTools });
+        const infrastructure = infrastructurePrompt({
+          requestHints,
+          supportsTools,
+        });
         systemMessage = `${config.defaultSystemPrompt}\n\n${infrastructure}`;
       }
     }
 
-    const modelMessages = await convertToModelMessages(uiMessages);
+    let modelMessages = await convertToModelMessages(uiMessages);
+
+    // Truncate context to prevent token explosion in long conversations
+    if (modelMessages.length > MAX_CONTEXT_MESSAGES) {
+      modelMessages = modelMessages.slice(-MAX_CONTEXT_MESSAGES);
+    }
 
     // Save user message without blocking streaming response
     if (message?.role === "user") {
@@ -220,7 +236,9 @@ export async function POST(request: Request) {
             createdAt: new Date(),
           },
         ],
-      }).catch(() => {});
+      }).catch(() => {
+        /* fire-and-forget */
+      });
     }
 
     // 调试：打印转换后的消息格式
@@ -241,53 +259,65 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const result = streamText({
-          model: getLanguageModel(chatModel),
-          system: systemMessage,
-          messages: modelMessages,
-          stopWhen: stepCountIs(5),
-          experimental_activeTools:
-            isReasoningModel && !supportsTools
-              ? []
-              : [
-                  "getWeather",
-                  "createDocument",
-                  "editDocument",
-                  "updateDocument",
-                  "requestSuggestions",
-                ],
-          providerOptions: {
-            ...(modelConfig?.reasoningEffort && {
-              openai: { reasoningEffort: modelConfig.reasoningEffort },
+        const result = await withRetry(
+          () =>
+            streamText({
+              model: getLanguageModel(chatModel),
+              system: systemMessage,
+              messages: modelMessages,
+              stopWhen: stepCountIs(5),
+              experimental_activeTools:
+                isReasoningModel && !supportsTools
+                  ? []
+                  : [
+                      "getWeather",
+                      "createDocument",
+                      "editDocument",
+                      "updateDocument",
+                      "requestSuggestions",
+                    ],
+              providerOptions: {
+                ...(modelConfig?.reasoningEffort && {
+                  openai: { reasoningEffort: modelConfig.reasoningEffort },
+                }),
+              },
+              tools: {
+                getWeather,
+                createDocument: createDocument({
+                  session,
+                  dataStream,
+                  modelId: chatModel,
+                }),
+                editDocument: editDocument({ dataStream, session }),
+                updateDocument: updateDocument({
+                  session,
+                  dataStream,
+                  modelId: chatModel,
+                }),
+                requestSuggestions: requestSuggestions({
+                  session,
+                  dataStream,
+                  modelId: chatModel,
+                }),
+              },
+              experimental_telemetry: {
+                isEnabled: isProductionEnvironment,
+                functionId: "stream-text",
+              },
             }),
-          },
-          tools: {
-            getWeather,
-            createDocument: createDocument({
-              session,
-              dataStream,
-              modelId: chatModel,
-            }),
-            editDocument: editDocument({ dataStream, session }),
-            updateDocument: updateDocument({
-              session,
-              dataStream,
-              modelId: chatModel,
-            }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-              modelId: chatModel,
-            }),
-          },
-          experimental_telemetry: {
-            isEnabled: isProductionEnvironment,
-            functionId: "stream-text",
-          },
-        });
+          2,
+          (attempt, error, delayMs) => {
+            console.warn(
+              `[chat] streamText retry ${attempt} (delay ${Math.round(delayMs)}ms):`,
+              error instanceof Error ? error.message : error
+            );
+          }
+        );
 
         dataStream.merge(
-          result.toUIMessageStream({ sendReasoning: isReasoningModel && thinkingEnabled })
+          result.toUIMessageStream({
+            sendReasoning: isReasoningModel && thinkingEnabled,
+          })
         );
 
         if (titlePromise) {
@@ -371,8 +401,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    const requestId =
-      request.headers.get("x-request-id") ?? generateUUID();
+    const requestId = request.headers.get("x-request-id") ?? generateUUID();
 
     if (error instanceof ChatbotError) {
       return error.toResponse();

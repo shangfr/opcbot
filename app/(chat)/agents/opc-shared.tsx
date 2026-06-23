@@ -9,12 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-} from "react";
+import { createContext, useCallback, useContext, useMemo } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import {
@@ -58,11 +53,14 @@ const CATEGORIES_KEY = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/categorie
 export function useAgents() {
   const router = useRouter();
 
-  const { data: agents = [], isLoading: loading, mutate } = useSWR<Agent[]>(
-    AGENTS_KEY,
-    fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 60_000 }
-  );
+  const {
+    data: agents = [],
+    isLoading: loading,
+    mutate,
+  } = useSWR<Agent[]>(AGENTS_KEY, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
+  });
 
   const { data: categories = [] } = useSWR<CategoryRecord[]>(
     CATEGORIES_KEY,
@@ -116,9 +114,7 @@ export function useAgents() {
     const groups = categories
       .map((c) => ({
         group: buildGroupFromCategory(c),
-        agents: (map.get(c.id) ?? []).sort(
-          (a, b) => a.sortOrder - b.sortOrder
-        ),
+        agents: (map.get(c.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
       }))
       .filter((g) => g.agents.length > 0);
 
@@ -145,21 +141,19 @@ export function useAgents() {
     const ungrouped: Agent[] = [];
 
     for (const a of agents) {
-      if (!a.categoryId) {
-        ungrouped.push(a);
-      } else {
+      if (a.categoryId) {
         const bucket = map.get(a.categoryId) ?? [];
         bucket.push(a);
         map.set(a.categoryId, bucket);
+      } else {
+        ungrouped.push(a);
       }
     }
 
     const groups = categories
       .map((c) => ({
         group: buildGroupFromCategory(c),
-        agents: (map.get(c.id) ?? []).sort(
-          (a, b) => a.sortOrder - b.sortOrder
-        ),
+        agents: (map.get(c.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
       }))
       .filter((g) => g.agents.length > 0);
 
@@ -230,9 +224,7 @@ export function CategoryProvider({
   value: CategoryContextValue;
   children: React.ReactNode;
 }) {
-  return (
-    <CategoryCtx.Provider value={value}>{children}</CategoryCtx.Provider>
-  );
+  return <CategoryCtx.Provider value={value}>{children}</CategoryCtx.Provider>;
 }
 
 /* ================================================================

@@ -1,8 +1,8 @@
 "use client";
 
-import cx from "classnames";
 import { format, isWithinInterval } from "date-fns";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 const SunIcon = ({ size = 40 }: { size?: number }) => (
   <svg fill="none" height={size} viewBox="0 0 24 24" width={size}>
@@ -290,12 +290,8 @@ export function Weather({
 
   const data = weatherAtLocation;
 
-  const currentHigh = Math.max(
-    ...data.hourly.temperature_2m.slice(0, 24)
-  );
-  const currentLow = Math.min(
-    ...data.hourly.temperature_2m.slice(0, 24)
-  );
+  const currentHigh = Math.max(...data.hourly.temperature_2m.slice(0, 24));
+  const currentLow = Math.min(...data.hourly.temperature_2m.slice(0, 24));
 
   const isDay = isWithinInterval(new Date(data.current.time), {
     start: new Date(data.daily.sunrise[0]),
@@ -336,7 +332,7 @@ export function Weather({
 
   return (
     <div
-      className={cx(
+      className={cn(
         "relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl p-4 shadow-lg backdrop-blur-sm",
         {
           "bg-gradient-to-br from-sky-400 via-blue-500 to-blue-600": isDay,
@@ -360,7 +356,7 @@ export function Weather({
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
-              className={cx("text-white/90", {
+              className={cn("text-white/90", {
                 "text-yellow-200": isDay,
                 "text-blue-200": !isDay,
               })}
@@ -395,7 +391,7 @@ export function Weather({
 
               return (
                 <div
-                  className={cx(
+                  className={cn(
                     "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md px-1 py-1.5",
                     {
                       "bg-white/20": isCurrentHour,
@@ -408,7 +404,7 @@ export function Weather({
                   </div>
 
                   <div
-                    className={cx("text-white/60", {
+                    className={cn("text-white/60", {
                       "text-yellow-200": isDay,
                       "text-blue-200": !isDay,
                     })}
@@ -426,14 +422,8 @@ export function Weather({
         </div>
 
         <div className="mt-2 flex justify-between text-white/60 text-xs">
-          <div>
-            日出:{" "}
-            {format(new Date(data.daily.sunrise[0]), "HH:mm")}
-          </div>
-          <div>
-            日落:{" "}
-            {format(new Date(data.daily.sunset[0]), "HH:mm")}
-          </div>
+          <div>日出: {format(new Date(data.daily.sunrise[0]), "HH:mm")}</div>
+          <div>日落: {format(new Date(data.daily.sunset[0]), "HH:mm")}</div>
         </div>
       </div>
     </div>

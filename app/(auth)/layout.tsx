@@ -14,8 +14,7 @@ export default function AuthLayout({
         position="top-center"
         theme="system"
         toastOptions={{
-          className:
-            "!bg-card !text-foreground !border-border/50 !shadow-lg",
+          className: "!bg-card !text-foreground !border-border/50 !shadow-lg",
         }}
       />
       {/* ===== 左侧表单区 ===== */}
@@ -23,11 +22,15 @@ export default function AuthLayout({
         {/* 环境光效 */}
         <div
           className="auth-pulse-glow pointer-events-none absolute -top-40 -right-40 size-[500px] rounded-full opacity-[0.04]"
-          style={{ background: "radial-gradient(circle, #3b82f6, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #3b82f6, transparent 70%)",
+          }}
         />
         <div
           className="auth-pulse-glow pointer-events-none absolute -bottom-48 -left-48 size-[400px] rounded-full opacity-[0.03]"
-          style={{ background: "radial-gradient(circle, #06b6d4, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #06b6d4, transparent 70%)",
+          }}
         />
 
         {/* 返回首页 */}
@@ -45,9 +48,9 @@ export default function AuthLayout({
             <div className="auth-slide-in relative mb-2">
               <div className="auth-pulse-glow absolute -inset-3 rounded-2xl bg-blue-500/8 blur-md" />
               <img
-                src="/logo.jpg"
                 alt="OPC Bot"
                 className="relative size-14 rounded-2xl object-cover ring-1 ring-border/50"
+                src="/logo.jpg"
               />
             </div>
             {children}

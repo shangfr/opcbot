@@ -3,12 +3,14 @@ import { toast } from "sonner";
 import { Artifact } from "@/components/chat/create-artifact";
 import {
   CopyIcon,
+  DownloadIcon,
   LineChartIcon,
   RedoIcon,
   SparklesIcon,
   UndoIcon,
 } from "@/components/chat/icons";
 import { SpreadsheetEditor } from "@/components/chat/sheet-editor";
+import { downloadCSV } from "@/lib/artifact-export";
 
 type Metadata = Record<string, never>;
 
@@ -82,6 +84,19 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
         toast.success("CSV 已复制到剪贴板！");
       },
     },
+    {
+      icon: <DownloadIcon />,
+      description: "下载 CSV 文件",
+      onClick: ({ title, content }) => {
+        const parsed = parse<string[]>(content, { skipEmptyLines: true });
+        const nonEmptyRows = parsed.data.filter((row) =>
+          row.some((cell) => cell.trim() !== "")
+        );
+        const cleanedCsv = unparse(nonEmptyRows);
+        downloadCSV(cleanedCsv, title);
+        toast.success("CSV 文件已下载！");
+      },
+    },
   ],
   toolbar: [
     {
@@ -90,9 +105,7 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
       onClick: ({ sendMessage }) => {
         sendMessage({
           role: "user",
-          parts: [
-            { type: "text", text: "请格式化并清理数据" },
-          ],
+          parts: [{ type: "text", text: "请格式化并清理数据" }],
         });
       },
     },

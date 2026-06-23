@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { auth } from "@/app/(auth)/auth";
 import {
+  createCategory,
+  deleteCategory,
   getCategories,
   getCategoryById,
-  createCategory,
   updateCategory,
-  deleteCategory,
 } from "@/lib/db/queries";
 import { ChatbotError } from "@/lib/errors";
 import { isAdmin } from "@/lib/utils";

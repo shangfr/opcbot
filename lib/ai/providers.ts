@@ -1,8 +1,8 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { customProvider } from "ai";
 import { isTestEnvironment } from "../constants";
-import { type ChatModel, chatModels, DEFAULT_CHAT_MODEL } from "./models";
 import { providers } from "./config";
+import { type ChatModel, chatModels, DEFAULT_CHAT_MODEL } from "./models";
 
 // ============================================================
 // 多厂商 Provider 管理
@@ -16,7 +16,10 @@ export type ProviderConfig = {
 };
 
 // 缓存已创建的 provider 实例
-const providerCache = new Map<string, ReturnType<typeof createOpenAICompatible>>();
+const providerCache = new Map<
+  string,
+  ReturnType<typeof createOpenAICompatible>
+>();
 
 function getOrCreateProvider(name: string) {
   const cached = providerCache.get(name);
@@ -39,7 +42,10 @@ function getOrCreateProvider(name: string) {
 }
 
 function buildLanguageModels(models: ChatModel[]) {
-  const map: Record<string, ReturnType<ReturnType<typeof getOrCreateProvider>>> = {};
+  const map: Record<
+    string,
+    ReturnType<ReturnType<typeof getOrCreateProvider>>
+  > = {};
   for (const m of models) {
     const provider = getOrCreateProvider(m.provider);
     map[m.id] = provider(m.id);

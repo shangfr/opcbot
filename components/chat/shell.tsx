@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useActiveChat } from "@/hooks/use-active-chat";
 import {
   initialArtifactData,
@@ -81,12 +82,7 @@ export function ChatShell() {
               <div className="flex flex-1 items-center justify-center" />
             ) : (
               <Messages
-                addToolApprovalResponse={addToolApprovalResponse}
-                chatId={chatId}
                 isArtifactVisible={isArtifactVisible}
-                isLoading={isLoading}
-                isReadonly={isReadonly}
-                messages={messages}
                 onEditMessage={(msg) => {
                   const text = msg.parts
                     ?.filter((p) => p.type === "text")
@@ -95,11 +91,6 @@ export function ChatShell() {
                   setInput(text ?? "");
                   setEditingMessage(msg);
                 }}
-                regenerate={regenerate}
-                selectedModelId={currentModelId}
-                setMessages={setMessages}
-                status={status}
-                votes={votes}
               />
             )}
 
@@ -120,7 +111,6 @@ export function ChatShell() {
                   onThinkingChange={setThinkingEnabled}
                   selectedModelId={currentModelId}
                   selectedVisibilityType={visibilityType}
-                  thinkingEnabled={thinkingEnabled}
                   sendMessage={
                     editingMessage
                       ? async () => {
@@ -141,30 +131,33 @@ export function ChatShell() {
                   setMessages={setMessages}
                   status={status}
                   stop={stop}
+                  thinkingEnabled={thinkingEnabled}
                 />
               )}
             </div>
           </div>
         </div>
 
-        <Artifact
-          addToolApprovalResponse={addToolApprovalResponse}
-          attachments={attachments}
-          chatId={chatId}
-          input={input}
-          isReadonly={isReadonly}
-          messages={messages}
-          regenerate={regenerate}
-          selectedModelId={currentModelId}
-          selectedVisibilityType={visibilityType}
-          sendMessage={sendMessage}
-          setAttachments={setAttachments}
-          setInput={setInput}
-          setMessages={setMessages}
-          status={status}
-          stop={stop}
-          votes={votes}
-        />
+        <ErrorBoundary>
+          <Artifact
+            addToolApprovalResponse={addToolApprovalResponse}
+            attachments={attachments}
+            chatId={chatId}
+            input={input}
+            isReadonly={isReadonly}
+            messages={messages}
+            regenerate={regenerate}
+            selectedModelId={currentModelId}
+            selectedVisibilityType={visibilityType}
+            sendMessage={sendMessage}
+            setAttachments={setAttachments}
+            setInput={setInput}
+            setMessages={setMessages}
+            status={status}
+            stop={stop}
+            votes={votes}
+          />
+        </ErrorBoundary>
       </div>
 
       <DataStreamHandler />

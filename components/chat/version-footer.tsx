@@ -49,6 +49,7 @@ export const VersionFooter = ({
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1">
           <button
+            aria-label="上一个版本"
             className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
             disabled={isFirst}
             onClick={() => handleVersionChange("prev")}
@@ -60,6 +61,7 @@ export const VersionFooter = ({
             {currentVersionIndex + 1} of {documents.length}
           </span>
           <button
+            aria-label="下一个版本"
             className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
             disabled={isLast}
             onClick={() => handleVersionChange("next")}
@@ -70,12 +72,12 @@ export const VersionFooter = ({
         </div>
 
         <button
+          aria-label="查看变更"
           className={cn(
             "flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
             mode === "diff" && "bg-muted text-foreground"
           )}
           onClick={() => setMode(mode === "diff" ? "edit" : "diff")}
-          title="查看变更"
           type="button"
         >
           <DiffIcon className="size-4" />

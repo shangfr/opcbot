@@ -1,4 +1,4 @@
-import { models, capabilities } from "./config";
+import { capabilities, models } from "./config";
 
 export type ModelCapabilities = {
   tools: boolean;
@@ -49,7 +49,11 @@ export function getAllGatewayModels(): GatewayModelWithCapabilities[] {
   const caps = getCapabilities();
   return chatModels.map((m) => ({
     ...m,
-    capabilities: caps[m.id] ?? { tools: false, vision: false, reasoning: false },
+    capabilities: caps[m.id] ?? {
+      tools: false,
+      vision: false,
+      reasoning: false,
+    },
   }));
 }
 
