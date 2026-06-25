@@ -720,6 +720,7 @@ export async function createAgent({
   avatar,
   systemPrompt,
   phone,
+  knowledgeId,
   starterQuestions,
   isActive,
   isDefault,
@@ -732,6 +733,7 @@ export async function createAgent({
   avatar: string;
   systemPrompt: string;
   phone?: string | null;
+  knowledgeId?: string | null;
   starterQuestions?: string[];
   isActive: boolean;
   isDefault?: boolean;
@@ -755,6 +757,7 @@ export async function createAgent({
             avatar,
             systemPrompt,
             phone: phone || null,
+            knowledgeId: knowledgeId ?? null,
             starterQuestions: starterQuestions ?? [],
             isActive,
             isDefault: true,
@@ -777,6 +780,7 @@ export async function createAgent({
         avatar,
         systemPrompt,
         phone: phone || null,
+        knowledgeId: knowledgeId ?? null,
         starterQuestions: starterQuestions ?? [],
         isActive,
         isDefault: false,
@@ -814,6 +818,7 @@ export async function updateAgent({
   avatar,
   systemPrompt,
   phone,
+  knowledgeId,
   starterQuestions,
   isActive,
   isDefault,
@@ -826,6 +831,7 @@ export async function updateAgent({
   avatar: string;
   systemPrompt: string;
   phone?: string | null;
+  knowledgeId?: string | null;
   starterQuestions?: string[];
   isActive: boolean;
   isDefault?: boolean;
@@ -849,6 +855,7 @@ export async function updateAgent({
             avatar,
             systemPrompt,
             phone: phone ?? null,
+            knowledgeId: knowledgeId ?? null,
             starterQuestions: starterQuestions ?? [],
             isActive,
             isDefault: true,
@@ -872,6 +879,7 @@ export async function updateAgent({
         avatar,
         systemPrompt,
         phone: phone ?? null,
+        knowledgeId: knowledgeId ?? null,
         starterQuestions: starterQuestions ?? [],
         isActive,
         ...(isDefault !== undefined ? { isDefault } : {}),

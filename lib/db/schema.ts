@@ -171,6 +171,7 @@ export const agent = pgTable(
     avatar: text("avatar").notNull().default("/icon.png"),
     systemPrompt: text("system_prompt").notNull(),
     phone: text("phone"),
+    knowledgeId: text("knowledge_id"),
     starterQuestions: json("starter_questions").$type<string[]>().default([]),
     isActive: boolean("is_active").notNull().default(true),
     isDefault: boolean("is_default").notNull().default(false),

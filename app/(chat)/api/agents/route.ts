@@ -20,6 +20,11 @@ const agentSchema = z.object({
   avatar: z.string().default("/icon.png"),
   systemPrompt: z.string().min(1, "系统提示词不能为空"),
   phone: z.string().max(20, "手机号最长 20 个字符").nullable().default(null),
+  knowledgeId: z
+    .string()
+    .max(64, "知识库 ID 最长 64 个字符")
+    .nullable()
+    .default(null),
   starterQuestions: z.array(z.string()).max(8, "默认问题最多 8 个").default([]),
   isActive: z.boolean().default(true),
   isDefault: z.boolean().default(false),
@@ -80,6 +85,7 @@ export async function POST(request: Request) {
       avatar: body.avatar,
       systemPrompt: body.systemPrompt,
       phone: body.phone,
+      knowledgeId: body.knowledgeId,
       starterQuestions: body.starterQuestions,
       isActive: body.isActive,
       isDefault: body.isDefault,
@@ -129,6 +135,10 @@ export async function PATCH(request: Request) {
       avatar: body.avatar ?? existing.avatar,
       systemPrompt: body.systemPrompt ?? existing.systemPrompt,
       phone: body.phone ?? existing.phone,
+      knowledgeId:
+        body.knowledgeId !== undefined
+          ? body.knowledgeId
+          : existing.knowledgeId,
       starterQuestions:
         body.starterQuestions ?? existing.starterQuestions ?? [],
       isActive: body.isActive ?? existing.isActive,

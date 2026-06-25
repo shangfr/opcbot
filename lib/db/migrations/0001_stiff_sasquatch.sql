@@ -1,0 +1,1 @@
+ALTER TABLE "Agent" ADD COLUMN "knowledge_id" text;

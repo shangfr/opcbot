@@ -1,6 +1,7 @@
 "use client";
 
-import { BarChart3, FolderTree, Plus, Settings2 } from "lucide-react";
+import { BarChart3, BookOpen, FolderTree, Plus, Settings2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { Agent } from "@/lib/db/schema";
 import { GroupManagerDialog } from "./group-manager-dialog";
+import { KnowledgeSection } from "./knowledge-section";
 import {
   AgentCard,
   CategoryProvider,
@@ -41,6 +43,7 @@ type AgentFormData = {
   avatar: string;
   systemPrompt: string;
   phone: string;
+  knowledgeId: string;
   starterQuestions: string;
   isActive: boolean;
   isDefault: boolean;
@@ -54,6 +57,7 @@ const emptyForm: AgentFormData = {
   avatar: "/icon.png",
   systemPrompt: "",
   phone: "",
+  knowledgeId: "__none__",
   starterQuestions: "",
   isActive: true,
   isDefault: false,
@@ -93,6 +97,7 @@ export function AgentManager() {
       avatar: agent.avatar,
       systemPrompt: agent.systemPrompt,
       phone: agent.phone ?? "",
+      knowledgeId: agent.knowledgeId ?? "__none__",
       starterQuestions: (agent.starterQuestions ?? []).join("\n"),
       isActive: agent.isActive,
       isDefault: agent.isDefault,
@@ -119,6 +124,7 @@ export function AgentManager() {
         .map((s) => s.trim())
         .filter(Boolean),
       isDefault: form.isDefault,
+      knowledgeId: form.knowledgeId === "__none__" ? null : form.knowledgeId,
       categoryId: form.categoryId === "__none__" ? null : form.categoryId,
     };
 
@@ -199,6 +205,12 @@ export function AgentManager() {
               <BarChart3 className="size-3.5" />
               数据看板
             </Button>
+            <Link href="/agents/knowledge">
+              <Button className="gap-1.5" size="sm" variant="ghost">
+                <BookOpen className="size-3.5" />
+                知识库
+              </Button>
+            </Link>
             <Button
               className="gap-1.5"
               onClick={() => setGroupDialogOpen(true)}
@@ -343,6 +355,12 @@ export function AgentManager() {
                   value={form.systemPrompt}
                 />
               </div>
+
+              {/* 知识库配置 (RAG) */}
+              <KnowledgeSection
+                onChange={(v) => setForm({ ...form, knowledgeId: v })}
+                value={form.knowledgeId}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="starterQuestions">默认问题</Label>

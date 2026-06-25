@@ -23,6 +23,7 @@ import {
 } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { withRetry } from "@/lib/ai/retry";
+import { retrieve as retrieveKnowledge } from "@/lib/ai/zhipu-knowledge";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -203,8 +204,63 @@ export async function POST(request: Request) {
     const supportsTools = capabilities?.tools === true;
 
     let systemMessage = systemPrompt({ requestHints, supportsTools });
+
+    // ── Knowledge base retrieval (RAG) ──
+    let knowledgeContext = "";
+    if (agentRecord?.isActive && agentRecord?.knowledgeId) {
+      try {
+        const lastUserMsg = uiMessages[uiMessages.length - 1];
+        const queryText =
+          lastUserMsg?.parts
+            ?.filter((p: { type: string }) => p.type === "text")
+            .map((p: { type: string; text?: string }) => (p as { text: string }).text)
+            .join(" ") ?? "";
+
+        if (queryText.trim()) {
+          const retrieveResult = await retrieveKnowledge({
+            query: queryText.slice(0, 1000),
+            knowledge_ids: [agentRecord.knowledgeId],
+            top_k: 5,
+            recall_method: "mixed",
+          });
+
+          if (!isProductionEnvironment) {
+            console.log(
+              "[chat] 知识库检索 query:",
+              queryText.slice(0, 100),
+              "\n[chat] 知识库返回 code:",
+              retrieveResult.code,
+              "条数:",
+              retrieveResult.data?.length ?? 0
+            );
+            retrieveResult.data?.forEach((r, i) => {
+              console.log(
+                `[chat] chunk[${i}] score=${r.score.toFixed(3)} source=${r.metadata.document_name}\n`,
+                r.text.slice(0, 200)
+              );
+            });
+          }
+
+          if (
+            retrieveResult.code === 200 &&
+            retrieveResult.data &&
+            retrieveResult.data.length > 0
+          ) {
+            const chunks = retrieveResult.data.map((r) => r.text).join("\n\n");
+            knowledgeContext = `\n\n## 知识库参考内容\n以下是从知识库中检索到的相关信息，请优先基于这些内容回答用户问题。如果知识库内容不足以回答，再结合你的知识补充，并告知用户信息来源。\n\n${chunks}`;
+          }
+        }
+      } catch (e) {
+        console.warn(
+          "[chat] 知识库检索失败:",
+          e instanceof Error ? e.message : e
+        );
+        // Non-fatal: degrade to no-knowledge mode
+      }
+    }
+
     if (agentRecord?.isActive) {
-      systemMessage = `${agentRecord.systemPrompt}\n\n${systemMessage}`;
+      systemMessage = `${agentRecord.systemPrompt}${knowledgeContext}\n\n${systemMessage}`;
     } else if (!agentId) {
       const config = await getSiteConfig();
       if (config?.defaultSystemPrompt) {
