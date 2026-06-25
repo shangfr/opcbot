@@ -2,6 +2,7 @@
 
 import { BarChart3, Bot, MessageSquare, ThumbsUp, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -59,7 +60,7 @@ function StatCard({
 }) {
   const c = colorMap[color] ?? colorMap.cyan;
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]">
+    <Card className="flex items-center gap-4" padding="md" variant="base">
       {Icon && (
         <div
           className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${c.bg}`}
@@ -78,7 +79,7 @@ function StatCard({
           <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -92,7 +93,7 @@ function PeriodCard({
   users: number;
 }) {
   return (
-    <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2.5">
+    <Card className="rounded-lg bg-muted/30" padding="sm" variant="base">
       <div className="mb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
         {label}
       </div>
@@ -104,7 +105,7 @@ function PeriodCard({
         <span className="text-sm font-medium">{users}</span>
         <span className="text-[10px] text-muted-foreground">用户</span>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -230,7 +231,11 @@ export function StatsDialog({
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 OPC 使用排行
               </p>
-              <div className="rounded-xl border border-border/50 overflow-hidden">
+              <Card
+                className="overflow-hidden border-border/50"
+                padding="none"
+                variant="base"
+              >
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/40 bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -309,7 +314,7 @@ export function StatsDialog({
                     )}
                   </tbody>
                 </table>
-              </div>
+              </Card>
             </div>
           </div>
         ) : (

@@ -10,6 +10,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
+import { cardVariants } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export type SlashCommand = {
@@ -102,7 +103,10 @@ export function SlashCommandMenu({
           : undefined
       }
       aria-label="斜杠命令"
-      className="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-xl border border-border/50 bg-card/95 shadow-[var(--shadow-float)] backdrop-blur-xl"
+      className={cn(
+        "absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden",
+        cardVariants({ variant: "glass", padding: "none" })
+      )}
       ref={menuRef}
       role="listbox"
       tabIndex={-1}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
+import { cardVariants } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { guestRegex } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import { LoaderIcon } from "./icons";
 import { toast } from "./toast";
 
@@ -69,7 +71,14 @@ export function SidebarUserNav({ user }: { user: User }) {
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-popper-anchor-width) rounded-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[var(--shadow-float)]"
+            className={cn(
+              "w-(--radix-popper-anchor-width)",
+              cardVariants({
+                variant: "glass",
+                padding: "none",
+                className: "rounded-lg",
+              })
+            )}
             data-testid="user-nav-menu"
             side="top"
           >

@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 
+import { cardVariants } from "@/components/ui/card";
 import {
   Command,
   CommandEmpty,
@@ -43,8 +44,13 @@ export const ModelSelectorContent = ({
   <PopoverContent
     align="start"
     className={cn(
-      "w-[280px] p-0 rounded-xl border border-primary/10 bg-card/90 backdrop-blur-xl shadow-[var(--shadow-float)]",
-      className
+      "w-[280px]",
+      cardVariants({
+        variant: "glass",
+        padding: "none",
+        className: "border-primary/10",
+      }),
+      className,
     )}
     side="top"
     sideOffset={8}

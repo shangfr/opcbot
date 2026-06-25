@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { cardVariants } from "@/components/ui/card";
 import { useActiveChat } from "@/hooks/use-active-chat";
 import { useMessages } from "@/hooks/use-messages";
 import type { ChatMessage } from "@/lib/types";
@@ -221,11 +222,17 @@ function PureMessages({ isArtifactVisible, onEditMessage }: MessagesProps) {
 
       <button
         aria-label="滚动到底部"
-        className={`absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center rounded-full border border-border/50 bg-card/90 shadow-[var(--shadow-float)] backdrop-blur-lg transition-all duration-200 size-9 ${
+        className={cn(
+          "absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center size-9 transition-all duration-200",
+          cardVariants({
+            variant: "glass",
+            padding: "none",
+            className: "rounded-full",
+          }),
           isAtBottom
             ? "pointer-events-none scale-90 opacity-0"
             : "pointer-events-auto scale-100 opacity-100"
-        }`}
+        )}
         onClick={() => scrollToBottom("smooth")}
         type="button"
       >

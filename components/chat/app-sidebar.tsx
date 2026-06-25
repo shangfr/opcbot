@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BarChart3,
   BookOpen,
   Bot,
   MessagesSquareIcon,
@@ -203,6 +204,22 @@ export function AppSidebar({
                       <Link href="/agents/knowledge" onClick={() => setOpenMobile(false)}>
                         <BookOpen className="size-3.5" />
                         <span>知识库管理</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* 数据看板 */}
+                {user && isAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip="数据看板"
+                    >
+                      <Link href="/agents/stats" onClick={() => setOpenMobile(false)}>
+                        <BarChart3 className="size-3.5" />
+                        <span>数据看板</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

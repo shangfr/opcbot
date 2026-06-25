@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { cardVariants } from "@/components/ui/card";
 import {
   type AgentGroupStyle,
   buildGroupFromCategory,
@@ -19,7 +20,7 @@ import {
   getAvatarChar,
 } from "@/lib/agent-groups";
 import type { Agent, Category } from "@/lib/db/schema";
-import { fetcher } from "@/lib/utils";
+import { cn, fetcher } from "@/lib/utils";
 
 /* ================================================================
  * Category 上下文 —— AgentCard 通过 context 获取分组主题
@@ -277,9 +278,14 @@ export function AgentCard({
   return (
     <div
       aria-label={!admin && onChat ? `与 ${agent.name} 开始对话` : undefined}
-      className={`fade-up group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br ${group.gradientFrom} to-transparent p-5 shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 ${group.borderHover} ${group.hoverShadow} ${
-        !admin && onChat ? "cursor-pointer" : ""
-      }`}
+      className={cn(
+        "fade-up group relative overflow-hidden bg-gradient-to-br to-transparent p-5 transition-all duration-300 hover:-translate-y-1",
+        cardVariants({
+          variant: "elevated",
+          padding: "none",
+          className: `${group.gradientFrom} ${group.borderHover} ${group.hoverShadow}`,
+        })
+      )}
       onClick={!admin && onChat ? () => onChat(agent) : undefined}
       onKeyDown={
         !admin && onChat

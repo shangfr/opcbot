@@ -1,7 +1,6 @@
 "use client";
 
-import { BarChart3, BookOpen, FolderTree, Plus, Settings2 } from "lucide-react";
-import Link from "next/link";
+import { FolderTree, Plus, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +34,7 @@ import {
   useAgents,
 } from "./opc-shared";
 import { SiteConfigDialog } from "./site-config-dialog";
-import { StatsDialog } from "./stats-dialog";
+
 
 type AgentFormData = {
   name: string;
@@ -81,7 +80,6 @@ export function AgentManager() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Agent | null>(null);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
 
   const openCreate = () => {
     setEditingAgent(null);
@@ -186,7 +184,7 @@ export function AgentManager() {
 
   return (
     <CategoryProvider value={ctxValue}>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="px-6 py-8">
         {/* Header */}
         <div className="mb-10 flex items-center justify-between">
           <div>
@@ -196,21 +194,6 @@ export function AgentManager() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              className="gap-1.5"
-              onClick={() => setStatsDialogOpen(true)}
-              size="sm"
-              variant="ghost"
-            >
-              <BarChart3 className="size-3.5" />
-              数据看板
-            </Button>
-            <Link href="/agents/knowledge">
-              <Button className="gap-1.5" size="sm" variant="ghost">
-                <BookOpen className="size-3.5" />
-                知识库
-              </Button>
-            </Link>
             <Button
               className="gap-1.5"
               onClick={() => setGroupDialogOpen(true)}
@@ -528,9 +511,6 @@ export function AgentManager() {
           onOpenChange={setGroupDialogOpen}
           open={groupDialogOpen}
         />
-
-        {/* 数据看板弹窗 */}
-        <StatsDialog onOpenChange={setStatsDialogOpen} open={statsDialogOpen} />
       </div>
     </CategoryProvider>
   );

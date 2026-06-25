@@ -2,6 +2,7 @@
 
 import { Lightbulb, PowerOff, Search } from "lucide-react";
 import { useState } from "react";
+import { Card } from "@/components/ui/card";
 import { getAvatarChar } from "@/lib/agent-groups";
 import {
   AgentCard,
@@ -39,7 +40,7 @@ export function AgentCards() {
 
   return (
     <CategoryProvider value={ctxValue}>
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="px-6 py-8">
         {/* 页头 */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">选择 OPC</h1>
@@ -118,9 +119,11 @@ export function AgentCards() {
               {inactive.map((agent) => {
                 const avatarChar = getAvatarChar(agent.name);
                 return (
-                  <div
-                    className="relative rounded-2xl border border-border/50 bg-card p-5"
+                  <Card
+                    className="relative"
                     key={agent.id}
+                    padding="lg"
+                    variant="elevated"
                   >
                     <div className="mb-3 flex items-center gap-3">
                       <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-base font-bold text-muted-foreground/50">
@@ -139,7 +142,7 @@ export function AgentCards() {
                     <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                       {agent.description}
                     </p>
-                  </div>
+                  </Card>
                 );
               })}
             </div>

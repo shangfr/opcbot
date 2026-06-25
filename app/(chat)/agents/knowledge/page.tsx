@@ -343,9 +343,9 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
+    <div className="px-6 py-8">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-10 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/agents">
             <Button size="icon" variant="ghost">
@@ -356,8 +356,8 @@ export default function KnowledgePage() {
             <h1 className="text-2xl font-semibold tracking-tight">
               知识库管理
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              管理智谱知识库，上传文档用于对话检索（RAG）
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              管理智谱知识库,上传文档用于对话检索(RAG)
             </p>
           </div>
         </div>
@@ -373,7 +373,7 @@ export default function KnowledgePage() {
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
+        <div className="grid gap-4 lg:grid-cols-[1fr_1.5fr]">
           {/* Left: KB list — hidden on mobile when a KB is selected */}
           <div
             className={`space-y-3 ${selectedKb ? "hidden lg:block" : ""}`}

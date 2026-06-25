@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { cardVariants } from "@/components/ui/card";
 import {
   buildGroupFromCategory,
   DEFAULT_THEME,
   getAvatarChar,
 } from "@/lib/agent-groups";
 import type { Agent, Category } from "@/lib/db/schema";
-import { fetcher } from "@/lib/utils";
+import { cn, fetcher } from "@/lib/utils";
 
 type CategoryRecord = Category & { sortOrder: number; colorKey: string };
 
@@ -45,7 +46,10 @@ function StatCard({
 
   return (
     <div
-      className="stat-enter flex items-center gap-4 rounded-xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]"
+      className={cn(
+        "stat-enter flex items-center gap-4",
+        cardVariants({ variant: "base", padding: "md" })
+      )}
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div
@@ -219,7 +223,15 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <button
-              className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/[0.04] to-transparent p-5 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-500/30 hover:shadow-[0_4px_24px_-4px_rgba(14,165,233,0.15)]"
+              className={cn(
+                "group relative flex items-center gap-4 overflow-hidden bg-gradient-to-br to-transparent text-left transition-all duration-300 hover:-translate-y-0.5",
+                cardVariants({
+                  variant: "base",
+                  padding: "lg",
+                  className:
+                    "from-sky-500/[0.04] hover:border-sky-500/30 hover:shadow-[0_4px_24px_-4px_rgba(14,165,233,0.15)]",
+                })
+              )}
               onClick={handleNewChat}
               type="button"
             >
@@ -247,7 +259,15 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
               </svg>
             </button>
             <button
-              className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-rose-500/15 bg-gradient-to-br from-rose-500/[0.04] to-transparent p-5 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-500/30 hover:shadow-[0_4px_24px_-4px_rgba(244,63,94,0.15)]"
+              className={cn(
+                "group relative flex items-center gap-4 overflow-hidden bg-gradient-to-br to-transparent text-left transition-all duration-300 hover:-translate-y-0.5",
+                cardVariants({
+                  variant: "base",
+                  padding: "lg",
+                  className:
+                    "from-rose-500/[0.04] hover:border-rose-500/30 hover:shadow-[0_4px_24px_-4px_rgba(244,63,94,0.15)]",
+                })
+              )}
               onClick={() => router.push("/agents")}
               type="button"
             >
@@ -286,7 +306,10 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
             <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
-                  className="flex items-center gap-4 overflow-hidden rounded-xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]"
+                  className={cn(
+                    "flex items-center gap-4 overflow-hidden",
+                    cardVariants({ variant: "base", padding: "md" })
+                  )}
                   key={`skeleton-${i}`}
                 >
                   <div className="size-10 shrink-0 animate-pulse rounded-xl bg-foreground/10" />
@@ -322,7 +345,14 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
 
                 return (
                   <button
-                    className={`stat-enter group flex items-center gap-4 overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br ${group.gradientFrom} to-transparent p-4 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 ${group.borderHover} ${group.hoverShadow}`}
+                    className={cn(
+                      "stat-enter group flex items-center gap-4 overflow-hidden bg-gradient-to-br to-transparent text-left transition-all duration-300 hover:-translate-y-0.5",
+                      cardVariants({
+                        variant: "base",
+                        padding: "md",
+                        className: `${group.gradientFrom} ${group.borderHover} ${group.hoverShadow}`,
+                      })
+                    )}
                     key={agent.id}
                     onClick={() => handleStartChatWithAgent(agent)}
                     style={{
