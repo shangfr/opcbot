@@ -9,6 +9,7 @@ import { ChatShellWrapper } from "@/components/chat/chat-shell-wrapper";
 import { DataStreamProvider } from "@/components/chat/data-stream-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { isAdmin } from "@/lib/utils";
+import { GlobalHeader } from "@/components/chat/global-header";
 import { auth } from "../(auth)/auth";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,7 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
       <ChatProvider>
         <AppSidebar isAdmin={isAdminUser} user={session?.user} />
         <SidebarInset>
+          <GlobalHeader />
           <Toaster
             position="top-center"
             theme="system"

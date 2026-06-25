@@ -23,7 +23,7 @@ function PureChatHeader({
 
   return (
     <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm">
-      {!isCollapsed && (
+      {(isMobile || !isCollapsed) && (
         <Button
           className="md:hidden -ml-1"
           onClick={toggleSidebar}

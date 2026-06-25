@@ -125,18 +125,13 @@ function PureSuggestedActions({
 
       {/* 引导问题 */}
       <div
-        className="flex w-full gap-2.5 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible"
+        className="flex w-full flex-col gap-2.5 sm:grid sm:grid-cols-2"
         data-testid="suggested-actions"
-        style={{
-          scrollbarWidth: "none",
-          WebkitOverflowScrolling: "touch",
-          msOverflowStyle: "none",
-        }}
       >
         {suggestedActions.map((suggestedAction, index) => (
           <motion.div
             animate={{ opacity: 1, y: 0 }}
-            className="min-w-[200px] shrink-0 sm:min-w-0 sm:shrink"
+            className="w-full"
             exit={{ opacity: 0, y: 16 }}
             initial={{ opacity: 0, y: 16 }}
             key={suggestedAction}
@@ -147,7 +142,7 @@ function PureSuggestedActions({
             }}
           >
             <Suggestion
-              className="h-auto w-full whitespace-nowrap rounded-xl border border-primary/15 bg-primary/[0.03] backdrop-blur-sm px-4 py-3 text-left text-[12px] leading-relaxed text-muted-foreground transition-all duration-200 sm:whitespace-normal sm:p-4 sm:text-[13px] hover:-translate-y-0.5 hover:bg-primary/[0.08] hover:text-foreground hover:border-primary/30 hover:shadow-[0_0_20px_rgba(255,110,50,0.1)] dark:hover:shadow-[0_0_24px_rgba(255,90,30,0.15)]"
+              className="h-auto w-full whitespace-normal rounded-xl border border-primary/15 bg-primary/[0.03] backdrop-blur-sm px-4 py-3 text-left text-[12px] leading-relaxed text-muted-foreground transition-all duration-200 sm:p-4 sm:text-[13px] hover:-translate-y-0.5 hover:bg-primary/[0.08] hover:text-foreground hover:border-primary/30 hover:shadow-[0_0_20px_rgba(255,110,50,0.1)] dark:hover:shadow-[0_0_24px_rgba(255,90,30,0.15)]"
               onClick={(suggestion) => {
                 window.history.pushState(
                   {},
