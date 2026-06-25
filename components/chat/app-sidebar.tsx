@@ -8,6 +8,7 @@ import {
   PanelLeftIcon,
   PenSquareIcon,
   TrashIcon,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -220,6 +221,22 @@ export function AppSidebar({
                       <Link href="/agents/stats" onClick={() => setOpenMobile(false)}>
                         <BarChart3 className="size-3.5" />
                         <span>数据看板</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* 用户管理 */}
+                {user && isAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip="用户管理"
+                    >
+                      <Link href="/agents/users" onClick={() => setOpenMobile(false)}>
+                        <Users className="size-3.5" />
+                        <span>用户管理</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -19,7 +19,8 @@ export type Surface =
   | "agent"
   | "category"
   | "site-config"
-  | "stats";
+  | "stats"
+  | "users";
 
 export type ErrorCode = `${ErrorType}:${Surface}`;
 
@@ -39,6 +40,7 @@ export const visibilityBySurface: Record<Surface, ErrorVisibility> = {
   category: "response",
   "site-config": "response",
   stats: "response",
+  users: "response",
 };
 
 export class ChatbotError extends Error {
@@ -137,6 +139,15 @@ export function getMessageByErrorCode(errorCode: ErrorCode): string {
       return "当前账号无权查看数据看板。仅管理员可操作。";
     case "bad_request:stats":
       return "获取统计数据失败。请稍后重试。";
+
+    case "unauthorized:users":
+      return "请先登录以访问用户管理。";
+    case "forbidden:users":
+      return "当前账号无权访问用户管理。仅管理员可操作。";
+    case "not_found:users":
+      return "未找到该用户。请检查用户 ID 后重试。";
+    case "bad_request:users":
+      return "用户操作请求无效。请检查输入后重试。";
 
     default:
       return "出了点问题，请稍后重试。";

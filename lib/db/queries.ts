@@ -40,7 +40,7 @@ import {
 import { generateHashedPassword } from "./utils";
 
 const client = postgres(process.env.POSTGRES_URL ?? "");
-const db = drizzle(client);
+export const db = drizzle(client);
 
 export async function getUser(email: string): Promise<User[]> {
   try {
@@ -68,7 +68,11 @@ export async function createGuestUser() {
   const password = generateHashedPassword(generateUUID());
 
   try {
-    return await db.insert(user).values({ email, password }).returning({
+    return await db.insert(user).values({ 
+      email, 
+      password,
+      isAnonymous: true,
+    }).returning({
       id: user.id,
       email: user.email,
     });
@@ -1220,6 +1224,123 @@ export async function updateUserPassword({
 // ============================================================
 // Dashboard Stats (admin only)
 // ============================================================
+
+// ============================================================
+// User Management (admin only)
+// ============================================================
+
+export async function getUserManagementStats() {
+  try {
+    // User list with activity stats
+    const userList = await db.execute(sql`
+      SELECT
+        u.id,
+        u.email,
+        u.name,
+        u."isAnonymous",
+        u.role,
+        u."createdAt",
+        u."updatedAt",
+        COUNT(DISTINCT c.id) AS "chatCount",
+        COUNT(DISTINCT m.id) AS "messageCount",
+        MAX(c."createdAt") AS "lastActivityAt",
+        COUNT(DISTINCT CASE WHEN v."isUpvoted" = true THEN v."messageId" END) AS "upvotes",
+        COUNT(DISTINCT CASE WHEN v."isUpvoted" = false THEN v."messageId" END) AS "downvotes"
+      FROM "User" u
+      LEFT JOIN "Chat" c ON c."userId" = u.id
+      LEFT JOIN "Message_v2" m ON m."chatId" = c.id AND m.role = 'user'
+      LEFT JOIN "Vote_v2" v ON v."chatId" = c.id
+      GROUP BY u.id, u.email, u.name, u."isAnonymous", u.role, u."createdAt", u."updatedAt"
+      ORDER BY MAX(c."createdAt") DESC NULLS LAST, u."createdAt" DESC
+    `);
+
+    // Conversion funnel: guest vs registered
+    const conversion = await db.execute(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE u."isAnonymous" = true) AS "guestUsers",
+        COUNT(*) FILTER (WHERE u."isAnonymous" = false) AS "registeredUsers",
+        COUNT(*) AS "totalUsers"
+      FROM "User" u
+    `);
+
+    // Feedback summary: all votes aggregated
+    const feedback = await db.execute(sql`
+      SELECT
+        COUNT(*) FILTER (WHERE v."isUpvoted" = true) AS "totalUpvotes",
+        COUNT(*) FILTER (WHERE v."isUpvoted" = false) AS "totalDownvotes",
+        COUNT(DISTINCT v."chatId") AS "votedChats",
+        COUNT(DISTINCT v."messageId") AS "votedMessages"
+      FROM "Vote_v2" v
+    `);
+
+    const conversionRow = (conversion as unknown as Record<string, string>[])[0] ?? {};
+    const feedbackRow = (feedback as unknown as Record<string, string>[])[0] ?? {};
+
+    return {
+      users: (userList as unknown as Record<string, string>[]).map((row) => ({
+        id: row.id,
+        email: row.email,
+        name: row.name,
+        isAnonymous: row.isAnonymous === 'true' || row.isAnonymous === 't',
+        role: row.role || 'user',
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        chatCount: Number(row.chatCount ?? 0),
+        messageCount: Number(row.messageCount ?? 0),
+        lastActivityAt: row.lastActivityAt,
+        upvotes: Number(row.upvotes ?? 0),
+        downvotes: Number(row.downvotes ?? 0),
+      })),
+      conversion: {
+        guestUsers: Number(conversionRow.guestUsers ?? 0),
+        registeredUsers: Number(conversionRow.registeredUsers ?? 0),
+        totalUsers: Number(conversionRow.totalUsers ?? 0),
+      },
+      feedback: {
+        totalUpvotes: Number(feedbackRow.totalUpvotes ?? 0),
+        totalDownvotes: Number(feedbackRow.totalDownvotes ?? 0),
+        votedChats: Number(feedbackRow.votedChats ?? 0),
+        votedMessages: Number(feedbackRow.votedMessages ?? 0),
+      },
+    };
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get user management stats"
+    );
+  }
+}
+
+export async function deleteAllGuestUsers() {
+  try {
+    return await db.transaction(async (tx) => {
+      // Get all guest user IDs
+      const guestUsers = await tx
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.isAnonymous, true));
+
+      if (guestUsers.length === 0) {
+        return { deletedCount: 0 };
+      }
+
+      const guestUserIds = guestUsers.map((u) => u.id);
+
+      // Delete all related data (cascading will handle votes, messages, chats, documents, etc.)
+      const deletedUsers = await tx
+        .delete(user)
+        .where(inArray(user.id, guestUserIds))
+        .returning();
+
+      return { deletedCount: deletedUsers.length };
+    });
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to delete guest users"
+    );
+  }
+}
 
 export async function getDashboardStats() {
   try {

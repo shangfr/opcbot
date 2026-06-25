@@ -5,6 +5,7 @@ import {
   index,
   integer,
   json,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -13,6 +14,9 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+
+// 用户角色枚举
+export const userRoleEnum = pgEnum("user_role", ["user", "moderator", "admin"]);
 
 export const user = pgTable(
   "User",
@@ -24,6 +28,7 @@ export const user = pgTable(
     emailVerified: boolean("emailVerified").notNull().default(false),
     image: text("image"),
     isAnonymous: boolean("isAnonymous").notNull().default(false),
+    role: userRoleEnum("role").notNull().default("user"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },

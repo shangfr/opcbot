@@ -86,14 +86,24 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
     .join('');
 }
 
-export function isAdmin(user: { email?: string | null }): boolean {
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+export function isAdmin(user: { role?: string | null }): boolean {
+  return user.role === 'admin';
+}
 
-  if (adminEmails.length === 0) return false;
+export function hasPermission(
+  user: { role?: string | null } | null,
+  requiredRole: 'user' | 'moderator' | 'admin'
+): boolean {
+  if (!user?.role) return false;
 
-  const email = user.email?.toLowerCase() ?? "";
-  return adminEmails.includes(email);
+  const roleHierarchy = {
+    user: 0,
+    moderator: 1,
+    admin: 2,
+  };
+
+  const userLevel = roleHierarchy[user.role as keyof typeof roleHierarchy] ?? 0;
+  const requiredLevel = roleHierarchy[requiredRole];
+
+  return userLevel >= requiredLevel;
 }
