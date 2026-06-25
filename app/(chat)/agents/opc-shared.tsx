@@ -276,14 +276,18 @@ export function AgentCard({
 
   return (
     <div
-      className={`fade-up group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br ${group.gradientFrom} to-transparent p-5 shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 hover:${group.borderHover} ${group.hoverShadow} ${
+      aria-label={!admin && onChat ? `与 ${agent.name} 开始对话` : undefined}
+      className={`fade-up group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br ${group.gradientFrom} to-transparent p-5 shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-1 ${group.borderHover} ${group.hoverShadow} ${
         !admin && onChat ? "cursor-pointer" : ""
       }`}
       onClick={!admin && onChat ? () => onChat(agent) : undefined}
       onKeyDown={
         !admin && onChat
           ? (e) => {
-              if (e.key === "Enter") onChat(agent);
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onChat(agent);
+              }
             }
           : undefined
       }
@@ -349,8 +353,8 @@ export function AgentCard({
         {agent.description}
       </p>
 
-      {/* hover 行动栏 */}
-      <div className="flex items-center justify-between opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+      {/* hover 行动栏 — 移动端始终可见，桌面端 hover 显示 */}
+      <div className="flex items-center justify-between opacity-100 transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
         {admin ? (
           /* 管理操作 */
           <>

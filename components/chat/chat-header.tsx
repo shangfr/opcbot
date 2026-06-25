@@ -19,21 +19,20 @@ function PureChatHeader({
   isReadonly: boolean;
 }) {
   const { state, toggleSidebar, isMobile } = useSidebar();
-
-  if (state === "collapsed" && !isMobile) {
-    return null;
-  }
+  const isCollapsed = state === "collapsed" && !isMobile;
 
   return (
     <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm">
-      <Button
-        className="md:hidden -ml-1"
-        onClick={toggleSidebar}
-        size="icon-sm"
-        variant="ghost"
-      >
-        <PanelLeftIcon className="size-4" />
-      </Button>
+      {!isCollapsed && (
+        <Button
+          className="md:hidden -ml-1"
+          onClick={toggleSidebar}
+          size="icon-sm"
+          variant="ghost"
+        >
+          <PanelLeftIcon className="size-4" />
+        </Button>
+      )}
 
       {agentName && (
         <div className="flex items-center gap-2 min-w-0">

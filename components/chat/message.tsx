@@ -282,7 +282,7 @@ const PurePreviewMessage = ({
                 output={
                   "error" in part.output ? (
                     <div className="rounded border p-2 text-red-500">
-                      Error: {String(part.output.error)}
+                      错误: {String(part.output.error)}
                     </div>
                   ) : (
                     <DocumentToolResult

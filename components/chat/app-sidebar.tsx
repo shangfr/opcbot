@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookOpen,
   Bot,
   MessagesSquareIcon,
   PanelLeftIcon,
@@ -186,6 +187,22 @@ export function AppSidebar({
                       <Link href="/agents" onClick={() => setOpenMobile(false)}>
                         <Bot className="size-3.5" />
                         <span>{isAdmin ? "OPC 管理" : "选择 OPC"}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* 知识库管理 */}
+                {user && isAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip="知识库管理"
+                    >
+                      <Link href="/agents/knowledge" onClick={() => setOpenMobile(false)}>
+                        <BookOpen className="size-3.5" />
+                        <span>知识库管理</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

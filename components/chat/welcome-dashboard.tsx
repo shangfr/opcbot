@@ -79,7 +79,7 @@ function StatCard({
 export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
   const router = useRouter();
 
-  const { data: agents = [] } = useSWR<Agent[]>(
+  const { data: agents = [], isLoading: agentsLoading } = useSWR<Agent[]>(
     `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
@@ -278,6 +278,28 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
         </div>
 
         {/* ===== 推荐 OPC ===== */}
+        {agentsLoading && featuredAgents.length === 0 && (
+          <div>
+            <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              推荐 OPC
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  className="flex items-center gap-4 overflow-hidden rounded-xl border border-border/40 bg-card p-4 shadow-[var(--shadow-card)]"
+                  key={`skeleton-${i}`}
+                >
+                  <div className="size-10 shrink-0 animate-pulse rounded-xl bg-foreground/10" />
+                  <div className="min-w-0 flex-1">
+                    <div className="h-4 w-24 animate-pulse rounded bg-foreground/10" />
+                    <div className="mt-1.5 h-3 w-36 animate-pulse rounded bg-foreground/8" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {featuredAgents.length > 0 && (
           <div>
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -300,7 +322,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
 
                 return (
                   <button
-                    className={`stat-enter group flex items-center gap-4 overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br ${group.gradientFrom} to-transparent p-4 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:${group.borderHover} ${group.hoverShadow}`}
+                    className={`stat-enter group flex items-center gap-4 overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br ${group.gradientFrom} to-transparent p-4 text-left shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 ${group.borderHover} ${group.hoverShadow}`}
                     key={agent.id}
                     onClick={() => handleStartChatWithAgent(agent)}
                     style={{

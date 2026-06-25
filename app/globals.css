@@ -228,12 +228,10 @@ select:focus-visible,
     --background-end-rgb: 255, 250, 248;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --foreground-rgb: 255, 230, 210;
-      --background-start-rgb: 25, 10, 5;
-      --background-end-rgb: 30, 15, 5;
-    }
+  .dark {
+    --foreground-rgb: 255, 230, 210;
+    --background-start-rgb: 25, 10, 5;
+    --background-end-rgb: 30, 15, 5;
   }
 }
 

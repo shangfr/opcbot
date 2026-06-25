@@ -49,7 +49,7 @@ export function AgentCards() {
         </div>
 
         {/* 搜索框 */}
-        {activeCount > 6 && (
+        {activeCount > 3 && (
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
             <input

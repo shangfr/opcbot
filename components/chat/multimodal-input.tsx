@@ -289,7 +289,7 @@ function PureMultimodalInput({
       const { error } = await response.json();
       toast.error(error);
     } catch (_error) {
-      toast.error("Failed to upload file, please try again!");
+      toast.error("文件上传失败，请重试");
     }
   }, []);
 
@@ -311,7 +311,7 @@ function PureMultimodalInput({
           ...successfullyUploadedAttachments,
         ]);
       } catch (_error) {
-        toast.error("Failed to upload files");
+        toast.error("文件上传失败");
       } finally {
         setUploadQueue([]);
       }
@@ -357,7 +357,7 @@ function PureMultimodalInput({
           ...(successfullyUploadedAttachments as Attachment[]),
         ]);
       } catch (_error) {
-        toast.error("Failed to upload pasted image(s)");
+        toast.error("粘贴的图片上传失败");
       } finally {
         setUploadQueue([]);
       }
@@ -379,7 +379,7 @@ function PureMultimodalInput({
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
       {editingMessage && onCancelEdit && (
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <span>Editing message</span>
+          <span>正在编辑消息</span>
           <button
             className="rounded px-1.5 py-0.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground"
             onMouseDown={(e) => {
@@ -388,7 +388,7 @@ function PureMultimodalInput({
             }}
             type="button"
           >
-            Cancel
+            取消
           </button>
         </div>
       )}
@@ -443,7 +443,7 @@ function PureMultimodalInput({
           if (status === "ready" || status === "error") {
             submitForm();
           } else {
-            toast.error("Please wait for the model to finish its response!");
+            toast.error("请等待模型完成回复");
           }
         }}
       >
