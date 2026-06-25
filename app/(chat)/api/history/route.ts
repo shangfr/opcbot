@@ -1,6 +1,10 @@
 import type { NextRequest } from "next/server";
 import { auth } from "@/app/(auth)/auth";
-import { deleteAllChatsByUserId, getChatsByUserId } from "@/lib/db/queries";
+import {
+  deleteAllChatsByUserId,
+  deleteChatsByIds,
+  getChatsByUserId,
+} from "@/lib/db/queries";
 import { ChatbotError } from "@/lib/errors";
 
 export async function GET(request: NextRequest) {
@@ -36,11 +40,29 @@ export async function GET(request: NextRequest) {
   return Response.json(chats);
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   const session = await auth();
 
   if (!session?.user) {
     return new ChatbotError("unauthorized:chat").toResponse();
+  }
+
+  const { searchParams } = new URL(request.url);
+  const idsParam = searchParams.get("ids");
+
+  if (idsParam) {
+    const ids = idsParam.split(",").filter(Boolean);
+
+    if (ids.length === 0) {
+      return new ChatbotError("bad_request:api").toResponse();
+    }
+
+    const result = await deleteChatsByIds({
+      ids,
+      userId: session.user.id,
+    });
+
+    return Response.json(result, { status: 200 });
   }
 
   const result = await deleteAllChatsByUserId({ userId: session.user.id });

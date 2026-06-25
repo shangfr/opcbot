@@ -4,7 +4,7 @@ import { isToday, isYesterday, subMonths, subWeeks } from "date-fns";
 import { motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "next-auth";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
 import {
@@ -118,6 +118,104 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const router = useRouter();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+
+  const allChats: Chat[] = paginatedChatHistories
+    ? paginatedChatHistories.flatMap((page) => page.chats)
+    : [];
+
+  const handleToggleSelect = useCallback((chatId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(chatId)) {
+        next.delete(chatId);
+      } else {
+        next.add(chatId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedIds.size === allChats.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allChats.map((c) => c.id)));
+    }
+  }, [allChats, selectedIds.size]);
+
+  const handleExitSelecting = useCallback(() => {
+    setIsSelecting(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const handlePin = useCallback(
+    async (chatId: string, pinned: boolean) => {
+      // Optimistic update
+      mutate((chatHistories) => {
+        if (!chatHistories) return;
+        return chatHistories.map((chatHistory) => ({
+          ...chatHistory,
+          chats: chatHistory.chats.map((c) =>
+            c.id === chatId
+              ? { ...c, pinnedAt: pinned ? new Date() : null }
+              : c
+          ),
+        }));
+      }, false);
+
+      try {
+        await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pinned }),
+          }
+        );
+        toast.success(pinned ? "已置顶" : "已取消置顶");
+        // Revalidate to get correct sort order
+        mutate();
+      } catch {
+        // Rollback
+        mutate();
+        toast.error("操作失败");
+      }
+    },
+    [mutate]
+  );
+
+  const handleBatchDelete = () => {
+    const idsToDelete = Array.from(selectedIds);
+    const isCurrentChatDeleted = idsToDelete.includes(id ?? "");
+
+    setShowBatchDeleteDialog(false);
+    setIsSelecting(false);
+    setSelectedIds(new Set());
+
+    if (isCurrentChatDeleted) {
+      router.replace("/chat");
+    }
+
+    mutate((chatHistories) => {
+      if (!chatHistories) return;
+      return chatHistories.map((chatHistory) => ({
+        ...chatHistory,
+        chats: chatHistory.chats.filter(
+          (c) => !idsToDelete.includes(c.id)
+        ),
+      }));
+    });
+
+    fetch(
+      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history?ids=${idsToDelete.join(",")}`,
+      { method: "DELETE" }
+    );
+
+    toast.success(`已删除 ${idsToDelete.length} 个对话`);
+  };
 
   const hasReachedEnd = paginatedChatHistories
     ? paginatedChatHistories.some((page) => page.hasMore === false)
@@ -213,18 +311,43 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   return (
     <>
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-        <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
-          历史记录
-        </SidebarGroupLabel>
+        <div className="flex items-center justify-between px-2">
+          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+            历史记录
+          </SidebarGroupLabel>
+          {allChats.length > 0 && !isSelecting && (
+            <button
+              type="button"
+              className="text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+              onClick={() => setIsSelecting(true)}
+            >
+              批量管理
+            </button>
+          )}
+          {isSelecting && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+                onClick={handleSelectAll}
+              >
+                {selectedIds.size === allChats.length ? "取消全选" : "全选"}
+              </button>
+              <button
+                type="button"
+                className="text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+                onClick={handleExitSelecting}
+              >
+                完成
+              </button>
+            </div>
+          )}
+        </div>
         <SidebarGroupContent>
           <SidebarMenu>
             {paginatedChatHistories &&
               (() => {
-                const chatsFromHistory = paginatedChatHistories.flatMap(
-                  (paginatedChatHistory) => paginatedChatHistory.chats
-                );
-
-                const groupedChats = groupChatsByDate(chatsFromHistory);
+                const groupedChats = groupChatsByDate(allChats);
 
                 return (
                   <div className="flex flex-col gap-4">
@@ -242,6 +365,10 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            isSelecting={isSelecting}
+                            isSelected={selectedIds.has(chat.id)}
+                            onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -262,6 +389,10 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            isSelecting={isSelecting}
+                            isSelected={selectedIds.has(chat.id)}
+                            onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -282,6 +413,10 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            isSelecting={isSelecting}
+                            isSelected={selectedIds.has(chat.id)}
+                            onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -302,6 +437,10 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            isSelecting={isSelecting}
+                            isSelected={selectedIds.has(chat.id)}
+                            onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -322,6 +461,10 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            isSelecting={isSelecting}
+                            isSelected={selectedIds.has(chat.id)}
+                            onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -348,6 +491,18 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
               <div className="text-[11px]">加载中...</div>
             </div>
           )}
+
+          {isSelecting && selectedIds.size > 0 && (
+            <div className="sticky bottom-0 bg-sidebar px-2 py-2 border-t border-sidebar-border">
+              <button
+                type="button"
+                className="w-full rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                onClick={() => setShowBatchDeleteDialog(true)}
+              >
+                删除选中 ({selectedIds.size})
+              </button>
+            </div>
+          )}
         </SidebarGroupContent>
       </SidebarGroup>
 
@@ -362,6 +517,26 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        onOpenChange={setShowBatchDeleteDialog}
+        open={showBatchDeleteDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确定要删除 {selectedIds.size} 个对话吗？</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作无法撤销。这将永久删除选中的对话并从服务器中移除。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchDelete}>
               确认删除
             </AlertDialogAction>
           </AlertDialogFooter>

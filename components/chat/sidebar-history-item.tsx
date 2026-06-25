@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { memo, useCallback } from "react";
+import { Pin, PinOff } from "lucide-react";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import { getChatCache, setChatCache } from "@/hooks/use-message-cache";
 import type { Chat } from "@/lib/db/schema";
@@ -32,11 +33,19 @@ const PureChatItem = ({
   chat,
   isActive,
   onDelete,
+  onPin,
+  isSelecting,
+  isSelected,
+  onToggleSelect,
   setOpenMobile,
 }: {
   chat: Chat;
   isActive: boolean;
   onDelete: (chatId: string) => void;
+  onPin: (chatId: string, pinned: boolean) => void;
+  isSelecting: boolean;
+  isSelected: boolean;
+  onToggleSelect: (chatId: string) => void;
   setOpenMobile: (open: boolean) => void;
 }) => {
   const { visibilityType, setVisibilityType } = useChatVisibility({
@@ -65,14 +74,37 @@ const PureChatItem = ({
       .catch((err) => console.error("Prefetch failed:", err));
   }, [chat.id]);
 
+  const isPinned = !!chat.pinnedAt;
+
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem className="group/item relative">
+      {isSelecting && (
+        <button
+          type="button"
+          className="absolute left-0 top-1/2 z-10 flex h-8 w-6 -translate-y-1/2 items-center justify-center text-sidebar-foreground/50 hover:text-sidebar-foreground"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(chat.id);
+          }}
+        >
+          {isSelected ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="1" width="14" height="14" rx="3" fill="currentColor" />
+              <path d="M4.5 8L7 10.5L11.5 5.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" strokeWidth="1" />
+            </svg>
+          )}
+        </button>
+      )}
       {chat.agentName ? (
         <Tooltip>
           <TooltipTrigger asChild>
             <SidebarMenuButton
               asChild
-              className="h-8 rounded-none text-[13px] text-sidebar-foreground/50 transition-all duration-150 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground/50 data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary/[0.08] data-[active=true]:pl-3"
+              className={`h-8 rounded-none text-[13px] text-sidebar-foreground/50 transition-all duration-150 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground/50 data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary/[0.08] data-[active=true]:pl-3 ${isSelecting ? "pl-7" : ""}`}
               isActive={isActive}
             >
               <Link
@@ -80,7 +112,10 @@ const PureChatItem = ({
                 onClick={() => setOpenMobile(false)}
                 onMouseEnter={handlePrefetch}
               >
-                <span className="truncate">{chat.title}</span>
+                <span className="truncate flex items-center gap-1">
+                  {isPinned && !isSelecting && <Pin size={12} className="shrink-0 text-sidebar-primary" />}
+                  {chat.title}
+                </span>
               </Link>
             </SidebarMenuButton>
           </TooltipTrigger>
@@ -89,7 +124,7 @@ const PureChatItem = ({
       ) : (
         <SidebarMenuButton
           asChild
-          className="h-8 rounded-none text-[13px] text-sidebar-foreground/50 transition-all duration-150 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground/50 data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary/[0.08] data-[active=true]:pl-3"
+          className={`h-8 rounded-none text-[13px] text-sidebar-foreground/50 transition-all duration-150 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground/50 data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium data-[active=true]:border-l-2 data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary/[0.08] data-[active=true]:pl-3 ${isSelecting ? "pl-7" : ""}`}
           isActive={isActive}
         >
           <Link
@@ -97,7 +132,10 @@ const PureChatItem = ({
             onClick={() => setOpenMobile(false)}
             onMouseEnter={handlePrefetch}
           >
-            <span className="truncate">{chat.title}</span>
+            <span className="truncate flex items-center gap-1">
+              {isPinned && !isSelecting && <Pin size={12} className="shrink-0 text-sidebar-primary" />}
+              {chat.title}
+            </span>
           </Link>
         </SidebarMenuButton>
       )}
@@ -152,6 +190,23 @@ const PureChatItem = ({
           </DropdownMenuSub>
 
           <DropdownMenuItem
+            onClick={() => onPin(chat.id, !isPinned)}
+            className="cursor-pointer"
+          >
+            {isPinned ? (
+              <>
+                <PinOff size={14} />
+                <span>取消置顶</span>
+              </>
+            ) : (
+              <>
+                <Pin size={14} />
+                <span>置顶</span>
+              </>
+            )}
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
             onSelect={() => onDelete(chat.id)}
             variant="destructive"
           >
@@ -165,8 +220,9 @@ const PureChatItem = ({
 };
 
 export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => {
-  if (prevProps.isActive !== nextProps.isActive) {
-    return false;
-  }
+  if (prevProps.isActive !== nextProps.isActive) return false;
+  if (prevProps.isSelecting !== nextProps.isSelecting) return false;
+  if (prevProps.isSelected !== nextProps.isSelected) return false;
+  if (prevProps.chat.pinnedAt !== nextProps.chat.pinnedAt) return false;
   return true;
 });

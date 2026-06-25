@@ -164,6 +164,65 @@ export async function deleteAllChatsByUserId({ userId }: { userId: string }) {
   }
 }
 
+export async function updateChatPinnedById({
+  chatId,
+  pinnedAt,
+}: {
+  chatId: string;
+  pinnedAt: Date | null;
+}) {
+  try {
+    return await db
+      .update(chat)
+      .set({ pinnedAt })
+      .where(eq(chat.id, chatId));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update chat pinned status"
+    );
+  }
+}
+
+export async function deleteChatsByIds({
+  ids,
+  userId,
+}: {
+  ids: string[];
+  userId: string;
+}) {
+  try {
+    return await db.transaction(async (tx) => {
+      const userChats = await tx
+        .select({ id: chat.id })
+        .from(chat)
+        .where(and(eq(chat.userId, userId), inArray(chat.id, ids)));
+
+      if (userChats.length === 0) {
+        return { deletedCount: 0 };
+      }
+
+      const chatIds = userChats.map((c) => c.id);
+
+      await tx.delete(vote).where(inArray(vote.chatId, chatIds));
+      await tx.delete(message).where(inArray(message.chatId, chatIds));
+      await tx.delete(stream).where(inArray(stream.chatId, chatIds));
+
+      const deletedChats = await tx
+        .delete(chat)
+        .where(and(eq(chat.userId, userId), inArray(chat.id, chatIds)))
+        .returning();
+
+      return { deletedCount: deletedChats.length };
+    });
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to delete chats by ids"
+    );
+  }
+}
+
 export async function getChatsByUserId({
   id,
   limit,
@@ -187,7 +246,7 @@ export async function getChatsByUserId({
             ? and(whereCondition, eq(chat.userId, id))
             : eq(chat.userId, id)
         )
-        .orderBy(desc(chat.createdAt))
+        .orderBy(sql`${chat.pinnedAt} DESC NULLS LAST`, desc(chat.createdAt))
         .limit(extendedLimit);
 
     let filteredChats: Chat[] = [];

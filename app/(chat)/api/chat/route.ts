@@ -40,6 +40,7 @@ import {
   getSiteConfig,
   saveChat,
   saveMessages,
+  updateChatPinnedById,
   updateChatTitleById,
   updateMessage,
 } from "@/lib/db/queries";
@@ -498,4 +499,39 @@ export async function DELETE(request: Request) {
   const deletedChat = await deleteChatById({ id });
 
   return Response.json(deletedChat, { status: 200 });
+}
+
+export async function PATCH(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return new ChatbotError("bad_request:api").toResponse();
+  }
+
+  let body: { pinned?: boolean };
+
+  try {
+    body = (await request.json()) as { pinned?: boolean };
+  } catch (_) {
+    return new ChatbotError("bad_request:api").toResponse();
+  }
+
+  const session = await auth();
+
+  if (!session?.user) {
+    return new ChatbotError("unauthorized:chat").toResponse();
+  }
+
+  const existingChat = await getChatById({ id });
+
+  if (existingChat?.userId !== session.user.id) {
+    return new ChatbotError("forbidden:chat").toResponse();
+  }
+
+  const pinnedAt = body.pinned ? new Date() : null;
+
+  await updateChatPinnedById({ chatId: id, pinnedAt });
+
+  return Response.json({ id, pinnedAt }, { status: 200 });
 }

@@ -15,6 +15,13 @@
       "when": 1782348616892,
       "tag": "0001_stiff_sasquatch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782367325626,
+      "tag": "0002_add-pinned-at",
+      "breakpoints": true
     }
   ]
 }

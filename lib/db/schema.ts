@@ -50,10 +50,12 @@ export const chat = pgTable(
       onDelete: "set null",
     }),
     agentName: text("agentName"),
+    pinnedAt: timestamp("pinnedAt"),
   },
   (table) => ({
     userIdIdx: index("Chat_userId_idx").on(table.userId),
     createdAtIdx: index("Chat_createdAt_idx").on(table.createdAt),
+    pinnedAtIdx: index("Chat_pinnedAt_idx").on(table.pinnedAt),
   })
 );
 
