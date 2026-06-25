@@ -4,7 +4,7 @@ import { isAdmin } from "@/lib/utils";
 import { AgentCards } from "./agent-cards";
 import { AgentManager } from "./agent-manager";
 
-export default async function AgentsPage() {
+export default async function AdminPage() {
   const session = await auth();
 
   if (!session?.user) {

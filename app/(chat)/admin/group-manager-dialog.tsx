@@ -199,7 +199,7 @@ export function GroupManagerDialog({
                     type="button"
                   >
                     <span className="text-[8px] font-bold text-white uppercase">
-                      {key.slice(0, 2)}
+                      {(key.slice(0, 2))}
                     </span>
                   </button>
                 );
@@ -242,7 +242,7 @@ export function GroupManagerDialog({
                                 type="button"
                               >
                                 <span className="text-[7px] font-bold text-white uppercase">
-                                  {key.slice(0, 2)}
+                                  {(key.slice(0, 2))}
                                 </span>
                               </button>
                             );

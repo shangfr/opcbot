@@ -268,7 +268,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
                     "from-rose-500/[0.04] hover:border-rose-500/30 hover:shadow-[0_4px_24px_-4px_rgba(244,63,94,0.15)]",
                 })
               )}
-              onClick={() => router.push("/agents")}
+              onClick={() => router.push("/admin")}
               type="button"
             >
               <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 transition-colors group-hover:bg-rose-500/15">
@@ -396,7 +396,7 @@ export function WelcomeDashboard({ onNewChat }: WelcomeDashboardProps) {
             {activeAgents.length > featuredAgents.length && (
               <button
                 className="mt-4 w-full rounded-xl border border-dashed border-border/50 py-2.5 text-center text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-                onClick={() => router.push("/agents")}
+                onClick={() => router.push("/admin")}
                 type="button"
               >
                 查看全部 {activeAgents.length} 个 OPC →

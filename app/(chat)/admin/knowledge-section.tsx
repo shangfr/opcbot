@@ -98,7 +98,7 @@ export function KnowledgeSection({ value, onChange }: KnowledgeSectionProps) {
         </div>
         <Link
           className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-          href="/agents/knowledge"
+          href="/admin/knowledge"
         >
           <Settings2 className="size-3" />
           管理知识库

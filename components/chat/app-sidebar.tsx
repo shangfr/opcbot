@@ -186,7 +186,7 @@ export function AppSidebar({
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       tooltip={isAdmin ? "OPC 管理" : "选择 OPC"}
                     >
-                      <Link href="/agents" onClick={() => setOpenMobile(false)}>
+                      <Link href="/admin" onClick={() => setOpenMobile(false)}>
                         <Bot className="size-3.5" />
                         <span>{isAdmin ? "OPC 管理" : "选择 OPC"}</span>
                       </Link>
@@ -202,7 +202,7 @@ export function AppSidebar({
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       tooltip="知识库管理"
                     >
-                      <Link href="/agents/knowledge" onClick={() => setOpenMobile(false)}>
+                      <Link href="/admin/knowledge" onClick={() => setOpenMobile(false)}>
                         <BookOpen className="size-3.5" />
                         <span>知识库管理</span>
                       </Link>
@@ -218,7 +218,7 @@ export function AppSidebar({
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       tooltip="数据看板"
                     >
-                      <Link href="/agents/stats" onClick={() => setOpenMobile(false)}>
+                      <Link href="/admin/stats" onClick={() => setOpenMobile(false)}>
                         <BarChart3 className="size-3.5" />
                         <span>数据看板</span>
                       </Link>
@@ -234,7 +234,7 @@ export function AppSidebar({
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       tooltip="用户管理"
                     >
-                      <Link href="/agents/users" onClick={() => setOpenMobile(false)}>
+                      <Link href="/admin/users" onClick={() => setOpenMobile(false)}>
                         <Users className="size-3.5" />
                         <span>用户管理</span>
                       </Link>

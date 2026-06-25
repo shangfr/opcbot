@@ -8,10 +8,10 @@ const EXCLUDED_PATHS = ["/chat"];
 // 路由标题映射
 const ROUTE_TITLES: { path: string; title: string; exact?: boolean }[] = [
   { path: "/", title: "OPC Bot", exact: true },
-  { path: "/agents/knowledge", title: "知识库管理" },
-  { path: "/agents/stats", title: "数据看板" },
-  { path: "/agents/users", title: "用户管理" },
-  { path: "/agents", title: "OPC 管理" },
+  { path: "/admin/knowledge", title: "知识库管理" },
+  { path: "/admin/stats", title: "数据看板" },
+  { path: "/admin/users", title: "用户管理" },
+  { path: "/admin", title: "OPC 管理" },
 ];
 
 function getPageTitle(pathname: string): string {

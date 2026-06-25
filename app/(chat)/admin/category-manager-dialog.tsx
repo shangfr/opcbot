@@ -203,7 +203,7 @@ export function CategoryManagerDialog({
                             className={`size-5 rounded-full transition-all ${
                               editColor === color
                                 ? "scale-110 ring-2 ring-offset-1 ring-foreground/40"
-                                : "hover:scale-110"
+                                : "opacity-60 hover:opacity-100 hover:scale-110"
                             }`}
                             key={color}
                             onClick={() => setEditColor(color)}

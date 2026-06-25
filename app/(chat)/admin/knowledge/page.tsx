@@ -347,7 +347,7 @@ export default function KnowledgePage() {
       {/* Header */}
       <div className="mb-10 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/agents">
+          <Link href="/admin">
             <Button size="icon" variant="ghost">
               <ArrowLeft className="size-4" />
             </Button>
