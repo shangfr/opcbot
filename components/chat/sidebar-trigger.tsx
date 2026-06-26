@@ -8,15 +8,16 @@ export function SidebarTrigger() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed" && !isMobile;
 
-  // 在桌面端，当侧边栏折叠时不显示按钮
-  // 在移动端，始终显示按钮（因为侧边栏默认是隐藏的）
-  if (!isMobile && isCollapsed) {
+  // 移动端始终显示（侧边栏默认隐藏）
+  // 桌面端折叠时显示（需要入口来展开侧边栏）
+  // 桌面端展开时不显示（侧边栏内部已有收起按钮）
+  if (!isMobile && !isCollapsed) {
     return null;
   }
 
   return (
     <Button
-      className="md:hidden -ml-1"
+      className="-ml-1"
       onClick={toggleSidebar}
       size="icon-sm"
       variant="ghost"

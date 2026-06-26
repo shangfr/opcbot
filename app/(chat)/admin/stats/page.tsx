@@ -135,21 +135,6 @@ export default function StatsPage() {
   return (
     <div className="px-6 py-8">
       {/* Header */}
-      <div className="mb-10 flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">数据看板</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            查看平台使用情况和各 OPC 的表现数据
-          </p>
-        </div>
-      </div>
 
       {loading && !stats ? (
         <div className="py-12 text-center text-sm text-muted-foreground">

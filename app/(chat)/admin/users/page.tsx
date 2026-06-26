@@ -211,32 +211,7 @@ export default function UsersPage() {
   return (
     <div className="px-6 py-8">
       {/* Header */}
-      <div className="mb-10 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="size-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">用户管理</h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              查看用户列表、活跃度统计和访客转化数据
-            </p>
-          </div>
-        </div>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setShowDeleteGuestsDialog(true)}
-          disabled={deleting || (conversion?.guestUsers ?? 0) === 0}
-        >
-          <Trash2 className="mr-2 size-4" />
-          {deleting ? "删除中..." : `一键清空访客 (${conversion?.guestUsers ?? 0})`}
-        </Button>
-      </div>
+
 
       {loading && !data ? (
         <div className="py-12 text-center text-sm text-muted-foreground">
@@ -374,6 +349,17 @@ export default function UsersPage() {
               <p className="text-xs font-medium text-muted-foreground">
                 用户列表 ({filteredUsers.length})
               </p>
+
+                 
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => setShowDeleteGuestsDialog(true)}
+          disabled={deleting || (conversion?.guestUsers ?? 0) === 0}
+        >
+          <Trash2 className="mr-2 size-4" />
+          {deleting ? "删除中..." : `一键清空访客 (${conversion?.guestUsers ?? 0})`}
+        </Button>
               <input
                 type="text"
                 placeholder="搜索邮箱、姓名或ID..."

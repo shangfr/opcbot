@@ -7,11 +7,11 @@ const EXCLUDED_PATHS = ["/chat"];
 
 // 路由标题映射
 const ROUTE_TITLES: { path: string; title: string; exact?: boolean }[] = [
-  { path: "/", title: "OPC Bot", exact: true },
-  { path: "/admin/knowledge", title: "知识库管理" },
-  { path: "/admin/stats", title: "数据看板" },
-  { path: "/admin/users", title: "用户管理" },
-  { path: "/admin", title: "OPC 管理" },
+  { path: "/", title: " ", exact: true },
+  { path: "/admin/knowledge", title: "管理知识库，上传文档用于对话检索(RAG)" },
+  { path: "/admin/stats", title: "查看平台使用情况和各 OPC 的表现数据" },
+  { path: "/admin/users", title: "查看用户列表、活跃度统计和访客转化数据" },
+  { path: "/admin", title: "OPC" },
 ];
 
 function getPageTitle(pathname: string): string {
@@ -21,11 +21,13 @@ function getPageTitle(pathname: string): string {
   );
   if (exactMatch) return exactMatch.title;
 
-  // 前缀匹配
-  const prefixMatch = ROUTE_TITLES.find((route) =>
-    pathname.startsWith(route.path)
+  // 前缀匹配：排除 exact 路由（如 "/"），按路径长度降序匹配最具体的
+  const prefixMatches = ROUTE_TITLES.filter(
+    (route) => !route.exact && pathname.startsWith(route.path)
   );
-  return prefixMatch?.title || "OPC Bot";
+  // 最长前缀优先
+  prefixMatches.sort((a, b) => b.path.length - a.path.length);
+  return prefixMatches[0]?.title || "OPC Bot";
 }
 
 export function GlobalHeader() {

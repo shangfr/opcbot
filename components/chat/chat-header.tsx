@@ -1,10 +1,8 @@
 "use client";
 
-import { PanelLeftIcon } from "lucide-react";
 import { memo } from "react";
-import { Button } from "@/components/ui/button";
-import { useSidebar } from "@/components/ui/sidebar";
 import { getAvatarChar } from "@/lib/agent-groups";
+import { SidebarTrigger } from "./sidebar-trigger";
 import { VisibilitySelector, type VisibilityType } from "./visibility-selector";
 
 function PureChatHeader({
@@ -18,21 +16,9 @@ function PureChatHeader({
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
 }) {
-  const { state, toggleSidebar, isMobile } = useSidebar();
-  const isCollapsed = state === "collapsed" && !isMobile;
-
   return (
-    <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm">
-      <Button
-        aria-expanded={!isCollapsed}
-        aria-label={isCollapsed ? "展开侧边栏" : "折叠侧边栏"}
-        className="-ml-1"
-        onClick={toggleSidebar}
-        size="icon-sm"
-        variant="ghost"
-      >
-        <PanelLeftIcon className="size-4" />
-      </Button>
+    <header className="sticky top-0 z-10 flex h-12 items-center gap-3 bg-background/80 px-4 backdrop-blur-sm">
+      <SidebarTrigger />
 
       {agentName && (
         <div className="flex min-w-0 items-center gap-2">

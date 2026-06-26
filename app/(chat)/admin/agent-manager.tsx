@@ -1,6 +1,7 @@
 "use client";
 
-import { FolderTree, Plus, Settings2 } from "lucide-react";
+import { FolderTree, Home, Plus, Settings2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -186,14 +187,14 @@ export function AgentManager() {
     <CategoryProvider value={ctxValue}>
       <div className="px-6 py-8">
         {/* Header */}
-        <div className="mb-10 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">OPC 管理</h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              管理 AI OPC 角色配置，共 {agents.length} 个
-            </p>
-          </div>
+        <div className="mb-10 flex items-center justify-end">
           <div className="flex items-center gap-2">
+            <Button asChild className="gap-1.5" size="sm" variant="ghost">
+              <Link href="/">
+                <Home className="size-3.5" />
+                返回主页
+              </Link>
+            </Button>
             <Button
               className="gap-1.5"
               onClick={() => setGroupDialogOpen(true)}

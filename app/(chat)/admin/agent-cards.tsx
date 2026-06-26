@@ -42,12 +42,6 @@ export function AgentCards() {
     <CategoryProvider value={ctxValue}>
       <div className="px-6 py-8">
         {/* 页头 */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">选择 OPC</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            选择一个角色开始对话，共 {activeCount} 个可用 OPC
-          </p>
-        </div>
 
         {/* 搜索框 */}
         {activeCount > 3 && (
