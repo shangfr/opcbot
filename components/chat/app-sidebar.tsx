@@ -85,7 +85,7 @@ export function AppSidebar({
         collapsible="icon"
       >
         {/* ===== Logo / Brand 区域 ===== */}
-        <SidebarHeader className="border-b border-sidebar-border px-3 pb-3 pt-4">
+        <SidebarHeader className="border-sidebar-border px-3 pb-3 pt-4">
           <SidebarMenu>
             <SidebarMenuItem className="flex items-center justify-between">
               <div className="group/logo relative flex items-center gap-2.5">
