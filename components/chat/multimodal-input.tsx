@@ -378,18 +378,38 @@ function PureMultimodalInput({
   return (
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
       {editingMessage && onCancelEdit && (
-        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <span>正在编辑消息</span>
-          <button
-            className="rounded px-1.5 py-0.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              onCancelEdit();
-            }}
-            type="button"
-          >
-            取消
-          </button>
+        <div className="flex flex-col gap-1.5 text-[12px] text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span>正在编辑消息</span>
+            <button
+              aria-label="取消编辑"
+              className="rounded px-1.5 py-0.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onCancelEdit();
+              }}
+              type="button"
+            >
+              取消
+            </button>
+          </div>
+          {(() => {
+            const originalText = editingMessage.parts
+              ?.filter((p) => p.type === "text")
+              .map((p) => (p as { text: string }).text)
+              .join("");
+            if (!originalText) {
+              return null;
+            }
+            return (
+              <div className="max-h-20 overflow-y-auto rounded-md border border-border/50 bg-muted/30 px-2.5 py-1.5 text-[11px] leading-relaxed text-muted-foreground/70">
+                <span className="select-none font-medium text-muted-foreground/50">
+                  原文：
+                </span>
+                {originalText}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -542,8 +562,9 @@ function PureMultimodalInput({
             <StopButton chatId={chatId} setMessages={setMessages} stop={stop} />
           ) : (
             <PromptInputSubmit
+              aria-label={input.trim() ? "发送消息" : "请输入消息后再发送"}
               className={cn(
-                "h-7 w-7 rounded-xl transition-all duration-200",
+                "h-8 w-8 rounded-xl transition-all duration-200",
                 input.trim()
                   ? "bg-foreground text-background hover:opacity-85 active:scale-95"
                   : "bg-muted text-muted-foreground/25 cursor-not-allowed"
@@ -624,8 +645,9 @@ function PureAttachmentsButton({
 
   return (
     <Button
+      aria-label={hasVision ? "添加附件" : "当前模型不支持图片附件"}
       className={cn(
-        "h-7 w-7 rounded-lg border border-border/40 p-1 transition-colors",
+        "h-8 w-8 rounded-lg border border-border/40 p-1 transition-colors",
         hasVision
           ? "text-foreground hover:border-border hover:text-foreground"
           : "text-muted-foreground/30 cursor-not-allowed"
@@ -679,7 +701,11 @@ function PureModelSelectorCompact({
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
       <ModelSelectorTrigger asChild>
-        <Button data-testid="model-selector" variant="ghost">
+        <Button
+          aria-label={`当前模型：${selectedModel.name}，点击切换模型`}
+          data-testid="model-selector"
+          variant="ghost"
+        >
           {provider && <ModelSelectorLogo provider={provider} />}
           <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
         </Button>
@@ -771,10 +797,14 @@ function PureModelSelectorCompact({
                       key={model.id}
                       onSelect={() => {
                         if (!curated) {
+                          toast.error("该模型暂不可用");
                           return;
                         }
-                        onModelChange?.(model.id);
-                        setCookie("chat-model", model.id);
+                        if (model.id !== selectedModel.id) {
+                          onModelChange?.(model.id);
+                          setCookie("chat-model", model.id);
+                          toast.success(`已切换到 ${model.name}`);
+                        }
                         setOpen(false);
                         setTimeout(() => {
                           document
@@ -841,15 +871,18 @@ function ThinkingToggle({
     modelsData?.capabilities ?? modelsData ?? getCapabilities();
   const isReasoningModel = capabilities?.[selectedModelId]?.reasoning ?? false;
 
-  if (!isReasoningModel) return null;
+  if (!isReasoningModel) {
+    return null;
+  }
 
   return (
     <button
       aria-label={
         enabled ? "思考模式已开启，点击关闭" : "思考模式已关闭，点击开启"
       }
+      aria-pressed={enabled}
       className={cn(
-        "inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg px-2 text-[12px] font-medium transition-colors",
+        "inline-flex h-8 cursor-pointer items-center gap-1 rounded-lg px-2 text-[12px] font-medium transition-colors",
         enabled
           ? "bg-cyan-500 text-white hover:bg-cyan-500/90"
           : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -879,7 +912,8 @@ function PureStopButton({
 }) {
   return (
     <Button
-      className="h-7 w-7 rounded-xl bg-foreground p-1 text-background transition-all duration-200 hover:opacity-85 active:scale-95 disabled:bg-muted disabled:text-muted-foreground/25 disabled:cursor-not-allowed"
+      aria-label="停止生成"
+      className="h-8 w-8 rounded-xl bg-foreground p-1 text-background transition-all duration-200 hover:opacity-85 active:scale-95 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground/25"
       data-testid="stop-button"
       onClick={(event) => {
         event.preventDefault();

@@ -12,6 +12,7 @@ import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Artifact } from "./artifact";
 import { ChatHeader } from "./chat-header";
+import { ConnectionStatus } from "./connection-status";
 import { DataStreamHandler } from "./data-stream-handler";
 import { submitEditedMessage } from "./message-editor";
 import { Messages } from "./messages";
@@ -63,6 +64,7 @@ export function ChatShell() {
 
   return (
     <>
+      <ConnectionStatus />
       <div className="flex h-dvh w-full flex-row overflow-hidden">
         <div
           className={cn(
@@ -90,6 +92,9 @@ export function ChatShell() {
                     .join("");
                   setInput(text ?? "");
                   setEditingMessage(msg);
+                }}
+                onSelectPrompt={(prompt) => {
+                  setInput(prompt);
                 }}
               />
             )}

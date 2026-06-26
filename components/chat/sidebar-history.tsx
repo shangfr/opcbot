@@ -24,9 +24,9 @@ import {
   SidebarMenu,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Spinner } from "@/components/ui/spinner";
 import type { Chat } from "@/lib/db/schema";
 import { fetcher } from "@/lib/utils";
-import { LoaderIcon } from "./icons";
 import { ChatItem } from "./sidebar-history-item";
 
 type GroupedChats = {
@@ -155,13 +155,13 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     async (chatId: string, pinned: boolean) => {
       // Optimistic update
       mutate((chatHistories) => {
-        if (!chatHistories) return;
+        if (!chatHistories) {
+          return;
+        }
         return chatHistories.map((chatHistory) => ({
           ...chatHistory,
           chats: chatHistory.chats.map((c) =>
-            c.id === chatId
-              ? { ...c, pinnedAt: pinned ? new Date() : null }
-              : c
+            c.id === chatId ? { ...c, pinnedAt: pinned ? new Date() : null } : c
           ),
         }));
       }, false);
@@ -200,12 +200,12 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     }
 
     mutate((chatHistories) => {
-      if (!chatHistories) return;
+      if (!chatHistories) {
+        return;
+      }
       return chatHistories.map((chatHistory) => ({
         ...chatHistory,
-        chats: chatHistory.chats.filter(
-          (c) => !idsToDelete.includes(c.id)
-        ),
+        chats: chatHistory.chats.filter((c) => !idsToDelete.includes(c.id)),
       }));
     });
 
@@ -300,8 +300,40 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           历史记录
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <div className="flex w-full flex-row items-center justify-center gap-2 px-2 text-[13px] text-sidebar-foreground/60">
-            开始聊天后，你的对话将显示在这里！
+          <div className="flex flex-col items-center gap-3 px-3 py-6 text-center">
+            <div
+              aria-hidden="true"
+              className="flex size-10 items-center justify-center rounded-full bg-muted/60 text-muted-foreground/50"
+            >
+              <svg
+                fill="none"
+                height="20"
+                viewBox="0 0 24 24"
+                width="20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 10h8M8 14h5"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="1.5"
+                />
+                <path
+                  clipRule="evenodd"
+                  d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+              </svg>
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-[13px] font-medium text-sidebar-foreground/70">
+                还没有对话记录
+              </p>
+              <p className="text-[11px] leading-relaxed text-sidebar-foreground/50">
+                发送第一条消息后，对话会自动保存在这里
+              </p>
+            </div>
           </div>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -317,9 +349,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           </SidebarGroupLabel>
           {allChats.length > 0 && !isSelecting && (
             <button
-              type="button"
               className="text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
               onClick={() => setIsSelecting(true)}
+              type="button"
             >
               批量管理
             </button>
@@ -327,16 +359,16 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           {isSelecting && (
             <div className="flex items-center gap-2">
               <button
-                type="button"
                 className="text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
                 onClick={handleSelectAll}
+                type="button"
               >
                 {selectedIds.size === allChats.length ? "取消全选" : "全选"}
               </button>
               <button
-                type="button"
                 className="text-[10px] text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
                 onClick={handleExitSelecting}
+                type="button"
               >
                 完成
               </button>
@@ -360,14 +392,14 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isSelected={selectedIds.has(chat.id)}
+                            isSelecting={isSelecting}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
                             onPin={handlePin}
-                            isSelecting={isSelecting}
-                            isSelected={selectedIds.has(chat.id)}
                             onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
@@ -384,14 +416,14 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isSelected={selectedIds.has(chat.id)}
+                            isSelecting={isSelecting}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
                             onPin={handlePin}
-                            isSelecting={isSelecting}
-                            isSelected={selectedIds.has(chat.id)}
                             onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
@@ -408,14 +440,14 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isSelected={selectedIds.has(chat.id)}
+                            isSelecting={isSelecting}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
                             onPin={handlePin}
-                            isSelecting={isSelecting}
-                            isSelected={selectedIds.has(chat.id)}
                             onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
@@ -432,14 +464,14 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isSelected={selectedIds.has(chat.id)}
+                            isSelecting={isSelecting}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
                             onPin={handlePin}
-                            isSelecting={isSelecting}
-                            isSelected={selectedIds.has(chat.id)}
                             onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
@@ -456,14 +488,14 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isSelected={selectedIds.has(chat.id)}
+                            isSelecting={isSelecting}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
                             onPin={handlePin}
-                            isSelecting={isSelecting}
-                            isSelected={selectedIds.has(chat.id)}
                             onToggleSelect={handleToggleSelect}
                             setOpenMobile={setOpenMobile}
                           />
@@ -484,20 +516,21 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           />
 
           {hasReachedEnd ? null : (
-            <div className="mt-1 flex flex-row items-center gap-2 px-4 py-2 text-sidebar-foreground/50">
-              <div className="animate-spin">
-                <LoaderIcon />
-              </div>
+            <output
+              aria-label="正在加载更多对话"
+              className="mt-1 flex flex-row items-center gap-2 px-4 py-2 text-sidebar-foreground/50"
+            >
+              <Spinner className="size-3.5" />
               <div className="text-[11px]">加载中...</div>
-            </div>
+            </output>
           )}
 
           {isSelecting && selectedIds.size > 0 && (
             <div className="sticky bottom-0 bg-sidebar px-2 py-2 border-t border-sidebar-border">
               <button
-                type="button"
                 className="w-full rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors"
                 onClick={() => setShowBatchDeleteDialog(true)}
+                type="button"
               >
                 删除选中 ({selectedIds.size})
               </button>
@@ -529,7 +562,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确定要删除 {selectedIds.size} 个对话吗？</AlertDialogTitle>
+            <AlertDialogTitle>
+              确定要删除 {selectedIds.size} 个对话吗？
+            </AlertDialogTitle>
             <AlertDialogDescription>
               此操作无法撤销。这将永久删除选中的对话并从服务器中移除。
             </AlertDialogDescription>

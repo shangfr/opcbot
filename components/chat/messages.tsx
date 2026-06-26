@@ -13,9 +13,14 @@ import { PreviewMessage, ThinkingMessage } from "./message";
 type MessagesProps = {
   isArtifactVisible: boolean;
   onEditMessage?: (message: ChatMessage) => void;
+  onSelectPrompt?: (prompt: string) => void;
 };
 
-function PureMessages({ isArtifactVisible, onEditMessage }: MessagesProps) {
+function PureMessages({
+  isArtifactVisible,
+  onEditMessage,
+  onSelectPrompt,
+}: MessagesProps) {
   const {
     chatId,
     messages,
@@ -38,6 +43,16 @@ function PureMessages({ isArtifactVisible, onEditMessage }: MessagesProps) {
   });
 
   useDataStream();
+
+  // 计算最后一条助手消息的索引，用于显示"重新生成"按钮
+  const lastAssistantIndex = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") {
+        return i;
+      }
+    }
+    return -1;
+  })();
 
   // P2: Virtual scrolling for long conversations
   const virtualizer = useVirtualizer({
@@ -64,8 +79,8 @@ function PureMessages({ isArtifactVisible, onEditMessage }: MessagesProps) {
   return (
     <div className="relative flex-1 bg-background">
       {messages.length === 0 && !isLoading && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <Greeting />
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <Greeting onSelectPrompt={onSelectPrompt} />
         </div>
       )}
       <div
@@ -110,6 +125,7 @@ function PureMessages({ isArtifactVisible, onEditMessage }: MessagesProps) {
                         <PreviewMessage
                           addToolApprovalResponse={addToolApprovalResponse}
                           chatId={chatId}
+                          isLastAssistant={index === lastAssistantIndex}
                           isLoading={
                             status === "streaming" &&
                             messages.length - 1 === index
@@ -185,6 +201,7 @@ function PureMessages({ isArtifactVisible, onEditMessage }: MessagesProps) {
                 <PreviewMessage
                   addToolApprovalResponse={addToolApprovalResponse}
                   chatId={chatId}
+                  isLastAssistant={index === lastAssistantIndex}
                   isLoading={
                     status === "streaming" && messages.length - 1 === index
                   }

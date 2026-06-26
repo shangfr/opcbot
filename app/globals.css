@@ -584,20 +584,26 @@ select:focus-visible,
   -webkit-user-select: none;
 }
 
-/* ===== 滚动条 ===== */
+/* ===== 滚动条 =====
+ * 优化点：
+ * 1. 默认宽度 6px，悬停时扩展到 8px，提升可抓取性（符合 Fitts 定律）
+ * 2. 暗色模式下使用更高对比度的滑块颜色
+ * 3. 增加 transition 使宽度变化平滑
+ */
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: oklch(0 0 0 / 0.1) transparent;
+    scrollbar-color: oklch(0 0 0 / 0.12) transparent;
   }
 
   .dark * {
-    scrollbar-color: oklch(1 1 1 / 0.12) transparent;
+    scrollbar-color: oklch(1 1 1 / 0.15) transparent;
   }
 
   *::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
+    transition: width 0.2s ease;
   }
 
   *::-webkit-scrollbar-track {
@@ -605,20 +611,21 @@ select:focus-visible,
   }
 
   *::-webkit-scrollbar-thumb {
-    background: oklch(0 0 0 / 0.1);
+    background: oklch(0 0 0 / 0.12);
     border-radius: 9999px;
+    transition: background 0.2s ease;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: oklch(0 0 0 / 0.18);
+    background: oklch(0 0 0 / 0.22);
   }
 
   .dark *::-webkit-scrollbar-thumb {
-    background: oklch(1 1 1 / 0.12);
+    background: oklch(1 1 1 / 0.15);
   }
 
   .dark *::-webkit-scrollbar-thumb:hover {
-    background: oklch(1 1 1 / 0.22);
+    background: oklch(1 1 1 / 0.28);
   }
 
   *::-webkit-scrollbar-corner {

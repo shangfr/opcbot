@@ -8,7 +8,6 @@ import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
 import { MessageContent, MessageResponse } from "../ai-elements/message";
 import { ModelSelectorLogo } from "../ai-elements/model-selector";
-import { Shimmer } from "../ai-elements/shimmer";
 import {
   Tool,
   ToolContent,
@@ -16,6 +15,7 @@ import {
   ToolInput,
   ToolOutput,
 } from "../ai-elements/tool";
+import { Skeleton } from "../ui/skeleton";
 import { useDataStream } from "./data-stream-provider";
 import { DocumentToolResult } from "./document";
 import { DocumentPreview } from "./document-preview";
@@ -31,11 +31,12 @@ const PurePreviewMessage = ({
   vote,
   isLoading,
   setMessages: _setMessages,
-  regenerate: _regenerate,
+  regenerate,
   isReadonly,
   requiresScrollPadding: _requiresScrollPadding,
   onEdit,
   selectedModelId,
+  isLastAssistant,
 }: {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
   chatId: string;
@@ -48,6 +49,7 @@ const PurePreviewMessage = ({
   requiresScrollPadding: boolean;
   onEdit?: (message: ChatMessage) => void;
   selectedModelId: string;
+  isLastAssistant?: boolean;
 }) => {
   const currentModel = chatModels.find((m) => m.id === selectedModelId);
   const attachmentsFromMessage = message.parts.filter(
@@ -317,10 +319,16 @@ const PurePreviewMessage = ({
   const actions = !isReadonly && (
     <MessageActions
       chatId={chatId}
+      isLastAssistant={isLastAssistant}
       isLoading={isLoading}
       key={`action-${message.id}`}
       message={message}
       onEdit={onEdit ? () => onEdit(message) : undefined}
+      onRegenerate={
+        isLastAssistant && message.role === "assistant"
+          ? () => regenerate()
+          : undefined
+      }
       vote={vote}
     />
   );
@@ -405,6 +413,8 @@ export const ThinkingMessage = ({
   const { thinkingEnabled } = useActiveChat();
   return (
     <div
+      aria-busy="true"
+      aria-live="polite"
       className="group/message w-full"
       data-role="assistant"
       data-testid="message-assistant-loading"
@@ -426,10 +436,14 @@ export const ThinkingMessage = ({
           </div>
         </div>
 
-        <div className="flex h-[calc(13px*1.65)] items-center text-[13px] leading-[1.65]">
-          <Shimmer className="font-medium" duration={1}>
-            {thinkingEnabled ? "思考中..." : "生成中..."}
-          </Shimmer>
+        <div className="flex w-full max-w-md flex-col gap-2 py-1">
+          <span className="sr-only">
+            {thinkingEnabled ? "正在思考中" : "正在生成回复中"}
+          </span>
+          <Skeleton className="h-3.5 w-16" />
+          <Skeleton className="h-3.5 w-full" />
+          <Skeleton className="h-3.5 w-4/5" />
+          <Skeleton className="h-3.5 w-3/5" />
         </div>
       </div>
     </div>

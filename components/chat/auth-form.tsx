@@ -55,9 +55,9 @@ export function AuthForm({
           />
           <button
             aria-label={showPassword ? "隐藏密码" : "显示密码"}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 transition-colors hover:text-foreground"
+            aria-pressed={showPassword}
+            className="absolute right-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
             onClick={() => setShowPassword((v) => !v)}
-            tabIndex={-1}
             type="button"
           >
             {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
@@ -66,7 +66,13 @@ export function AuthForm({
       </div>
 
       {error && (
-        <p className="text-[13px] text-red-500 leading-relaxed">{error}</p>
+        <p
+          aria-live="assertive"
+          className="text-[13px] leading-relaxed text-red-500"
+          role="alert"
+        >
+          {error}
+        </p>
       )}
 
       {children}

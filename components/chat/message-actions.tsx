@@ -9,7 +9,13 @@ import {
   MessageAction as Action,
   MessageActions as Actions,
 } from "../ai-elements/message";
-import { CopyIcon, PencilEditIcon, ThumbDownIcon, ThumbUpIcon } from "./icons";
+import {
+  CopyIcon,
+  PencilEditIcon,
+  RefreshIcon,
+  ThumbDownIcon,
+  ThumbUpIcon,
+} from "./icons";
 
 export function PureMessageActions({
   chatId,
@@ -17,12 +23,16 @@ export function PureMessageActions({
   vote,
   isLoading,
   onEdit,
+  onRegenerate,
+  isLastAssistant,
 }: {
   chatId: string;
   message: ChatMessage;
   vote: Vote | undefined;
   isLoading: boolean;
   onEdit?: () => void;
+  onRegenerate?: () => void;
+  isLastAssistant?: boolean;
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
@@ -49,11 +59,12 @@ export function PureMessageActions({
 
   if (message.role === "user") {
     return (
-      <Actions className="-mr-0.5 justify-end opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100 group-active/message:opacity-100">
+      <Actions className="-mr-0.5 justify-end opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover/message:opacity-100 md:group-focus-within/message:opacity-100 md:group-active/message:opacity-100">
         <div className="flex items-center gap-0.5">
           {onEdit && (
             <Action
-              className="size-7 text-muted-foreground/50 hover:text-foreground"
+              aria-label="编辑消息"
+              className="size-8 text-muted-foreground/50 hover:text-foreground"
               data-testid="message-edit-button"
               onClick={onEdit}
               tooltip="编辑"
@@ -62,7 +73,8 @@ export function PureMessageActions({
             </Action>
           )}
           <Action
-            className="size-7 text-muted-foreground/50 hover:text-foreground"
+            aria-label="复制消息"
+            className="size-8 text-muted-foreground/50 hover:text-foreground"
             onClick={handleCopy}
             tooltip="复制"
           >
@@ -74,17 +86,31 @@ export function PureMessageActions({
   }
 
   return (
-    <Actions className="-ml-0.5 opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100 group-active/message:opacity-100">
+    <Actions className="-ml-0.5 opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover/message:opacity-100 md:group-focus-within/message:opacity-100 md:group-active/message:opacity-100">
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        aria-label="复制回复"
+        className="size-8 text-muted-foreground/50 hover:text-foreground"
         onClick={handleCopy}
         tooltip="复制"
       >
         <CopyIcon />
       </Action>
 
+      {isLastAssistant && onRegenerate && (
+        <Action
+          aria-label="重新生成回复"
+          className="size-8 text-muted-foreground/50 hover:text-foreground"
+          data-testid="message-regenerate-button"
+          onClick={onRegenerate}
+          tooltip="重新生成"
+        >
+          <RefreshIcon />
+        </Action>
+      )}
+
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        aria-label="点赞"
+        className="size-8 text-muted-foreground/50 hover:text-foreground"
         data-testid="message-upvote"
         disabled={vote?.isUpvoted}
         onClick={() => {
@@ -137,7 +163,8 @@ export function PureMessageActions({
       </Action>
 
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        aria-label="取消点赞"
+        className="size-8 text-muted-foreground/50 hover:text-foreground"
         data-testid="message-downvote"
         disabled={vote && !vote.isUpvoted}
         onClick={() => {
@@ -199,6 +226,9 @@ export const MessageActions = memo(
       return false;
     }
     if (prevProps.isLoading !== nextProps.isLoading) {
+      return false;
+    }
+    if (prevProps.isLastAssistant !== nextProps.isLastAssistant) {
       return false;
     }
 

@@ -1,13 +1,21 @@
-import { cn } from "@/lib/utils"
+"use client";
 
-function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+import { cn } from "@/lib/utils";
+
+/**
+ * 骨架屏基础组件
+ *
+ * 用于在内容加载期间提供占位，避免布局跳动（CLS），
+ * 相比纯 Spinner 能更好地传达"内容结构"而非"正在转圈"。
+ */
+function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      data-slot="skeleton"
-      className={cn("animate-pulse rounded-xl bg-muted", className)}
+      aria-hidden="true"
+      className={cn("animate-pulse rounded-md bg-muted/60", className)}
       {...props}
     />
-  )
+  );
 }
 
-export { Skeleton }
+export { Skeleton };

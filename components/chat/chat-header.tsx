@@ -23,19 +23,19 @@ function PureChatHeader({
 
   return (
     <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm">
-      {(isMobile || !isCollapsed) && (
-        <Button
-          className="md:hidden -ml-1"
-          onClick={toggleSidebar}
-          size="icon-sm"
-          variant="ghost"
-        >
-          <PanelLeftIcon className="size-4" />
-        </Button>
-      )}
+      <Button
+        aria-expanded={!isCollapsed}
+        aria-label={isCollapsed ? "展开侧边栏" : "折叠侧边栏"}
+        className="-ml-1"
+        onClick={toggleSidebar}
+        size="icon-sm"
+        variant="ghost"
+      >
+        <PanelLeftIcon className="size-4" />
+      </Button>
 
       {agentName && (
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
           <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">
             {getAvatarChar(agentName)}
           </div>

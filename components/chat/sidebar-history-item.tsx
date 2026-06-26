@@ -1,6 +1,6 @@
+import { Pin, PinOff } from "lucide-react";
 import Link from "next/link";
 import { memo, useCallback } from "react";
-import { Pin, PinOff } from "lucide-react";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import { getChatCache, setChatCache } from "@/hooks/use-message-cache";
 import type { Chat } from "@/lib/db/schema";
@@ -80,21 +80,46 @@ const PureChatItem = ({
     <SidebarMenuItem className="group/item relative">
       {isSelecting && (
         <button
-          type="button"
-          className="absolute left-0 top-1/2 z-10 flex h-8 w-6 -translate-y-1/2 items-center justify-center text-sidebar-foreground/50 hover:text-sidebar-foreground"
+          aria-label={
+            isSelected ? `取消选择会话 ${chat.title}` : `选择会话 ${chat.title}`
+          }
+          aria-pressed={isSelected}
+          className="absolute left-0 top-1/2 z-10 flex h-9 w-7 -translate-y-1/2 items-center justify-center text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={(e) => {
             e.stopPropagation();
             onToggleSelect(chat.id);
           }}
+          type="button"
         >
           {isSelected ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="1" y="1" width="14" height="14" rx="3" fill="currentColor" />
-              <path d="M4.5 8L7 10.5L11.5 5.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <svg fill="none" height="16" viewBox="0 0 16 16" width="16">
+              <rect
+                fill="currentColor"
+                height="14"
+                rx="3"
+                width="14"
+                x="1"
+                y="1"
+              />
+              <path
+                d="M4.5 8L7 10.5L11.5 5.5"
+                stroke="white"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+              />
             </svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="currentColor" strokeWidth="1" />
+            <svg fill="none" height="16" viewBox="0 0 16 16" width="16">
+              <rect
+                height="13"
+                rx="2.5"
+                stroke="currentColor"
+                strokeWidth="1"
+                width="13"
+                x="1.5"
+                y="1.5"
+              />
             </svg>
           )}
         </button>
@@ -113,7 +138,9 @@ const PureChatItem = ({
                 onMouseEnter={handlePrefetch}
               >
                 <span className="truncate flex items-center gap-1">
-                  {isPinned && !isSelecting && <Pin size={12} className="shrink-0 text-sidebar-primary" />}
+                  {isPinned && !isSelecting && (
+                    <Pin className="shrink-0 text-sidebar-primary" size={12} />
+                  )}
                   {chat.title}
                 </span>
               </Link>
@@ -133,7 +160,9 @@ const PureChatItem = ({
             onMouseEnter={handlePrefetch}
           >
             <span className="truncate flex items-center gap-1">
-              {isPinned && !isSelecting && <Pin size={12} className="shrink-0 text-sidebar-primary" />}
+              {isPinned && !isSelecting && (
+                <Pin className="shrink-0 text-sidebar-primary" size={12} />
+              )}
               {chat.title}
             </span>
           </Link>
@@ -143,6 +172,7 @@ const PureChatItem = ({
       <DropdownMenu modal={true}>
         <DropdownMenuTrigger asChild>
           <SidebarMenuAction
+            aria-label={`会话 ${chat.title} 的更多操作`}
             className="mr-0.5 rounded-md text-sidebar-foreground/50 ring-0 transition-colors duration-150 focus-visible:ring-0 hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             showOnHover={!isActive}
           >
@@ -190,8 +220,8 @@ const PureChatItem = ({
           </DropdownMenuSub>
 
           <DropdownMenuItem
-            onClick={() => onPin(chat.id, !isPinned)}
             className="cursor-pointer"
+            onClick={() => onPin(chat.id, !isPinned)}
           >
             {isPinned ? (
               <>
@@ -220,9 +250,17 @@ const PureChatItem = ({
 };
 
 export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => {
-  if (prevProps.isActive !== nextProps.isActive) return false;
-  if (prevProps.isSelecting !== nextProps.isSelecting) return false;
-  if (prevProps.isSelected !== nextProps.isSelected) return false;
-  if (prevProps.chat.pinnedAt !== nextProps.chat.pinnedAt) return false;
+  if (prevProps.isActive !== nextProps.isActive) {
+    return false;
+  }
+  if (prevProps.isSelecting !== nextProps.isSelecting) {
+    return false;
+  }
+  if (prevProps.isSelected !== nextProps.isSelected) {
+    return false;
+  }
+  if (prevProps.chat.pinnedAt !== nextProps.chat.pinnedAt) {
+    return false;
+  }
   return true;
 });
