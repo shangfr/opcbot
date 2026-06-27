@@ -4,6 +4,7 @@ import {
   deleteAllChatsByUserId,
   deleteChatsByIds,
   getChatsByUserId,
+  getPinnedChatsByUserId,
 } from "@/lib/db/queries";
 import { ChatbotError } from "@/lib/errors";
 
@@ -12,10 +13,11 @@ export async function GET(request: NextRequest) {
 
   const limit = Math.min(
     Math.max(Number.parseInt(searchParams.get("limit") || "10", 10), 1),
-    50
+    100
   );
   const startingAfter = searchParams.get("starting_after");
   const endingBefore = searchParams.get("ending_before");
+  const pinned = searchParams.get("pinned");
 
   if (startingAfter && endingBefore) {
     return new ChatbotError(
@@ -28,6 +30,12 @@ export async function GET(request: NextRequest) {
 
   if (!session?.user) {
     return new ChatbotError("unauthorized:chat").toResponse();
+  }
+
+  // 置顶对话列表（用于「我的置顶」页面）
+  if (pinned) {
+    const pinnedChats = await getPinnedChatsByUserId({ id: session.user.id });
+    return Response.json({ chats: pinnedChats });
   }
 
   const chats = await getChatsByUserId({

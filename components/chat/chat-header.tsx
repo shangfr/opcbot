@@ -1,7 +1,18 @@
 "use client";
 
-import { memo } from "react";
+import { ArrowLeftRight, Search } from "lucide-react";
+import { memo, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import useSWR from "swr";
 import { getAvatarChar } from "@/lib/agent-groups";
+import type { Agent } from "@/lib/db/schema";
+import { cn, fetcher } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { SidebarTrigger } from "./sidebar-trigger";
 import { VisibilitySelector, type VisibilityType } from "./visibility-selector";
 
@@ -16,6 +27,59 @@ function PureChatHeader({
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
 }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [switching, setSwitching] = useState(false);
+
+  const { data: agents = [] } = useSWR<Agent[]>(
+    `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/agents`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 }
+  );
+
+  // 仅展示活跃的 OPC
+  const activeAgents = useMemo(
+    () => agents.filter((a) => a.isActive),
+    [agents]
+  );
+
+  const filteredAgents = useMemo(() => {
+    if (!search.trim()) return activeAgents;
+    const q = search.trim().toLowerCase();
+    return activeAgents.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        a.description?.toLowerCase().includes(q)
+    );
+  }, [activeAgents, search]);
+
+  const handleSwitch = async (agent: Agent) => {
+    if (switching) return;
+    setSwitching(true);
+    try {
+      const res = await fetch("/api/chat/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: agent.id }),
+      });
+      if (!res.ok) throw new Error("Failed to create chat");
+      const { chatId: newChatId } = await res.json();
+      sessionStorage.setItem(`pending-chat-${newChatId}`, agent.id);
+      setOpen(false);
+      router.push(`/chat/${newChatId}`);
+    } catch {
+      toast.error("切换 OPC 失败，请重试");
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  // 关闭弹窗时清空搜索
+  useEffect(() => {
+    if (!open) setSearch("");
+  }, [open]);
+
   return (
     <header className="sticky top-0 z-10 flex h-12 items-center gap-3 bg-background/80 px-4 backdrop-blur-sm">
       <SidebarTrigger />
@@ -32,6 +96,87 @@ function PureChatHeader({
       )}
 
       <div className="ml-auto flex items-center gap-2">
+        {/* OPC 切换按钮 */}
+        <Popover onOpenChange={setOpen} open={open}>
+          <PopoverTrigger asChild>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              disabled={switching}
+              title="切换 OPC"
+              type="button"
+            >
+              <ArrowLeftRight className="size-3.5" />
+              <span className="hidden sm:inline">切换 OPC</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            className="w-80 p-0"
+            sideOffset={8}
+          >
+            <div className="border-b p-3">
+              <p className="mb-2 text-xs font-semibold text-foreground">
+                切换到其他 OPC
+              </p>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
+                <input
+                  className="w-full rounded-lg border border-border/50 bg-background py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground/40 focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10"
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="搜索 OPC..."
+                  type="text"
+                  value={search}
+                />
+              </div>
+            </div>
+            <div className="max-h-72 overflow-y-auto p-1.5">
+              {filteredAgents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Search className="mb-2 size-6 text-muted-foreground/30" />
+                  <p className="text-xs text-muted-foreground">
+                    {search.trim() ? "未找到匹配的 OPC" : "暂无可用 OPC"}
+                  </p>
+                </div>
+              ) : (
+                filteredAgents.map((agent) => {
+                  const avatarChar = getAvatarChar(agent.name);
+                  const isCurrent = agent.name === agentName;
+                  return (
+                    <button
+                      className={cn(
+                        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted",
+                        isCurrent && "bg-muted/50",
+                        switching && "opacity-50"
+                      )}
+                      disabled={switching}
+                      key={agent.id}
+                      onClick={() => handleSwitch(agent)}
+                      type="button"
+                    >
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
+                        {avatarChar}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-foreground">
+                          {agent.name}
+                        </p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {agent.description}
+                        </p>
+                      </div>
+                      {isCurrent && (
+                        <span className="shrink-0 text-[10px] font-medium text-primary">
+                          当前
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {!isReadonly && (
           <VisibilitySelector
             chatId={chatId}

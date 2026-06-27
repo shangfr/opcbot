@@ -307,6 +307,26 @@ export async function getChatsByUserId({
   }
 }
 
+export async function getPinnedChatsByUserId({ id }: { id: string }) {
+  try {
+    return await db
+      .select()
+      .from(chat)
+      .where(
+        and(
+          eq(chat.userId, id),
+          sql`${chat.pinnedAt} IS NOT NULL`
+        )
+      )
+      .orderBy(desc(chat.pinnedAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get pinned chats"
+    );
+  }
+}
+
 export async function getChatById({ id }: { id: string }) {
   try {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
@@ -543,6 +563,47 @@ export async function deleteDocumentsByIdAfterTimestamp({
     throw new ChatbotError(
       "bad_request:database",
       "Failed to delete documents by id after timestamp"
+    );
+  }
+}
+
+export async function getDocumentsByUserId({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select({
+        id: document.id,
+        title: document.title,
+        kind: document.kind,
+        content: document.content,
+        createdAt: document.createdAt,
+      })
+      .from(document)
+      .where(eq(document.userId, userId))
+      .orderBy(desc(document.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get documents by user"
+    );
+  }
+}
+
+export async function deleteDocumentById({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}) {
+  try {
+    return await db
+      .delete(document)
+      .where(and(eq(document.id, id), eq(document.userId, userId)))
+      .returning();
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to delete document"
     );
   }
 }

@@ -4,9 +4,11 @@ import {
   BarChart3,
   BookOpen,
   Bot,
+  FileText,
   MessagesSquareIcon,
   PanelLeftIcon,
   PenSquareIcon,
+  Pin,
   TrashIcon,
   Users,
 } from "lucide-react";
@@ -189,6 +191,38 @@ export function AppSidebar({
                       <Link href="/admin" onClick={() => setOpenMobile(false)}>
                         <Bot className="size-3.5" />
                         <span>{isAdmin ? "OPC 管理" : "选择 OPC"}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* 我的置顶 */}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip="我的置顶"
+                    >
+                      <Link href="/pinned" onClick={() => setOpenMobile(false)}>
+                        <Pin className="size-3.5" />
+                        <span>我的置顶</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* 我的制品 */}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip="我的制品"
+                    >
+                      <Link href="/artifacts" onClick={() => setOpenMobile(false)}>
+                        <FileText className="size-3.5" />
+                        <span>我的制品</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

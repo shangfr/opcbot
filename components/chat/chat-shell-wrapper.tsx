@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { ChatShell } from "./shell";
 
-const EXCLUDED_PATHS = ["/admin", "/"];
+const EXCLUDED_PATHS = ["/admin", "/", "/pinned", "/artifacts"];
 
 export function ChatShellWrapper() {
   const pathname = usePathname();
