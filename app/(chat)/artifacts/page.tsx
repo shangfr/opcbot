@@ -135,35 +135,35 @@ export default function ArtifactsPage() {
   return (
     <div className="flex h-dvh flex-col bg-background">
       {/* 顶部栏 */}
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border/50 bg-background/80 px-4 backdrop-blur-sm">
+      <header className="page-header shrink-0">
         <button
-          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="back-button"
           onClick={() => router.back()}
           type="button"
         >
           <ArrowLeft className="size-3.5" />
-          返回
+          <span className="hidden sm:inline">返回</span>
         </button>
-        <div className="flex items-center gap-2">
-          <FileText className="size-4 text-muted-foreground" />
-          <h1 className="text-sm font-semibold">我的制品</h1>
-          <span className="text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-2">
+          <FileText className="size-4 shrink-0 text-muted-foreground" />
+          <h1 className="truncate text-sm font-semibold">我的制品</h1>
+          <span className="shrink-0 text-xs text-muted-foreground">
             {documents.length} 个
           </span>
         </div>
       </header>
 
       {/* 内容区 */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-6">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : documents.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3">
-            <FileText className="size-12 text-muted-foreground/30" />
+          <div className="empty-state h-full">
+            <FileText className="mb-3 size-12 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">还没有制品</p>
-            <p className="text-xs text-muted-foreground/60">
+            <p className="mt-1 px-6 text-xs text-muted-foreground/60">
               在对话中让 OPC 创建文档、代码、表格等制品，它们会自动保存在这里
             </p>
           </div>
@@ -173,7 +173,7 @@ export default function ArtifactsPage() {
             <div className="relative mb-6">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
               <input
-                className="w-full rounded-xl border border-border/50 bg-background py-2.5 pl-10 pr-4 text-sm transition-colors placeholder:text-muted-foreground/40 focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10"
+                className="search-input"
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="搜索制品..."
                 type="text"
@@ -206,12 +206,12 @@ export default function ArtifactsPage() {
                         {docs.length} 个
                       </span>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="card-grid">
                       {docs.map((doc) => {
                         const DocIcon = KIND_META[doc.kind].icon;
                         return (
                           <button
-                            className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-md"
+                            className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-md sm:p-4"
                             key={`${doc.id}-${doc.createdAt}`}
                             onClick={() => setPreviewDoc(doc)}
                             type="button"
@@ -230,7 +230,7 @@ export default function ArtifactsPage() {
                                   )}
                                 />
                               </div>
-                              <span className="text-[10px] text-muted-foreground/50">
+                              <span className="shrink-0 text-[10px] text-muted-foreground/50">
                                 {formatDistance(
                                   new Date(doc.createdAt),
                                   new Date(),
@@ -253,7 +253,7 @@ export default function ArtifactsPage() {
               })}
 
             {filteredDocs.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16">
+              <div className="empty-state py-16">
                 <Search className="mb-3 size-8 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">未找到匹配的制品</p>
               </div>
@@ -267,7 +267,7 @@ export default function ArtifactsPage() {
         onOpenChange={(open) => !open && setPreviewDoc(null)}
         open={!!previewDoc}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="dialog-mobile-friendly max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {previewDoc && (() => {
@@ -275,7 +275,7 @@ export default function ArtifactsPage() {
                 return (
                   <div
                     className={cn(
-                      "flex size-6 items-center justify-center rounded-md",
+                      "flex size-6 shrink-0 items-center justify-center rounded-md",
                       KIND_META[previewDoc.kind].bg
                     )}
                   >
@@ -288,7 +288,9 @@ export default function ArtifactsPage() {
                   </div>
                 );
               })()}
-              {previewDoc?.title || "无标题"}
+              <span className="truncate">
+                {previewDoc?.title || "无标题"}
+              </span>
             </DialogTitle>
             <DialogDescription>
               {previewDoc &&
@@ -299,14 +301,14 @@ export default function ArtifactsPage() {
                 )}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-border/50 bg-muted/30 p-4">
+          <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-border/50 bg-muted/30 p-3 sm:p-4">
             <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground/80">
               {previewDoc?.content || "无内容"}
             </pre>
           </div>
           <DialogFooter className="gap-2">
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+              className="touch-target inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
               disabled={deleting}
               onClick={() => previewDoc && handleDelete(previewDoc)}
               type="button"
@@ -319,7 +321,7 @@ export default function ArtifactsPage() {
               删除
             </button>
             <button
-              className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+              className="touch-target rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
               onClick={() => setPreviewDoc(null)}
               type="button"
             >

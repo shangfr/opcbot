@@ -133,7 +133,7 @@ export default function StatsPage() {
       : null;
 
   return (
-    <div className="px-6 py-8">
+    <div className="page-container">
       {/* Header */}
 
       {loading && !stats ? (
@@ -211,7 +211,8 @@ export default function StatsPage() {
               padding="none"
               variant="base"
             >
-              <table className="w-full text-sm">
+              <div className="table-wrapper">
+                <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/40 bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
                     <th className="px-3 py-2 text-left font-medium">
@@ -289,6 +290,7 @@ export default function StatsPage() {
                   )}
                 </tbody>
               </table>
+              </div>
             </Card>
           </div>
         </div>

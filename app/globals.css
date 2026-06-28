@@ -636,3 +636,105 @@ select:focus-visible,
 [data-testid="artifact"] {
   isolation: isolate;
 }
+
+/* ===== 移动端全局适配工具类 =====
+ * 设计原则：
+ * 1. 统一页面容器内边距：移动端 px-4，桌面端 px-6
+ * 2. 统一页面顶部内边距：移动端 py-6，桌面端 py-8
+ * 3. 表格在移动端横向滚动，避免内容溢出
+ * 4. 弹窗在移动端全屏化，桌面端居中
+ * 5. 触摸目标最小 44px（符合 iOS HIG / Material Design 规范）
+ */
+@layer components {
+  /* 页面容器：统一内边距，移动端紧凑、桌面端宽松 */
+  .page-container {
+    @apply px-4 py-6 md:px-6 md:py-8;
+  }
+
+  /* 页面头部：固定高度，移动端紧凑 */
+  .page-header {
+    @apply sticky top-0 z-10 flex h-12 items-center gap-2 border-b border-border/50 bg-background/80 px-4 backdrop-blur-sm sm:gap-3;
+  }
+
+  /* 表格容器：移动端横向滚动 */
+  .table-wrapper {
+    @apply overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0;
+  }
+
+  .table-wrapper table {
+    @apply min-w-[640px] md:min-w-0;
+  }
+
+  /* 卡片网格：移动端单列，平板双列，桌面三列 */
+  .card-grid {
+    @apply grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  /* 弹窗内容：移动端底部抽屉式，桌面端居中 */
+  .dialog-mobile-friendly {
+    @apply max-h-[90dvh] overflow-y-auto;
+  }
+
+  /* 触摸友好按钮：最小 44px 高度 */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* 搜索框：移动端全宽 */
+  .search-input {
+    @apply w-full rounded-xl border border-border/50 bg-background py-2.5 pl-10 pr-4 text-sm transition-colors placeholder:text-muted-foreground/40 focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10;
+  }
+
+  /* 返回按钮：统一样式 */
+  .back-button {
+    @apply inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
+  }
+
+  /* 空状态容器 */
+  .empty-state {
+    @apply flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-16 text-center md:py-20;
+  }
+}
+
+/* ===== 移动端专用优化 ===== */
+@media (max-width: 640px) {
+  /* 防止移动端文字过小 */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* 优化移动端触摸滚动 */
+  .overflow-y-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 防止移动端点击高亮 */
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 移动端输入框字体不小于 16px，防止 iOS 自动缩放 */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* 移动端弹窗内边距收紧 */
+  [role="dialog"] {
+    margin: 0;
+  }
+}
+
+/* ===== 安全区域适配（刘海屏、底部横条）===== */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}

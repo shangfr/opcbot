@@ -46,9 +46,11 @@ export function GlobalHeader() {
   const pageTitle = getPageTitle(pathname);
 
   return (
-    <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border/40 bg-background/80 px-4 backdrop-blur-sm">
+    <header className="page-header">
       <SidebarTrigger />
-      <span className="text-sm font-medium text-foreground/80">{pageTitle}</span>
+      <span className="truncate text-sm font-medium text-foreground/80">
+        {pageTitle}
+      </span>
     </header>
   );
 }

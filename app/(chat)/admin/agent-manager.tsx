@@ -185,14 +185,14 @@ export function AgentManager() {
 
   return (
     <CategoryProvider value={ctxValue}>
-      <div className="px-6 py-8">
+      <div className="page-container">
         {/* Header */}
-        <div className="mb-10 flex items-center justify-end">
-          <div className="flex items-center gap-2">
+        <div className="mb-6 flex flex-wrap items-center justify-end gap-2 sm:mb-10">
+          <div className="flex flex-wrap items-center gap-2">
             <Button asChild className="gap-1.5" size="sm" variant="ghost">
               <Link href="/">
                 <Home className="size-3.5" />
-                返回主页
+                <span className="hidden sm:inline">返回主页</span>
               </Link>
             </Button>
             <Button
@@ -202,7 +202,7 @@ export function AgentManager() {
               variant="ghost"
             >
               <FolderTree className="size-3.5" />
-              管理分组
+              <span className="hidden sm:inline">管理分组</span>
             </Button>
             <SiteConfigDialog />
             <Button className="gap-2" onClick={openCreate}>
@@ -214,7 +214,7 @@ export function AgentManager() {
 
         {/* Empty state */}
         {agents.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-20">
+          <div className="empty-state">
             <Plus className="mb-4 size-12 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">还没有任何 OPC</p>
             <Button
@@ -232,7 +232,7 @@ export function AgentManager() {
         {groups.map(({ group, agents: groupAgents }) => (
           <section className="mb-10" key={group.key}>
             <GroupHeader count={groupAgents.length} group={group} />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="card-grid">
               {groupAgents.map((agent) => (
                 <AgentCard
                   admin
@@ -254,7 +254,7 @@ export function AgentManager() {
               count={ungrouped.length}
               group={{ bg: "bg-slate-400", label: "其他" }}
             />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="card-grid">
               {ungrouped.map((agent) => (
                 <AgentCard
                   admin
@@ -271,7 +271,7 @@ export function AgentManager() {
 
         {/* Create / Edit dialog */}
         <Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
-          <DialogContent className="max-h-[85dvh] max-w-lg overflow-y-auto">
+          <DialogContent className="dialog-mobile-friendly max-h-[90dvh] max-w-lg">
             <DialogHeader>
               <DialogTitle>
                 {editingAgent ? "编辑 OPC" : "新建 OPC"}

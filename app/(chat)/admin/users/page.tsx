@@ -209,7 +209,7 @@ export default function UsersPage() {
       : null;
 
   return (
-    <div className="px-6 py-8">
+    <div className="page-container">
       {/* Header */}
 
 
@@ -365,7 +365,7 @@ export default function UsersPage() {
                 placeholder="搜索邮箱、姓名或ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 w-64 rounded-md border border-border/50 bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="h-8 w-full rounded-md border border-border/50 bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring sm:w-64"
               />
             </div>
             <Card
@@ -373,7 +373,8 @@ export default function UsersPage() {
               padding="none"
               variant="base"
             >
-              <table className="w-full text-sm">
+              <div className="table-wrapper">
+                <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/40 bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
                     <th className="px-3 py-2 text-left font-medium">用户</th>
@@ -524,6 +525,7 @@ export default function UsersPage() {
                   )}
                 </tbody>
               </table>
+              </div>
             </Card>
           </div>
         </div>

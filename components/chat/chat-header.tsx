@@ -81,7 +81,7 @@ function PureChatHeader({
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-10 flex h-12 items-center gap-3 bg-background/80 px-4 backdrop-blur-sm">
+    <header className="page-header">
       <SidebarTrigger />
 
       {agentName && (
@@ -95,12 +95,12 @@ function PureChatHeader({
         </div>
       )}
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         {/* OPC 切换按钮 */}
         <Popover onOpenChange={setOpen} open={open}>
           <PopoverTrigger asChild>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="touch-target inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               disabled={switching}
               title="切换 OPC"
               type="button"
@@ -111,7 +111,7 @@ function PureChatHeader({
           </PopoverTrigger>
           <PopoverContent
             align="end"
-            className="w-80 p-0"
+            className="w-[calc(100vw-2rem)] max-w-80 p-0 sm:w-80"
             sideOffset={8}
           >
             <div className="border-b p-3">
@@ -121,7 +121,7 @@ function PureChatHeader({
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
                 <input
-                  className="w-full rounded-lg border border-border/50 bg-background py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground/40 focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-lg border border-border/50 bg-background py-2 pl-8 pr-3 text-sm placeholder:text-muted-foreground/40 focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10"
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="搜索 OPC..."
                   type="text"
@@ -129,7 +129,7 @@ function PureChatHeader({
                 />
               </div>
             </div>
-            <div className="max-h-72 overflow-y-auto p-1.5">
+            <div className="max-h-[60dvh] overflow-y-auto p-1.5">
               {filteredAgents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Search className="mb-2 size-6 text-muted-foreground/30" />
@@ -144,7 +144,7 @@ function PureChatHeader({
                   return (
                     <button
                       className={cn(
-                        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted",
+                        "touch-target flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted",
                         isCurrent && "bg-muted/50",
                         switching && "opacity-50"
                       )}

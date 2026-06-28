@@ -343,9 +343,9 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div className="px-6 py-8">
+    <div className="page-container">
       {/* Header */}
-      <div className="mb-10 flex items-center justify-end">
+      <div className="mb-6 flex items-center justify-end sm:mb-10">
         <Button className="gap-2" onClick={() => setCreateOpen(true)}>
           <Plus className="size-4" />
           新建知识库
@@ -364,7 +364,7 @@ export default function KnowledgePage() {
             className={`space-y-3 ${selectedKb ? "hidden lg:block" : ""}`}
           >
             {knowledgeBases.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-16">
+              <div className="empty-state py-16">
                 <BookOpen className="mb-3 size-10 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">
                   还没有知识库
@@ -596,7 +596,7 @@ export default function KnowledgePage() {
 
       {/* Create dialog */}
       <Dialog onOpenChange={setCreateOpen} open={createOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="dialog-mobile-friendly max-w-sm">
           <DialogHeader>
             <DialogTitle>新建知识库</DialogTitle>
             <DialogDescription>
@@ -640,7 +640,7 @@ export default function KnowledgePage() {
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         open={!!deleteTarget}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="dialog-mobile-friendly max-w-sm">
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
             <DialogDescription>

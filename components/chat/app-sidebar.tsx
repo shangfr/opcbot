@@ -316,7 +316,7 @@ export function AppSidebar({
         onOpenChange={setShowDeleteAllDialog}
         open={showDeleteAllDialog}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="dialog-mobile-friendly max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>清空全部对话？</AlertDialogTitle>
             <AlertDialogDescription>

@@ -69,13 +69,13 @@ export function AgentCards() {
 
   return (
     <CategoryProvider value={ctxValue}>
-      <div className="px-6 py-8">
+      <div className="page-container">
         {/* 搜索框 */}
         {activeCount > 3 && (
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
             <input
-              className="w-full rounded-xl border border-border/50 bg-background py-2.5 pl-10 pr-4 text-sm transition-colors placeholder:text-muted-foreground/40 focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10"
+              className="search-input"
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索 OPC..."
               type="text"
@@ -89,7 +89,7 @@ export function AgentCards() {
           <div className="mb-6 flex flex-wrap items-center gap-2">
             <button
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all",
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all sm:px-3.5",
                 activeCategory === null
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -112,7 +112,7 @@ export function AgentCards() {
             {categoryFilters.map((cat) => (
               <button
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all",
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all sm:px-3.5",
                   activeCategory === cat.id
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -139,7 +139,7 @@ export function AgentCards() {
 
         {/* 全空 */}
         {agents.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-20">
+          <div className="empty-state">
             <Lightbulb className="mb-4 size-12 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">还没有可用的 OPC</p>
           </div>
@@ -147,7 +147,7 @@ export function AgentCards() {
 
         {/* 搜索结果 */}
         {filtered !== null && filtered.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="card-grid">
             {filtered.map((agent) => (
               <AgentCard
                 agent={agent}
@@ -159,7 +159,7 @@ export function AgentCards() {
         )}
 
         {filtered !== null && filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-16">
+          <div className="empty-state py-16">
             <Search className="mb-3 size-8 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">未找到匹配的 OPC</p>
           </div>
@@ -170,7 +170,7 @@ export function AgentCards() {
           visibleGroups.map(({ group, agents: groupAgents }) => (
             <section className="mb-10" key={group.key}>
               <GroupHeader count={groupAgents.length} group={group} />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="card-grid">
                 {groupAgents.map((agent) => (
                   <AgentCard
                     agent={agent}
@@ -186,7 +186,7 @@ export function AgentCards() {
         {filtered === null &&
           visibleGroups.length === 0 &&
           agents.length > 0 && (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-16">
+            <div className="empty-state py-16">
               <Lightbulb className="mb-3 size-8 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground">
                 该类别下暂无 OPC
@@ -203,7 +203,7 @@ export function AgentCards() {
                 count={inactive.length}
                 group={{ bg: "bg-muted-foreground/30", label: "已停用" }}
               />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-50">
+              <div className="card-grid opacity-50">
                 {inactive.map((agent) => {
                   const avatarChar = getAvatarChar(agent.name);
                   return (
@@ -217,8 +217,8 @@ export function AgentCards() {
                         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-base font-bold text-muted-foreground/50">
                           {avatarChar}
                         </div>
-                        <div>
-                          <h3 className="text-sm font-semibold leading-tight">
+                        <div className="min-w-0">
+                          <h3 className="truncate text-sm font-semibold leading-tight">
                             {agent.name}
                           </h3>
                           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">

@@ -149,29 +149,32 @@ export default function PinnedPage() {
   return (
     <div className="flex h-dvh flex-col bg-background">
       {/* 顶部栏 */}
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border/50 bg-background/80 px-4 backdrop-blur-sm">
+      <header className="page-header shrink-0">
         <button
-          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="back-button"
           onClick={() => router.back()}
           type="button"
         >
           <ArrowLeft className="size-3.5" />
-          返回
+          <span className="hidden sm:inline">返回</span>
         </button>
-        <div className="flex items-center gap-2">
-          <Pin className="size-4 text-primary" />
-          <h1 className="text-sm font-semibold text-foreground">我的置顶</h1>
+        <div className="flex min-w-0 items-center gap-2">
+          <Pin className="size-4 shrink-0 text-primary" />
+          <h1 className="truncate text-sm font-semibold text-foreground">我的置顶</h1>
           {chats.length > 0 && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
               {chats.length}
             </span>
           )}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           {selected.size > 0 && (
             <>
-              <span className="text-xs text-muted-foreground">
+              <span className="hidden text-xs text-muted-foreground sm:inline">
                 已选 {selected.size} 项
+              </span>
+              <span className="text-xs text-muted-foreground sm:hidden">
+                {selected.size}
               </span>
               <button
                 className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
@@ -179,14 +182,16 @@ export default function PinnedPage() {
                 type="button"
               >
                 <Sparkles className="size-3.5" />
-                信息汇总
+                <span className="hidden sm:inline">信息汇总</span>
+                <span className="sm:hidden">汇总</span>
               </button>
               <button
                 className="rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
                 onClick={clearSelection}
                 type="button"
               >
-                取消选择
+                <span className="hidden sm:inline">取消选择</span>
+                <span className="sm:hidden">取消</span>
               </button>
             </>
           )}
@@ -201,7 +206,7 @@ export default function PinnedPage() {
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
               <input
-                className="w-full rounded-xl border border-border/50 bg-background py-2.5 pl-10 pr-4 text-sm transition-colors placeholder:text-muted-foreground/40 focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10"
+                className="search-input"
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="搜索置顶对话..."
                 type="text"
@@ -219,14 +224,14 @@ export default function PinnedPage() {
 
           {/* 空状态 */}
           {!isLoading && chats.length === 0 && (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-20">
+            <div className="empty-state">
               <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted/60">
                 <Pin className="size-7 text-muted-foreground/40" />
               </div>
               <p className="text-sm font-medium text-foreground/70">
                 还没有置顶的对话
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 px-4 text-xs text-muted-foreground">
                 在侧边栏聊天记录中，点击对话右侧的「···」菜单选择「置顶」
               </p>
               <button
@@ -242,7 +247,7 @@ export default function PinnedPage() {
 
           {/* 搜索无结果 */}
           {!isLoading && chats.length > 0 && filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 py-16">
+            <div className="empty-state py-16">
               <Search className="mb-3 size-8 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground">未找到匹配的对话</p>
             </div>
@@ -281,7 +286,7 @@ export default function PinnedPage() {
               return (
                 <div
                   className={cn(
-                    "group relative flex items-start gap-3 rounded-xl border p-3.5 transition-all",
+                    "group relative flex items-start gap-2.5 rounded-xl border p-3 transition-all sm:gap-3 sm:p-3.5",
                     isSelected
                       ? "border-primary/40 bg-primary/5"
                       : "border-border/50 bg-card hover:border-border hover:bg-muted/30"
@@ -291,7 +296,7 @@ export default function PinnedPage() {
                   {/* 选择框 */}
                   <button
                     aria-label={isSelected ? "取消选择" : "选择"}
-                    className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors"
+                    className="touch-target mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors"
                     onClick={() => toggleSelect(chat.id)}
                     type="button"
                   >
@@ -314,11 +319,11 @@ export default function PinnedPage() {
                     <h3 className="truncate text-sm font-medium text-foreground">
                       {chat.title || "未命名对话"}
                     </h3>
-                    <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
                       {chat.agentName && (
                         <span className="inline-flex items-center gap-1">
                           <span className="size-1.5 rounded-full bg-primary/50" />
-                          {chat.agentName}
+                          <span className="max-w-[120px] truncate">{chat.agentName}</span>
                         </span>
                       )}
                       <span>
@@ -333,7 +338,7 @@ export default function PinnedPage() {
                   {/* 取消置顶按钮 */}
                   <button
                     aria-label="取消置顶"
-                    className="shrink-0 rounded-lg p-1.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                    className="touch-target shrink-0 rounded-lg p-1.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
                     disabled={unpinningId === chat.id}
                     onClick={() => handleUnpin(chat.id)}
                     title="取消置顶"
@@ -354,14 +359,14 @@ export default function PinnedPage() {
 
       {/* 选择 OPC 生成汇总报告 */}
       <Dialog onOpenChange={setShowAgentPicker} open={showAgentPicker}>
-        <DialogContent>
+        <DialogContent className="dialog-mobile-friendly max-w-md">
           <DialogHeader>
             <DialogTitle>选择 OPC 生成汇总报告</DialogTitle>
             <DialogDescription>
               将选中的 {selected.size} 个置顶对话信息发送给所选 OPC，生成综合分析报告。
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-72 overflow-y-auto">
+          <div className="max-h-[60dvh] overflow-y-auto">
             {activeAgents.length === 0 ? (
               <p className="py-8 text-center text-xs text-muted-foreground">
                 暂无可用 OPC
@@ -369,7 +374,7 @@ export default function PinnedPage() {
             ) : (
               activeAgents.map((agent) => (
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 disabled:opacity-50"
+                  className="touch-target flex w-full items-center gap-3 rounded-lg border border-transparent p-2.5 text-left transition-colors hover:border-border hover:bg-muted/50 disabled:opacity-50"
                   disabled={summarizing}
                   key={agent.id}
                   onClick={() => handleSummarize(agent)}
@@ -395,7 +400,7 @@ export default function PinnedPage() {
           </div>
           <DialogFooter>
             <button
-              className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+              className="touch-target rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
               onClick={() => setShowAgentPicker(false)}
               type="button"
             >

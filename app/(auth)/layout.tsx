@@ -18,7 +18,7 @@ export default function AuthLayout({
         }}
       />
       {/* ===== 左侧表单区 ===== */}
-      <div className="relative flex w-full flex-col overflow-hidden bg-background p-8 xl:w-[600px] xl:shrink-0 xl:rounded-r-2xl xl:border-r xl:border-border/40 md:p-16">
+      <div className="relative flex w-full flex-col overflow-hidden bg-background p-6 md:p-12 xl:w-[600px] xl:shrink-0 xl:rounded-r-2xl xl:border-r xl:border-border/40 xl:p-16">
         {/* 环境光效 */}
         <div
           className="auth-pulse-glow pointer-events-none absolute -top-40 -right-40 size-[500px] rounded-full opacity-[0.04]"
