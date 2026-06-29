@@ -10,7 +10,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isAdmin } from "@/lib/utils";
 
 // ── Types ──
 
@@ -50,6 +51,9 @@ interface DocumentItem {
 // ── Page ──
 
 export default function KnowledgePage() {
+  const { data: session } = useSession();
+  const userIsAdmin = isAdmin(session?.user ?? {});
+
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedKb, setSelectedKb] = useState<KnowledgeBase | null>(null);
@@ -86,7 +90,10 @@ export default function KnowledgePage() {
         const data = await res.json();
         const list: KnowledgeBase[] = data?.list ?? [];
         setKnowledgeBases(list);
-        setUsage(data?.usage ?? null);
+        // 仅管理员显示全局用量
+        if (data?.usage) {
+          setUsage(data.usage);
+        }
 
         // listKnowledgeBases returns stale stats;
         // compute real stats from document list for each KB
@@ -94,7 +101,7 @@ export default function KnowledgePage() {
           list.map(async (kb) => {
             try {
               const docRes = await fetch(
-                `/api/knowledge/documents?knowledgeId=${kb.id}`
+                `/api/knowledge/documents?knowledgeId=${kb.id}`,
               );
               if (docRes.ok) {
                 const docData = await docRes.json();
@@ -107,17 +114,17 @@ export default function KnowledgePage() {
                           document_size: docs.length,
                           word_num: docs.reduce(
                             (s, d) => s + d.word_num,
-                            0
+                            0,
                           ),
                         }
-                      : k
-                  )
+                      : k,
+                  ),
                 );
               }
             } catch {
               // non-fatal
             }
-          })
+          }),
         );
       }
     } catch {
@@ -137,7 +144,7 @@ export default function KnowledgePage() {
     setDocsLoading(true);
     try {
       const res = await fetch(
-        `/api/knowledge/documents?knowledgeId=${kbId}`
+        `/api/knowledge/documents?knowledgeId=${kbId}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -158,7 +165,7 @@ export default function KnowledgePage() {
     async (kbId: string) => {
       try {
         const res = await fetch(
-          `/api/knowledge/documents?knowledgeId=${kbId}`
+          `/api/knowledge/documents?knowledgeId=${kbId}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -171,11 +178,11 @@ export default function KnowledgePage() {
                     document_size: docs.length,
                     word_num: docs.reduce(
                       (sum, d) => sum + d.word_num,
-                      0
+                      0,
                     ),
                   }
-                : kb
-            )
+                : kb,
+            ),
           );
           // also update selectedKb if it matches
           setSelectedKb((prev) => {
@@ -185,7 +192,7 @@ export default function KnowledgePage() {
               document_size: docs.length,
               word_num: docs.reduce(
                 (sum, d) => sum + d.word_num,
-                0
+                0,
               ),
             };
           });
@@ -194,7 +201,7 @@ export default function KnowledgePage() {
         // non-fatal
       }
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -389,7 +396,7 @@ export default function KnowledgePage() {
                   key={kb.id}
                   onClick={() =>
                     setSelectedKb(
-                      selectedKb?.id === kb.id ? null : kb
+                      selectedKb?.id === kb.id ? null : kb,
                     )
                   }
                   role="button"
@@ -450,7 +457,8 @@ export default function KnowledgePage() {
                     ? "选择一个知识库查看文档"
                     : "创建知识库后可管理文档"}
                 </p>
-                {usage && (
+                {/* 存储用量：仅管理员可见 */}
+                {userIsAdmin && usage && (
                   <div className="mt-2 w-full max-w-[240px] space-y-2 rounded-lg border border-border/40 px-4 py-3">
                     <p className="text-center text-xs font-medium">
                       存储用量

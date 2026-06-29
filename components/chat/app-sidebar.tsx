@@ -9,7 +9,6 @@ import {
   PanelLeftIcon,
   PenSquareIcon,
   Pin,
-  Sparkles,
   TrashIcon,
   Users,
 } from "lucide-react";
@@ -187,11 +186,11 @@ export function AppSidebar({
                     <SidebarMenuButton
                       asChild
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      tooltip={isAdmin ? "OPC 管理" : "选择 OPC"}
+                      tooltip="OPC"
                     >
                       <Link href="/admin" onClick={() => setOpenMobile(false)}>
                         <Bot className="size-3.5" />
-                        <span>{isAdmin ? "OPC 管理" : "选择 OPC"}</span>
+                        <span>OPC</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -229,49 +228,17 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 )}
 
-                {/* 我的 OPC */}
+                {/* 知识库 */}
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      tooltip="我的 OPC"
-                    >
-                      <Link href="/my-opc" onClick={() => setOpenMobile(false)}>
-                        <Sparkles className="size-3.5" />
-                        <span>我的 OPC</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-
-                {/* 我的知识库 */}
-                {user && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      tooltip="我的知识库"
-                    >
-                      <Link href="/my-knowledge" onClick={() => setOpenMobile(false)}>
-                        <BookOpen className="size-3.5" />
-                        <span>我的知识库</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-
-                {/* 知识库管理 */}
-                {user && isAdmin && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      tooltip="知识库管理"
+                      tooltip="知识库"
                     >
                       <Link href="/admin/knowledge" onClick={() => setOpenMobile(false)}>
                         <BookOpen className="size-3.5" />
-                        <span>知识库管理</span>
+                        <span>知识库</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

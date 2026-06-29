@@ -63,12 +63,11 @@ export function useAgents() {
     dedupingInterval: 60_000,
   });
 
-  const { data: categories = [] } = useSWR<CategoryRecord[]>(
+  const { data: categories = [], mutate: mutateCategories } = useSWR<CategoryRecord[]>(
     CATEGORIES_KEY,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60_000 }
   );
-
   /** categoryId → category record */
   const categoryMap = useMemo(() => {
     const map = new Map<string, CategoryRecord>();
@@ -96,8 +95,8 @@ export function useAgents() {
   /** Force re-fetch (used after CRUD operations) */
   const refresh = useCallback(() => {
     mutate();
-  }, [mutate]);
-
+    mutateCategories(); // 🚨 关键：加上这一行，刷新分类缓存！
+  }, [mutate, mutateCategories]);
   /** 用户视图：仅活跃 agent，按分组归类 */
   const userGroups = useMemo(() => {
     const active = agents.filter((a) => a.isActive);

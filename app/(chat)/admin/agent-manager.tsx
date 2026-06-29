@@ -2,7 +2,7 @@
 
 import { FolderTree, Home, Plus, Settings2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,7 @@ export function AgentManager() {
     adminGroups,
     handleStartChat,
     ctxValue,
+	setCategories
   } = useAgents();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
@@ -507,11 +508,26 @@ export function AgentManager() {
         </Dialog>
 
         {/* 分组管理弹窗 */}
-        <GroupManagerDialog
-          onGroupsChange={() => {}}
-          onOpenChange={setGroupDialogOpen}
-          open={groupDialogOpen}
-        />
+		<GroupManagerDialog 
+		  onGroupsChange={async () => {
+			// 🚨 不依赖 mutate，直接手动拉取最新的分类列表
+			try {
+			  const res = await fetch("/api/categories");
+			  if (res.ok) {
+				const latestCategories = await res.json();
+				// 如果 useAgents 暴露了 setCategories：
+				if (setCategories) setCategories(latestCategories);
+				
+				// 如果没有暴露，触发全局刷新（兜底方案）
+				refresh(); 
+			  }
+			} catch (error) {
+			  console.error("刷新分类列表失败", error);
+			}
+		  }} 
+		  onOpenChange={setGroupDialogOpen} 
+		  open={groupDialogOpen} 
+		/>
       </div>
     </CategoryProvider>
   );
