@@ -1,23 +1,29 @@
 "use client";
+
 import { Edit, Lightbulb, Loader2, Plus, Power, PowerOff, Search, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getAvatarChar } from "@/lib/agent-groups";
 import type { Agent } from "@/lib/db/schema";
 import { cn, fetcher } from "@/lib/utils";
+
 import { AgentFormDialog } from "./agent-form-dialog";
-// 移除 GroupManagerDialog 的引入
 import { AgentCard, CategoryProvider, GroupHeader, useAgents } from "./opc-shared";
 
 export function AgentCards() {
   const { agents, categories, loading, userGroups, activeCount, searchAgents, handleStartChat, ctxValue, refresh } = useAgents();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  
+  // 新增 Tab 状态
+  const [activeTab, setActiveTab] = useState<"discover" | "mine">("mine");
 
   const { data: myAgents = [], mutate: mutateMine } = useSWR<Agent[]>("/api/agents?scope=mine", fetcher);
+
   const filtered = search.trim() ? searchAgents(search) : null;
 
   const categoryFilters = useMemo(() => {
@@ -40,7 +46,6 @@ export function AgentCards() {
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [deleteAgent, setDeleteAgent] = useState<Agent | null>(null);
   const [deleting, setDeleting] = useState(false);
-  // 移除 groupDialogOpen 状态
 
   const openCreate = () => {
     setEditingAgent(null);
@@ -104,103 +109,191 @@ export function AgentCards() {
   return (
     <CategoryProvider value={ctxValue}>
       <div className="page-container">
-        {activeCount > 3 && (
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
-            <input className="search-input" onChange={(e) => setSearch(e.target.value)} placeholder="搜索 OPC..." type="text" value={search} />
-          </div>
-        )}
+        {/* ═══ Tab 切换栏 ═══ */}
+        <div className="mb-6 flex gap-4 border-b border-border/40">
+          <button
+            className={cn(
+              "relative pb-2 text-sm font-medium transition-colors",
+              activeTab === "mine" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => setActiveTab("mine")}
+            type="button"
+          >
+            我的 OPC
+            <span className="ml-1 text-xs text-muted-foreground/50">
+              {myAgents.length}
+            </span>
+            {activeTab === "mine" && (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            className={cn(
+              "relative pb-2 text-sm font-medium transition-colors",
+              activeTab === "discover" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => setActiveTab("discover")}
+            type="button"
+          >
+            发现 OPC
+            {activeTab === "discover" && (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
+            )}
+          </button>
+        </div>
 
-        {filtered === null && categoryFilters.length > 0 && (
-          <div className="mb-6 flex flex-wrap items-center gap-2">
-            <button className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all sm:px-3.5", activeCategory === null ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground")} onClick={() => setActiveCategory(null)} type="button">
-              全部
-              <span className={cn("rounded-full px-1.5 py-0.5 text-[10px]", activeCategory === null ? "bg-primary-foreground/20" : "bg-background/80")}>{totalActive}</span>
-            </button>
-            {categoryFilters.map((cat) => (
-              <button className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all sm:px-3.5", activeCategory === cat.id ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground")} key={cat.id} onClick={() => setActiveCategory(cat.id)} type="button">
-                {cat.name}
-                <span className={cn("rounded-full px-1.5 py-0.5 text-[10px]", activeCategory === cat.id ? "bg-primary-foreground/20" : "bg-background/80")}>{cat.count}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {agents.length === 0 && (
-          <div className="empty-state">
-            <Lightbulb className="mb-4 size-12 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">还没有可用的 OPC</p>
-          </div>
-        )}
-
-        {filtered !== null && filtered.length > 0 && (
-          <div className="card-grid">
-            {filtered.map((agent) => (
-              <AgentCard agent={agent} key={agent.id} onChat={handleStartChat} />
-            ))}
-          </div>
-        )}
-
-        {filtered !== null && filtered.length === 0 && (
-          <div className="empty-state py-16">
-            <Search className="mb-3 size-8 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">未找到匹配的 OPC</p>
-          </div>
-        )}
-
-        {filtered === null && visibleGroups.map(({ group, agents: groupAgents }) => (
-          <section className="mb-10" key={group.key}>
-            <GroupHeader count={groupAgents.length} group={group} />
-            <div className="card-grid">
-              {groupAgents.map((agent) => (
-                <AgentCard agent={agent} key={agent.id} onChat={handleStartChat} />
-              ))}
-            </div>
-          </section>
-        ))}
-
-        {filtered === null && visibleGroups.length === 0 && agents.length > 0 && (
-          <div className="empty-state py-16">
-            <Lightbulb className="mb-3 size-8 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">该类别下暂无 OPC</p>
-          </div>
-        )}
-
-        {filtered === null && activeCategory === null && inactive.length > 0 && (
-          <section>
-            <GroupHeader count={inactive.length} group={{ bg: "bg-muted-foreground/30", label: "已停用" }} />
-            <div className="card-grid opacity-50">
-              {inactive.map((agent) => {
-                const avatarChar = getAvatarChar(agent.name);
-                return (
-                  <Card className="relative" key={agent.id} padding="lg" variant="elevated">
-                    <div className="mb-3 flex items-center gap-3">
-                      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-base font-bold text-muted-foreground/50">{avatarChar}</div>
-                      <div className="min-w-0">
-                        <h3 className="truncate text-sm font-semibold leading-tight">{agent.name}</h3>
-                        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <PowerOff className="size-2.5" />
-                          已停用
-                        </span>
-                      </div>
-                    </div>
-                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{agent.description}</p>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {filtered === null && activeCategory === null && (
-          <section className="mt-10 border-t border-border/40 pt-8">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-1 w-6 rounded-full bg-primary/60" />
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">我的 OPC</h2>
-                <span className="text-[10px] text-muted-foreground/50">{myAgents.length} 个</span>
+        {/* ═══ Tab: 发现 OPC ═══ */}
+        {activeTab === "discover" && (
+          <>
+            {/* 搜索框 */}
+            {activeCount > 3 && (
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+                <input
+                  className="search-input"
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="搜索 OPC..."
+                  type="text"
+                  value={search}
+                />
               </div>
-              <button className="touch-target inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20" onClick={openCreate} type="button">
+            )}
+
+            {/* 分类筛选 */}
+            {filtered === null && categoryFilters.length > 0 && (
+              <div className="mb-6 flex flex-wrap items-center gap-2">
+                <button
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all sm:px-3.5",
+                    activeCategory === null
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                  onClick={() => setActiveCategory(null)}
+                  type="button"
+                >
+                  全部
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px]",
+                      activeCategory === null ? "bg-primary-foreground/20" : "bg-background/80"
+                    )}
+                  >
+                    {totalActive}
+                  </span>
+                </button>
+                {categoryFilters.map((cat) => (
+                  <button
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all sm:px-3.5",
+                      activeCategory === cat.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    type="button"
+                  >
+                    {cat.name}
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-0.5 text-[10px]",
+                        activeCategory === cat.id ? "bg-primary-foreground/20" : "bg-background/80"
+                      )}
+                    >
+                      {cat.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* 空状态 */}
+            {agents.length === 0 && (
+              <div className="empty-state">
+                <Lightbulb className="mb-4 size-12 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">还没有可用的 OPC</p>
+              </div>
+            )}
+
+            {/* 搜索结果 */}
+            {filtered !== null && filtered.length > 0 && (
+              <div className="card-grid">
+                {filtered.map((agent) => (
+                  <AgentCard agent={agent} key={agent.id} onChat={handleStartChat} />
+                ))}
+              </div>
+            )}
+
+            {/* 搜索无结果 */}
+            {filtered !== null && filtered.length === 0 && (
+              <div className="empty-state py-16">
+                <Search className="mb-3 size-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">未找到匹配的 OPC</p>
+              </div>
+            )}
+
+            {/* 分组展示 */}
+            {filtered === null &&
+              visibleGroups.map(({ group, agents: groupAgents }) => (
+                <section className="mb-10" key={group.key}>
+                  <GroupHeader count={groupAgents.length} group={group} />
+                  <div className="card-grid">
+                    {groupAgents.map((agent) => (
+                      <AgentCard agent={agent} key={agent.id} onChat={handleStartChat} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+
+            {/* 该类别下无 OPC */}
+            {filtered === null && visibleGroups.length === 0 && agents.length > 0 && (
+              <div className="empty-state py-16">
+                <Lightbulb className="mb-3 size-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">该类别下暂无 OPC</p>
+              </div>
+            )}
+
+            {/* 已停用的 OPC */}
+            {filtered === null && activeCategory === null && inactive.length > 0 && (
+              <section>
+                <GroupHeader count={inactive.length} group={{ bg: "bg-muted-foreground/30", label: "已停用" }} />
+                <div className="card-grid opacity-50">
+                  {inactive.map((agent) => {
+                    const avatarChar = getAvatarChar(agent.name);
+                    return (
+                      <Card className="relative" key={agent.id} padding="lg" variant="elevated">
+                        <div className="mb-3 flex items-center gap-3">
+                          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-base font-bold text-muted-foreground/50">
+                            {avatarChar}
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="truncate text-sm font-semibold leading-tight">{agent.name}</h3>
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <PowerOff className="size-2.5" />
+                              已停用
+                            </span>
+                          </div>
+                        </div>
+                        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{agent.description}</p>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+
+        {/* ═══ Tab: 我的 OPC ═══ */}
+        {activeTab === "mine" && (
+          <section>
+            <div className="mb-4 flex items-center justify-end">
+              <button
+                className="touch-target inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                onClick={openCreate}
+                type="button"
+              >
                 <Plus className="size-3.5" />
                 <span className="hidden sm:inline">创建 OPC</span>
                 <span className="sm:hidden">创建</span>
@@ -208,10 +301,14 @@ export function AgentCards() {
             </div>
 
             {myAgents.length === 0 ? (
-              <div className="empty-state py-10">
+              <div className="empty-state py-16">
                 <Plus className="mb-3 size-8 text-muted-foreground/30" />
                 <p className="text-xs text-muted-foreground">创建专属的 OPC，自定义人设和提示词</p>
-                <button className="touch-target mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20" onClick={openCreate} type="button">
+                <button
+                  className="touch-target mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                  onClick={openCreate}
+                  type="button"
+                >
                   <Plus className="size-3.5" />
                   创建第一个
                 </button>
@@ -221,12 +318,27 @@ export function AgentCards() {
                 {myAgents.map((agent) => {
                   const avatarChar = getAvatarChar(agent.name);
                   return (
-                    <div className={cn("group rounded-xl border p-4 transition-all", agent.isActive ? "border-border/50 bg-card hover:border-border hover:shadow-sm" : "border-border/30 bg-muted/20 opacity-60")} key={agent.id}>
+                    <div
+                      className={cn(
+                        "group rounded-xl border p-4 transition-all",
+                        agent.isActive
+                          ? "border-border/50 bg-card hover:border-border hover:shadow-sm"
+                          : "border-border/30 bg-muted/20 opacity-60"
+                      )}
+                      key={agent.id}
+                    >
                       <div className="mb-3 flex items-start gap-3">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-base font-bold text-primary">{avatarChar}</div>
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-base font-bold text-primary">
+                          {avatarChar}
+                        </div>
                         <div className="min-w-0 flex-1">
                           <h3 className="truncate text-sm font-semibold">{agent.name}</h3>
-                          <span className={cn("inline-flex items-center gap-1 text-[10px]", agent.isActive ? "text-emerald-600" : "text-muted-foreground")}>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 text-[10px]",
+                              agent.isActive ? "text-emerald-600" : "text-muted-foreground"
+                            )}
+                          >
                             {agent.isActive ? (
                               <>
                                 <Power className="size-2.5" />
@@ -243,14 +355,35 @@ export function AgentCards() {
                       </div>
                       <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{agent.description}</p>
                       <div className="flex items-center gap-1.5">
-                        <button className="touch-target inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border/50 px-2 py-1.5 text-xs font-medium transition-colors hover:bg-muted" onClick={() => handleStartChat(agent)} type="button">对话</button>
-                        <button className="touch-target inline-flex items-center justify-center rounded-lg border border-border/50 px-2 py-1.5 text-xs transition-colors hover:bg-muted" onClick={() => openEdit(agent)} title="编辑" type="button">
+                        <button
+                          className="touch-target inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border/50 px-2 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                          onClick={() => handleStartChat(agent)}
+                          type="button"
+                        >
+                          对话
+                        </button>
+                        <button
+                          className="touch-target inline-flex items-center justify-center rounded-lg border border-border/50 px-2 py-1.5 text-xs transition-colors hover:bg-muted"
+                          onClick={() => openEdit(agent)}
+                          title="编辑"
+                          type="button"
+                        >
                           <Edit className="size-3.5" />
                         </button>
-                        <button className="touch-target inline-flex items-center justify-center rounded-lg border border-border/50 px-2 py-1.5 text-xs transition-colors hover:bg-muted" onClick={() => handleToggleActive(agent)} title={agent.isActive ? "停用" : "启用"} type="button">
+                        <button
+                          className="touch-target inline-flex items-center justify-center rounded-lg border border-border/50 px-2 py-1.5 text-xs transition-colors hover:bg-muted"
+                          onClick={() => handleToggleActive(agent)}
+                          title={agent.isActive ? "停用" : "启用"}
+                          type="button"
+                        >
                           {agent.isActive ? <PowerOff className="size-3.5" /> : <Power className="size-3.5" />}
                         </button>
-                        <button className="touch-target inline-flex items-center justify-center rounded-lg border border-destructive/30 px-2 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/5" onClick={() => setDeleteAgent(agent)} title="删除" type="button">
+                        <button
+                          className="touch-target inline-flex items-center justify-center rounded-lg border border-destructive/30 px-2 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/5"
+                          onClick={() => setDeleteAgent(agent)}
+                          title="删除"
+                          type="button"
+                        >
                           <Trash2 className="size-3.5" />
                         </button>
                       </div>
@@ -269,9 +402,9 @@ export function AgentCards() {
         onOpenChange={setShowCreate}
         editingAgent={editingAgent}
         categories={categories}
-        onOpenGroupDialog={() => {}} // 普通用户不展示，给个空函数防报错
+        onOpenGroupDialog={() => {}}
         onSuccess={refreshAll}
-        isAdmin={false} // 新增：标记为普通用户
+        isAdmin={false}
       />
 
       {/* 删除确认弹窗 */}
@@ -282,16 +415,25 @@ export function AgentCards() {
             <DialogDescription>确定要删除「{deleteAgent?.name}」吗？此操作无法撤销。</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <button className="touch-target rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted" onClick={() => setDeleteAgent(null)} type="button">取消</button>
-            <button className="touch-target inline-flex items-center gap-1.5 rounded-lg bg-destructive px-4 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50" disabled={deleting} onClick={handleDelete} type="button">
+            <button
+              className="touch-target rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+              onClick={() => setDeleteAgent(null)}
+              type="button"
+            >
+              取消
+            </button>
+            <button
+              className="touch-target inline-flex items-center gap-1.5 rounded-lg bg-destructive px-4 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+              disabled={deleting}
+              onClick={handleDelete}
+              type="button"
+            >
               {deleting && <Loader2 className="size-3.5 animate-spin" />}
               确认删除
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* 移除普通用户的 GroupManagerDialog */}
     </CategoryProvider>
   );
 }
