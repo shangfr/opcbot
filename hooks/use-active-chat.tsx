@@ -1,3 +1,4 @@
+// hooks/use-active-chat.tsx
 "use client";
 
 import type { UseChatHelpers } from "@ai-sdk/react";
@@ -16,6 +17,7 @@ import {
   useState,
 } from "react";
 import useSWR, { useSWRConfig } from "swr";
+
 import { useDataStream } from "@/components/chat/data-stream-provider";
 import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
@@ -61,8 +63,7 @@ type ActiveChatActionsContextValue = {
 };
 
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
-const ActiveChatActionsContext =
-  createContext<ActiveChatActionsContextValue | null>(null);
+const ActiveChatActionsContext = createContext<ActiveChatActionsContextValue | null>(null);
 
 function extractChatId(pathname: string): string | null {
   const match = pathname.match(/\/chat\/([^/]+)/);
@@ -105,14 +106,11 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const [input, setInput] = useState("");
 
-  // Check if messages for this chatId are already cached in memory.
-  // Re-fetch when cache has agentId but no agentName (old cache entries).
   const cachedEntry = isNewChat ? undefined : getChatCache(chatId);
   const hasCachedMessages =
     !!cachedEntry &&
     (!cachedEntry.agentId || cachedEntry.agentName !== undefined);
 
-  // Only fetch from API if chatId is not in memory cache
   const { data: chatData, isLoading } = useSWR(
     isNewChat || hasCachedMessages
       ? null
@@ -122,7 +120,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       revalidateOnFocus: false,
       revalidateOnMount: true,
       onSuccess: (data) => {
-        // Cache API response for future navigations
         if (data && chatId) {
           setChatCache(chatId, {
             messages: data.messages ?? [],
@@ -136,15 +133,12 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     }
   );
 
-  // Use cached data if available, otherwise use SWR data
   const effectiveData = hasCachedMessages ? cachedEntry : chatData;
 
-  // Title is stateful so it can be updated in real-time (via data-chat-title stream).
   const [title, setTitle] = useState<string>(
     isNewChat ? "" : ((effectiveData as { title?: string })?.title ?? "")
   );
 
-  // Sync title from effectiveData when navigating to a different chat.
   useEffect(() => {
     if (!isNewChat && effectiveData) {
       const newTitle = (effectiveData as { title?: string })?.title;
@@ -154,7 +148,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     }
   }, [chatId, isNewChat, effectiveData]);
 
-  // Reset title when navigating to a different chat, before new data loads.
   useEffect(() => {
     if (isNewChat) return;
     const cached = getChatCache(chatId);
@@ -165,7 +158,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     }
   }, [chatId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Agent binding (agentId, agentName, validation, sessionStorage) ──
   const { agentId, agentName, agentIdRef } = useAgentBinding({
     chatId,
     chatIdFromUrl,
@@ -176,9 +168,13 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const initialMessages: ChatMessage[] = isNewChat
     ? []
     : (effectiveData?.messages ?? []);
+
   const visibility: VisibilityType = isNewChat
     ? "private"
     : (effectiveData?.visibility ?? "private");
+
+  // 🚨 新增：用于暂存当前需要发送的 summarizeTask 标识
+  const summarizeTaskRef = useRef<string | null>(null);
 
   const {
     messages,
@@ -221,8 +217,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             })
           );
 
-        // P0: Optimistic history update — add chat to sidebar immediately
-        // when user sends first message (not a tool continuation)
         if (!isToolApprovalContinuation && lastMessage?.role === "user") {
           mutate(
             (key: unknown) =>
@@ -248,7 +242,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
               }
               const firstPage = currentData[0];
               if (firstPage.chats.some((c) => c.id === request.id)) {
-                return currentData; // Already exists
+                return currentData;
               }
               const optimisticChat = {
                 id: request.id,
@@ -277,6 +271,10 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             thinkingEnabled: thinkingEnabledRef.current,
             isNewChat: isNewChatRef.current,
             ...(agentIdRef.current ? { agentId: agentIdRef.current } : {}),
+            // 🚨 注入 summarizeTask 标识
+            ...(summarizeTaskRef.current
+              ? { summarizeTask: summarizeTaskRef.current }
+              : {}),
             ...request.body,
           },
         };
@@ -286,8 +284,6 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       setDataStream((ds) => (ds ? [...ds, dataPart] : []));
     },
     onFinish: () => {
-      // 用 matcher 函数匹配 useSWRInfinite 的缓存键（$inf$ 前缀），
-      // 避免 unstable_serialize 在 SWR v2 下对 infinite 模式不生效的问题
       mutate(
         (key: unknown) =>
           typeof key === "string" &&
@@ -307,34 +303,25 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Track which chatId the messages were last set for.
   const prevChatIdForMessages = useRef<string | null>(null);
-  // Track last synced message count to avoid redundant cache writes
   const prevMessageCountRef = useRef<number>(0);
 
-  // Sync messages FROM effectiveData (API or cache) TO useChat.
-  // Only when chatId changes (navigation) or initial load with data.
   useEffect(() => {
     if (isNewChat) {
       prevChatIdForMessages.current = chatId;
       prevMessageCountRef.current = 0;
       setMessages([]);
     } else if (prevChatIdForMessages.current !== chatId) {
-      // Navigated to a different chat
       if (effectiveData?.messages && effectiveData.messages.length > 0) {
         prevChatIdForMessages.current = chatId;
         prevMessageCountRef.current = effectiveData.messages.length;
         setMessages(effectiveData.messages);
       } else if (!effectiveData) {
-        // Data hasn't loaded yet — clear to avoid showing old chat
         setMessages([]);
       }
     }
   }, [chatId, isNewChat, effectiveData, setMessages]);
 
-  // Sync messages TO cache when messages change (content or count).
-  // This is a one-way write (cache ← messages), it does NOT trigger setMessages.
-  // P0: Debounced with requestAnimationFrame to avoid excessive writes during streaming.
   const rafRef = useRef<number | null>(null);
   useEffect(() => {
     if (!isNewChat && messages.length > 0) {
@@ -354,6 +341,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
         .split("; ")
         .find((row) => row.startsWith("chat-model="))
         ?.split("=")[1];
+
       if (cookieModel) {
         setCurrentModelId(decodeURIComponent(cookieModel));
       }
@@ -362,19 +350,50 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const hasAppendedQueryRef = useRef(false);
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const query = params.get("query");
-    if (query && !hasAppendedQueryRef.current) {
+    if (hasAppendedQueryRef.current) return;
+
+    // 1. 优先检查是否是"信息汇总"跳转过来的
+    const storedSummaryTask = sessionStorage.getItem(`pending-summarize-task-${chatId}`);
+    if (storedSummaryTask) {
       hasAppendedQueryRef.current = true;
+      
+      // 🚨 记录标识到 Ref，让 transport 拼接到 body
+      summarizeTaskRef.current = storedSummaryTask;
+      
+      sessionStorage.removeItem(`pending-summarize-task-${chatId}`);
       window.history.replaceState(
         {},
         "",
         `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
       );
+
+      // 发送一条普通的触发消息，后端会根据 body 里的 summarizeTask 拦截处理
       sendMessage({
         role: "user" as const,
-        parts: [{ type: "text", text: query }],
+        parts: [{ type: "text", text: "请帮我汇总并分析以上选中的对话记录" }],
       });
+
+      // 发送后清理 Ref，避免后续正常聊天误触
+      setTimeout(() => {
+        summarizeTaskRef.current = null;
+      }, 1000);
+      
+    } else {
+      // 2. 兼容原有的 URL query 参数模式
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get("query");
+      if (query) {
+        hasAppendedQueryRef.current = true;
+        window.history.replaceState(
+          {},
+          "",
+          `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
+        );
+        sendMessage({
+          role: "user" as const,
+          parts: [{ type: "text", text: query }],
+        });
+      }
     }
   }, [sendMessage, chatId]);
 
@@ -466,23 +485,22 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 export function useActiveChat() {
   const state = useContext(ActiveChatContext);
   const actions = useContext(ActiveChatActionsContext);
+
   if (!state || !actions) {
     throw new Error("useActiveChat must be used within ActiveChatProvider");
   }
+
   return { ...state, ...actions };
 }
 
-/**
- * Returns only the stable action references (setMessages, sendMessage, stop, etc.).
- * Use this instead of useActiveChat() when you only need actions, to avoid
- * re-renders triggered by state changes (messages, status, input).
- */
 export function useActiveChatActions() {
   const actions = useContext(ActiveChatActionsContext);
+
   if (!actions) {
     throw new Error(
       "useActiveChatActions must be used within ActiveChatProvider"
     );
   }
+
   return actions;
 }

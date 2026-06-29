@@ -1,8 +1,9 @@
+// app/(chat)/api/chat/schema.ts
 import { z } from "zod";
 
 const textPartSchema = z.object({
   type: z.enum(["text"]),
-  text: z.string().min(1).max(2000),
+  text: z.string().min(1).max(100000), // 🚨 修改：放宽到 10 万字符
 });
 
 const filePartSchema = z.object({
@@ -56,6 +57,7 @@ export const postRequestBodySchema = z.object({
   agentId: z.string().uuid().optional(),
   thinkingEnabled: z.boolean().default(true),
   isNewChat: z.boolean().optional(),
+  summarizeTask: z.string().optional(), // 🚨 新增：汇总任务标识
 });
 
 export type PostRequestBody = z.infer<typeof postRequestBodySchema>;

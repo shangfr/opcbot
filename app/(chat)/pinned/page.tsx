@@ -17,9 +17,10 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWR, { useSWRConfig } from "swr";
+
 import { getAvatarChar } from "@/lib/agent-groups";
 import type { Agent } from "@/lib/db/schema";
-import { cn, fetcher } from "@/lib/utils";
+import { cn, fetcher, generateUUID } from "@/lib/utils"; // 🚨 修改：引入 generateUUID
 import {
   Dialog,
   DialogContent,
@@ -41,10 +42,12 @@ type PinnedChat = {
 export default function PinnedPage() {
   const router = useRouter();
   const { mutate } = useSWRConfig();
+
   const { data, isLoading } = useSWR<{ chats: PinnedChat[] }>(
     "/api/history?pinned=1&limit=100",
     fetcher
   );
+
   const { data: agentsData } = useSWR<Agent[]>("/api/agents", fetcher, {
     revalidateOnFocus: false,
   });
@@ -56,6 +59,7 @@ export default function PinnedPage() {
   const [unpinningId, setUnpinningId] = useState<string | null>(null);
 
   const chats = data?.chats ?? [];
+
   const activeAgents = useMemo(
     () => (agentsData ?? []).filter((a) => a.isActive),
     [agentsData]
@@ -100,6 +104,7 @@ export default function PinnedPage() {
         body: JSON.stringify({ pinned: false }),
       });
       if (!res.ok) throw new Error("Failed to unpin");
+
       mutate("/api/history?pinned=1&limit=100");
       setSelected((prev) => {
         const next = new Set(prev);
@@ -114,31 +119,28 @@ export default function PinnedPage() {
     }
   };
 
+  // 🚨 修改：简化为只传递 chatIds 数组，不再拼接长文本
   const handleSummarize = async (agent: Agent) => {
     if (summarizing) return;
     setSummarizing(true);
     try {
-      const selectedChats = chats.filter((c) => selected.has(c.id));
-      const summaryContent = selectedChats
-        .map((c, idx) => {
-          const source = c.agentName ? `[来自 OPC: ${c.agentName}]` : "";
-          const title = c.title ? `[会话: ${c.title}]` : "";
-          return `--- 置顶对话 ${idx + 1} ${title} ${source} ---\n对话ID: ${c.id}`;
-        })
-        .join("\n\n");
+      const selectedChatIds = Array.from(selected);
 
-      const prompt = `以下是我置顶的 ${selectedChats.length} 个对话，请基于这些对话信息生成一份综合分析报告，包括：\n1. 对话主题摘要\n2. 关键信息提取\n3. 共同主题与关联分析\n4. 行动建议\n\n置顶对话列表：\n\n${summaryContent}`;
-
-      const res = await fetch("/api/chat/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId: agent.id }),
+      // 1. 构造汇总任务参数
+      const payload = JSON.stringify({
+        chatIds: selectedChatIds,
+        agentId: agent.id,
       });
-      if (!res.ok) throw new Error("Failed to create chat");
-      const { chatId } = await res.json();
-      sessionStorage.setItem(`pending-chat-${chatId}`, agent.id);
+
+      // 2. 生成新对话 ID
+      const newChatId = generateUUID();
+
+      // 3. 存入 sessionStorage，由 use-active-chat.tsx 消费
+      sessionStorage.setItem(`pending-summarize-task-${newChatId}`, payload);
+
+      // 4. 跳转新页面，触发 useChat 自动发送
       setShowAgentPicker(false);
-      router.push(`/chat/${chatId}?query=${encodeURIComponent(prompt)}`);
+      router.push(`/chat/${newChatId}`);
     } catch {
       toast.error("生成报告失败，请重试");
     } finally {
@@ -160,7 +162,9 @@ export default function PinnedPage() {
         </button>
         <div className="flex min-w-0 items-center gap-2">
           <Pin className="size-4 shrink-0 text-primary" />
-          <h1 className="truncate text-sm font-semibold text-foreground">我的置顶</h1>
+          <h1 className="truncate text-sm font-semibold text-foreground">
+            我的置顶
+          </h1>
           {chats.length > 0 && (
             <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
               {chats.length}
@@ -300,9 +304,7 @@ export default function PinnedPage() {
                     onClick={() => toggleSelect(chat.id)}
                     type="button"
                   >
-                    {isSelected && (
-                      <Check className="size-3.5 text-primary" />
-                    )}
+                    {isSelected && <Check className="size-3.5 text-primary" />}
                   </button>
 
                   {/* 头像 */}
@@ -323,7 +325,9 @@ export default function PinnedPage() {
                       {chat.agentName && (
                         <span className="inline-flex items-center gap-1">
                           <span className="size-1.5 rounded-full bg-primary/50" />
-                          <span className="max-w-[120px] truncate">{chat.agentName}</span>
+                          <span className="max-w-[120px] truncate">
+                            {chat.agentName}
+                          </span>
                         </span>
                       )}
                       <span>

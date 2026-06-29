@@ -1,3 +1,4 @@
+// app/(chat)/api/chat/route.ts
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -16,11 +17,7 @@ import {
   DEFAULT_CHAT_MODEL,
   getCapabilities,
 } from "@/lib/ai/models";
-import {
-  infrastructurePrompt,
-  type RequestHints,
-  systemPrompt,
-} from "@/lib/ai/prompts";
+import { infrastructurePrompt, type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { withRetry } from "@/lib/ai/retry";
 import { retrieve as retrieveKnowledge } from "@/lib/ai/zhipu-knowledge";
@@ -53,23 +50,13 @@ import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
 export const maxDuration = 60;
 
-/**
- * Maximum number of messages sent to the LLM as context.
- * Longer conversations keep only the most recent messages.
- */
 const MAX_CONTEXT_MESSAGES = 40;
 
-/**
- * Extract geolocation from request headers.
- * Supports Cloudflare (cf-ip*), Vercel (x-vercel-ip-*), and standard proxy headers.
- */
 function geolocation(request: Request) {
   const h = request.headers;
   return {
-    latitude:
-      h.get("cf-iplatitude") ?? h.get("x-vercel-ip-latitude") ?? undefined,
-    longitude:
-      h.get("cf-iplongitude") ?? h.get("x-vercel-ip-longitude") ?? undefined,
+    latitude: h.get("cf-iplatitude") ?? h.get("x-vercel-ip-latitude") ?? undefined,
+    longitude: h.get("cf-iplongitude") ?? h.get("x-vercel-ip-longitude") ?? undefined,
     city: h.get("cf-ipcity") ?? h.get("x-vercel-ip-city") ?? undefined,
     country: h.get("cf-ipcountry") ?? h.get("x-vercel-ip-country") ?? undefined,
   };
@@ -87,7 +74,6 @@ export { getStreamContext };
 
 export async function POST(request: Request) {
   let requestBody: PostRequestBody;
-
   try {
     const json = await request.json();
     requestBody = postRequestBodySchema.parse(json);
@@ -105,9 +91,9 @@ export async function POST(request: Request) {
       agentId,
       thinkingEnabled,
       isNewChat,
+      summarizeTask, // 🚨 解构汇总标识
     } = requestBody;
 
-    // ── Parallel pre-flight: auth + chat/agent lookup ──
     const [session, chat, agentRecord] = await Promise.all([
       auth(),
       isNewChat ? Promise.resolve(null) : getChatById({ id }),
@@ -123,7 +109,6 @@ export async function POST(request: Request) {
       : DEFAULT_CHAT_MODEL;
 
     const userType: UserType = session.user.type;
-
     const messageCount = await getMessageCountByUserId({
       id: session.user.id,
       differenceInHours: 1,
@@ -133,19 +118,122 @@ export async function POST(request: Request) {
       return new ChatbotError("rate_limit:chat").toResponse();
     }
 
-    // ── Chat setup ──
+    // ==========================================
+    // 🚨 核心分支：如果是置顶对话汇总任务
+    // ==========================================
+    if (summarizeTask) {
+      const { chatIds: targetChatIds } = JSON.parse(summarizeTask);
+
+      // 1. 创建新对话记录
+      await saveChat({
+        id,
+        userId: session.user.id,
+        title: "信息汇总分析",
+        visibility: selectedVisibilityType,
+        agentId,
+        agentName: agentRecord?.name ?? null,
+      });
+
+      // 2. 拉取历史记录并拼装成标准大模型对话数组格式
+      const modelMessages = [];
+      for (const targetChatId of targetChatIds) {
+        const targetChat = await getChatById({ id: targetChatId });
+        if (targetChat && targetChat.userId === session.user.id) {
+          const msgs = await getMessagesByChatId({ id: targetChatId });
+          modelMessages.push({
+            role: "user",
+            content: `--- 以下是对话《${targetChat.title}》的记录 ---`,
+          });
+          for (const m of msgs) {
+            const text = Array.isArray(m.parts)
+              ? m.parts
+                  .filter((p: any) => p.type === "text")
+                  .map((p: any) => p.text)
+                  .join("")
+              : "";
+            if (text) {
+              modelMessages.push({ role: m.role, content: text });
+            }
+          }
+        }
+      }
+
+      // 3. 在末尾追加总结指令
+      modelMessages.push({
+        role: "user",
+        content: "请基于以上多个对话的内容，生成一份综合分析报告。要求：1. 提取核心主题；2. 归纳关键信息；3. 分析共同点与差异；4. 给出后续行动建议。",
+      });
+
+      // 4. 组装 System Prompt
+      let systemMessage = systemPrompt({
+        requestHints: { longitude: undefined, latitude: undefined, city: undefined, country: undefined },
+        supportsTools: false,
+      });
+      if (agentRecord?.isActive) {
+        systemMessage = `${agentRecord.systemPrompt}\n\n${systemMessage}`;
+      }
+
+      // 5. 保存用户的触发消息到数据库
+      if (message?.role === "user") {
+        await saveMessages({
+          messages: [
+            {
+              chatId: id,
+              id: message.id,
+              role: "user",
+              parts: message.parts,
+              attachments: [],
+              createdAt: new Date(),
+            },
+          ],
+        });
+      }
+
+      // 6. 流式调用大模型
+      const stream = createUIMessageStream({
+        execute: async ({ writer: dataStream }) => {
+          const result = await streamText({
+            model: getLanguageModel(chatModel),
+            system: systemMessage,
+            messages: modelMessages, // 🚨 完美的标准对话数组！
+          });
+
+          dataStream.merge(result.toUIMessageStream());
+        },
+        generateId: generateUUID,
+        onFinish: async ({ messages: finishedMessages }) => {
+          if (finishedMessages.length > 0) {
+            await saveMessages({
+              messages: finishedMessages.map((currentMessage) => ({
+                id: currentMessage.id,
+                role: currentMessage.role,
+                parts: currentMessage.parts,
+                createdAt: new Date(),
+                attachments: [],
+                chatId: id,
+              })),
+            });
+          }
+        },
+        onError: (error) => "Oops, an error occurred!",
+      });
+
+      return createUIMessageStreamResponse({ stream });
+    }
+    // ==========================================
+    // 汇总分支结束，以下是原有正常聊天逻辑
+    // ==========================================
+
     const isToolApprovalFlow = Boolean(messages);
     let messagesFromDb: DBMessage[] = [];
     let titlePromise: Promise<string> | null = null;
 
     if (chat) {
-      // Existing chat — verify ownership and load history
       if (chat.userId !== session.user.id) {
         return new ChatbotError("forbidden:chat").toResponse();
       }
       messagesFromDb = await getMessagesByChatId({ id });
     } else if (message?.role === "user") {
-      // New chat — create record
       await saveChat({
         id,
         userId: session.user.id,
@@ -157,9 +245,7 @@ export async function POST(request: Request) {
       titlePromise = generateTitleFromUserMessage({ message });
     }
 
-    // ── Assemble UI messages ──
     let uiMessages: ChatMessage[];
-
     if (isToolApprovalFlow && messages) {
       const dbMessages = convertToUIMessages(messagesFromDb);
       const approvalStates = new Map(
@@ -180,43 +266,32 @@ export async function POST(request: Request) {
       uiMessages = dbMessages.map((msg) => ({
         ...msg,
         parts: msg.parts.map((part) => {
-          if (
-            "toolCallId" in part &&
-            approvalStates.has(String(part.toolCallId))
-          ) {
+          if ("toolCallId" in part && approvalStates.has(String(part.toolCallId))) {
             return { ...part, ...approvalStates.get(String(part.toolCallId)) };
           }
           return part;
         }),
       })) as ChatMessage[];
     } else {
-      uiMessages = [
-        ...convertToUIMessages(messagesFromDb),
-        message as ChatMessage,
-      ];
+      uiMessages = [...convertToUIMessages(messagesFromDb), message as ChatMessage];
     }
 
-    // ── System message (reuse agentRecord from parallel fetch) ──
     const { longitude, latitude, city, country } = geolocation(request);
     const requestHints: RequestHints = { longitude, latitude, city, country };
     const modelConfig = chatModels.find((m) => m.id === chatModel);
     const capabilities = getCapabilities()[chatModel];
     const isReasoningModel = capabilities?.reasoning === true;
     const supportsTools = capabilities?.tools === true;
-
     let systemMessage = systemPrompt({ requestHints, supportsTools });
 
-    // ── Knowledge base retrieval (RAG) ──
     let knowledgeContext = "";
     if (agentRecord?.isActive && agentRecord?.knowledgeId) {
       try {
         const lastUserMsg = uiMessages[uiMessages.length - 1];
-        const queryText =
-          lastUserMsg?.parts
-            ?.filter((p: { type: string }) => p.type === "text")
-            .map((p: { type: string; text?: string }) => (p as { text: string }).text)
-            .join(" ") ?? "";
-
+        const queryText = lastUserMsg?.parts
+          ?.filter((p: { type: string }) => p.type === "text")
+          .map((p: { type: string; text?: string }) => (p as { text: string }).text)
+          .join(" ") ?? "";
         if (queryText.trim()) {
           const retrieveResult = await retrieveKnowledge({
             query: queryText.slice(0, 1000),
@@ -224,39 +299,16 @@ export async function POST(request: Request) {
             top_k: 5,
             recall_method: "mixed",
           });
-
           if (!isProductionEnvironment) {
-            console.log(
-              "[chat] 知识库检索 query:",
-              queryText.slice(0, 100),
-              "\n[chat] 知识库返回 code:",
-              retrieveResult.code,
-              "条数:",
-              retrieveResult.data?.length ?? 0
-            );
-            retrieveResult.data?.forEach((r, i) => {
-              console.log(
-                `[chat] chunk[${i}] score=${r.score.toFixed(3)} source=${r.metadata.document_name}\n`,
-                r.text.slice(0, 200)
-              );
-            });
+            console.log("[chat] 知识库检索 query:", queryText.slice(0, 100));
           }
-
-          if (
-            retrieveResult.code === 200 &&
-            retrieveResult.data &&
-            retrieveResult.data.length > 0
-          ) {
+          if (retrieveResult.code === 200 && retrieveResult.data && retrieveResult.data.length > 0) {
             const chunks = retrieveResult.data.map((r) => r.text).join("\n\n");
-            knowledgeContext = `\n\n## 知识库参考内容\n以下是从知识库中检索到的相关信息，请优先基于这些内容回答用户问题。如果知识库内容不足以回答，再结合你的知识补充，并告知用户信息来源。\n\n${chunks}`;
+            knowledgeContext = `\n\n## 知识库参考内容\n以下是从知识库中检索到的相关信息，请优先基于这些内容回答用户问题。\n\n${chunks}`;
           }
         }
       } catch (e) {
-        console.warn(
-          "[chat] 知识库检索失败:",
-          e instanceof Error ? e.message : e
-        );
-        // Non-fatal: degrade to no-knowledge mode
+        console.warn("[chat] 知识库检索失败:", e instanceof Error ? e.message : e);
       }
     }
 
@@ -265,22 +317,16 @@ export async function POST(request: Request) {
     } else if (!agentId) {
       const config = await getSiteConfig();
       if (config?.defaultSystemPrompt) {
-        const infrastructure = infrastructurePrompt({
-          requestHints,
-          supportsTools,
-        });
+        const infrastructure = infrastructurePrompt({ requestHints, supportsTools });
         systemMessage = `${config.defaultSystemPrompt}\n\n${infrastructure}`;
       }
     }
 
     let modelMessages = await convertToModelMessages(uiMessages);
-
-    // Truncate context to prevent token explosion in long conversations
     if (modelMessages.length > MAX_CONTEXT_MESSAGES) {
       modelMessages = modelMessages.slice(-MAX_CONTEXT_MESSAGES);
     }
 
-    // Save user message without blocking streaming response
     if (message?.role === "user") {
       saveMessages({
         messages: [
@@ -293,98 +339,47 @@ export async function POST(request: Request) {
             createdAt: new Date(),
           },
         ],
-      }).catch(() => {
-        /* fire-and-forget */
-      });
-    }
-
-    // 调试：打印转换后的消息格式
-    if (!isProductionEnvironment) {
-      console.log(
-        "[chat] modelMessages:",
-        JSON.stringify(
-          modelMessages.map((m: Record<string, unknown>) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          null,
-          2
-        ).slice(0, 2000)
-      );
+      }).catch(() => {});
     }
 
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
         const result = await withRetry(
-          () =>
-            streamText({
-              model: getLanguageModel(chatModel),
-              system: systemMessage,
-              messages: modelMessages,
-              stopWhen: stepCountIs(5),
-              experimental_activeTools:
-                isReasoningModel && !supportsTools
-                  ? []
-                  : [
-                      "getWeather",
-                      "createDocument",
-                      "editDocument",
-                      "updateDocument",
-                      "requestSuggestions",
-                    ],
-              providerOptions: {
-                ...(modelConfig?.reasoningEffort && {
-                  openai: { reasoningEffort: modelConfig.reasoningEffort },
-                }),
-              },
-              tools: {
-                getWeather,
-                createDocument: createDocument({
-                  session,
-                  dataStream,
-                  modelId: chatModel,
-                }),
-                editDocument: editDocument({ dataStream, session }),
-                updateDocument: updateDocument({
-                  session,
-                  dataStream,
-                  modelId: chatModel,
-                }),
-                requestSuggestions: requestSuggestions({
-                  session,
-                  dataStream,
-                  modelId: chatModel,
-                }),
-              },
-              experimental_telemetry: {
-                isEnabled: isProductionEnvironment,
-                functionId: "stream-text",
-              },
-            }),
+          () => streamText({
+            model: getLanguageModel(chatModel),
+            system: systemMessage,
+            messages: modelMessages,
+            stopWhen: stepCountIs(5),
+            experimental_activeTools: isReasoningModel && !supportsTools ? [] : [
+              "getWeather", "createDocument", "editDocument", "updateDocument", "requestSuggestions",
+            ],
+            providerOptions: {
+              ...(modelConfig?.reasoningEffort && { openai: { reasoningEffort: modelConfig.reasoningEffort } }),
+            },
+            tools: {
+              getWeather,
+              createDocument: createDocument({ session, dataStream, modelId: chatModel }),
+              editDocument: editDocument({ dataStream, session }),
+              updateDocument: updateDocument({ session, dataStream, modelId: chatModel }),
+              requestSuggestions: requestSuggestions({ session, dataStream, modelId: chatModel }),
+            },
+            experimental_telemetry: { isEnabled: isProductionEnvironment, functionId: "stream-text" },
+          }),
           2,
           (attempt, error, delayMs) => {
-            console.warn(
-              `[chat] streamText retry ${attempt} (delay ${Math.round(delayMs)}ms):`,
-              error instanceof Error ? error.message : error
-            );
+            console.warn(`[chat] streamText retry ${attempt}:`, error instanceof Error ? error.message : error);
           }
         );
 
-        dataStream.merge(
-          result.toUIMessageStream({
-            sendReasoning: isReasoningModel && thinkingEnabled,
-          })
-        );
+        dataStream.merge(result.toUIMessageStream({ sendReasoning: isReasoningModel && thinkingEnabled }));
 
         if (titlePromise) {
           try {
             const title = await titlePromise;
             dataStream.write({ type: "data-chat-title", data: title });
             updateChatTitleById({ chatId: id, title });
-          } catch (_) {
-            /* non-fatal */
-          }
+          } catch (_) {}
         }
       },
       generateId: generateUUID,
@@ -393,43 +388,21 @@ export async function POST(request: Request) {
           for (const finishedMsg of finishedMessages) {
             const existingMsg = uiMessages.find((m) => m.id === finishedMsg.id);
             if (existingMsg) {
-              await updateMessage({
-                id: finishedMsg.id,
-                parts: finishedMsg.parts,
-              });
+              await updateMessage({ id: finishedMsg.id, parts: finishedMsg.parts });
             } else {
-              await saveMessages({
-                messages: [
-                  {
-                    id: finishedMsg.id,
-                    role: finishedMsg.role,
-                    parts: finishedMsg.parts,
-                    createdAt: new Date(),
-                    attachments: [],
-                    chatId: id,
-                  },
-                ],
-              });
+              await saveMessages({ messages: [{ id: finishedMsg.id, role: finishedMsg.role, parts: finishedMsg.parts, createdAt: new Date(), attachments: [], chatId: id }] });
             }
           }
         } else if (finishedMessages.length > 0) {
           await saveMessages({
             messages: finishedMessages.map((currentMessage) => ({
-              id: currentMessage.id,
-              role: currentMessage.role,
-              parts: currentMessage.parts,
-              createdAt: new Date(),
-              attachments: [],
-              chatId: id,
+              id: currentMessage.id, role: currentMessage.role, parts: currentMessage.parts, createdAt: new Date(), attachments: [], chatId: id,
             })),
           });
         }
       },
       onError: (error) => {
-        if (
-          error instanceof Error &&
-          error.message?.includes("Insufficient Balance")
-        ) {
+        if (error instanceof Error && error.message?.includes("Insufficient Balance")) {
           return "智谱 API 余额不足，请前往 open.bigmodel.cn 充值。";
         }
         return "Oops, an error occurred!";
@@ -439,38 +412,23 @@ export async function POST(request: Request) {
     return createUIMessageStreamResponse({
       stream,
       async consumeSseStream({ stream: sseStream }) {
-        if (!process.env.REDIS_URL) {
-          return;
-        }
+        if (!process.env.REDIS_URL) return;
         try {
           const streamContext = getStreamContext();
           if (streamContext) {
             const streamId = generateId();
             await createStreamId({ streamId, chatId: id });
-            await streamContext.createNewResumableStream(
-              streamId,
-              () => sseStream
-            );
+            await streamContext.createNewResumableStream(streamId, () => sseStream);
           }
-        } catch (_) {
-          /* non-critical */
-        }
+        } catch (_) {}
       },
     });
   } catch (error) {
     const requestId = request.headers.get("x-request-id") ?? generateUUID();
-
-    if (error instanceof ChatbotError) {
-      return error.toResponse();
-    }
-
-    if (
-      error instanceof Error &&
-      error.message?.includes("Insufficient Balance")
-    ) {
+    if (error instanceof ChatbotError) return error.toResponse();
+    if (error instanceof Error && error.message?.includes("Insufficient Balance")) {
       return new ChatbotError("bad_request:api").toResponse();
     }
-
     console.error("Unhandled error in chat API:", error, { requestId });
     return new ChatbotError("offline:chat").toResponse();
   }
@@ -479,59 +437,37 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-
-  if (!id) {
-    return new ChatbotError("bad_request:api").toResponse();
-  }
-
+  if (!id) return new ChatbotError("bad_request:api").toResponse();
+  
   const session = await auth();
-
-  if (!session?.user) {
-    return new ChatbotError("unauthorized:chat").toResponse();
-  }
-
+  if (!session?.user) return new ChatbotError("unauthorized:chat").toResponse();
+  
   const chat = await getChatById({ id });
-
-  if (chat?.userId !== session.user.id) {
-    return new ChatbotError("forbidden:chat").toResponse();
-  }
-
+  if (chat?.userId !== session.user.id) return new ChatbotError("forbidden:chat").toResponse();
+  
   const deletedChat = await deleteChatById({ id });
-
   return Response.json(deletedChat, { status: 200 });
 }
 
 export async function PATCH(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-
-  if (!id) {
-    return new ChatbotError("bad_request:api").toResponse();
-  }
-
+  if (!id) return new ChatbotError("bad_request:api").toResponse();
+  
   let body: { pinned?: boolean };
-
   try {
     body = (await request.json()) as { pinned?: boolean };
   } catch (_) {
     return new ChatbotError("bad_request:api").toResponse();
   }
-
+  
   const session = await auth();
-
-  if (!session?.user) {
-    return new ChatbotError("unauthorized:chat").toResponse();
-  }
-
+  if (!session?.user) return new ChatbotError("unauthorized:chat").toResponse();
+  
   const existingChat = await getChatById({ id });
-
-  if (existingChat?.userId !== session.user.id) {
-    return new ChatbotError("forbidden:chat").toResponse();
-  }
-
+  if (existingChat?.userId !== session.user.id) return new ChatbotError("forbidden:chat").toResponse();
+  
   const pinnedAt = body.pinned ? new Date() : null;
-
   await updateChatPinnedById({ chatId: id, pinnedAt });
-
   return Response.json({ id, pinnedAt }, { status: 200 });
 }
