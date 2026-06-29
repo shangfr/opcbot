@@ -11,6 +11,8 @@ const ROUTE_TITLES: { path: string; title: string; exact?: boolean }[] = [
   { path: "/admin/knowledge", title: "管理知识库，上传文档用于对话检索(RAG)" },
   { path: "/admin/stats", title: "查看平台使用情况和各 OPC 的表现数据" },
   { path: "/admin/users", title: "查看用户列表、活跃度统计和访客转化数据" },
+  { path: "/my-opc", title: "创建和管理你的专属 OPC" },
+  { path: "/my-knowledge", title: "创建和管理你的专属知识库" },
   { path: "/admin", title: "OPC" },
 ];
 

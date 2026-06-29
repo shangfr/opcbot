@@ -11,6 +11,7 @@ import {
   inArray,
   isNull,
   lt,
+  or,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -29,12 +30,14 @@ import {
   document,
   message,
   passwordResetToken,
+  phoneVerificationCode,
   type Suggestion,
   siteConfig,
   stream,
   suggestion,
   type User,
   user,
+  userKnowledge,
   vote,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
@@ -60,6 +63,133 @@ export async function createUser(email: string, password: string) {
     return await db.insert(user).values({ email, password: hashedPassword });
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to create user");
+  }
+}
+
+// ===== 手机号注册登录相关查询 =====
+
+/** 通过手机号查询用户 */
+export async function getUserByPhone(phone: string): Promise<User[]> {
+  try {
+    return await db.select().from(user).where(eq(user.phone, phone));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get user by phone"
+    );
+  }
+}
+
+/** 通过手机号创建用户（邮箱使用 phone@phone 占位，后续可补充） */
+export async function createUserByPhone(phone: string, name?: string) {
+  try {
+    // 邮箱字段 NOT NULL，使用 phone_xxx@phone.local 占位
+    const placeholderEmail = `phone_${phone}@phone.local`;
+    return await db
+      .insert(user)
+      .values({
+        email: placeholderEmail,
+        phone,
+        name: name ?? `用户${phone.slice(-4)}`,
+        emailVerified: true, // 手机号已验证
+      })
+      .returning({
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        name: user.name,
+        role: user.role,
+      });
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create user by phone"
+    );
+  }
+}
+
+/** 创建手机号验证码记录 */
+export async function createPhoneVerificationCode(
+  phone: string,
+  code: string,
+  purpose: "register" | "login"
+) {
+  try {
+    // 验证码有效期 5 分钟
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    return await db
+      .insert(phoneVerificationCode)
+      .values({ phone, code, purpose, expiresAt })
+      .returning({ id: phoneVerificationCode.id });
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create verification code"
+    );
+  }
+}
+
+/** 校验手机号验证码（同时检查有效期、用途、是否已使用） */
+export async function verifyPhoneCode(
+  phone: string,
+  code: string,
+  purpose: "register" | "login"
+): Promise<boolean> {
+  try {
+    const now = new Date();
+    const records = await db
+      .select()
+      .from(phoneVerificationCode)
+      .where(
+        and(
+          eq(phoneVerificationCode.phone, phone),
+          eq(phoneVerificationCode.code, code),
+          eq(phoneVerificationCode.purpose, purpose),
+          isNull(phoneVerificationCode.usedAt),
+          gt(phoneVerificationCode.expiresAt, now)
+        )
+      )
+      .orderBy(desc(phoneVerificationCode.createdAt))
+      .limit(1);
+
+    if (records.length === 0) {
+      return false;
+    }
+
+    // 标记为已使用
+    await db
+      .update(phoneVerificationCode)
+      .set({ usedAt: now })
+      .where(eq(phoneVerificationCode.id, records[0].id));
+
+    return true;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to verify phone code"
+    );
+  }
+}
+
+/** 检查手机号在最近 N 分钟内发送验证码的次数（用于限流） */
+export async function countRecentPhoneCodes(
+  phone: string,
+  withinMinutes = 60
+): Promise<number> {
+  try {
+    const since = new Date(Date.now() - withinMinutes * 60 * 1000);
+    const result = await db
+      .select({ count: count() })
+      .from(phoneVerificationCode)
+      .where(
+        and(
+          eq(phoneVerificationCode.phone, phone),
+          gt(phoneVerificationCode.createdAt, since)
+        )
+      );
+    return result[0]?.count ?? 0;
+  } catch (_error) {
+    return 0;
   }
 }
 
@@ -851,6 +981,7 @@ export async function createAgent({
   sortOrder,
   categoryId,
   userId,
+  visibility = "public",
 }: {
   name: string;
   description: string;
@@ -864,6 +995,7 @@ export async function createAgent({
   sortOrder: number;
   categoryId?: string | null;
   userId: string;
+  visibility?: "public" | "private";
 }) {
   try {
     if (isDefault === true) {
@@ -888,6 +1020,7 @@ export async function createAgent({
             sortOrder,
             categoryId: categoryId ?? null,
             userId,
+            visibility,
           })
           .returning();
 
@@ -911,11 +1044,57 @@ export async function createAgent({
         sortOrder,
         categoryId: categoryId ?? null,
         userId,
+        visibility,
       })
       .returning();
     return result;
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to create agent");
+  }
+}
+
+/** 获取用户自建的 OPC 列表（仅创建者可见的 private OPC） */
+export async function getAgentsByUserId({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(agent)
+      .where(
+        and(
+          eq(agent.userId, userId),
+          eq(agent.visibility, "private")
+        )
+      )
+      .orderBy(desc(agent.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get agents by user"
+    );
+  }
+}
+
+/** 获取所有可见的 OPC：公共 OPC + 用户自建的 private OPC */
+export async function getVisibleAgents({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(agent)
+      .where(
+        or(
+          eq(agent.visibility, "public"),
+          and(
+            eq(agent.userId, userId),
+            eq(agent.visibility, "private")
+          )
+        )
+      )
+      .orderBy(asc(agent.sortOrder), desc(agent.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get visible agents"
+    );
   }
 }
 
@@ -948,6 +1127,7 @@ export async function updateAgent({
   isDefault,
   sortOrder,
   categoryId,
+  visibility,
 }: {
   id: string;
   name: string;
@@ -961,6 +1141,7 @@ export async function updateAgent({
   isDefault?: boolean;
   sortOrder: number;
   categoryId?: string | null;
+  visibility?: "public" | "private";
 }) {
   try {
     // When setting as default, use a transaction to ensure only one default exists
@@ -985,6 +1166,7 @@ export async function updateAgent({
             isDefault: true,
             sortOrder,
             categoryId: categoryId ?? null,
+            ...(visibility ? { visibility } : {}),
             updatedAt: new Date(),
           })
           .where(eq(agent.id, id))
@@ -1009,6 +1191,7 @@ export async function updateAgent({
         ...(isDefault !== undefined ? { isDefault } : {}),
         sortOrder,
         categoryId: categoryId ?? null,
+        ...(visibility ? { visibility } : {}),
         updatedAt: new Date(),
       })
       .where(eq(agent.id, id))
@@ -1488,5 +1671,101 @@ export async function getDashboardStats() {
       "bad_request:database",
       "Failed to get dashboard stats"
     );
+  }
+}
+
+// ===== 用户知识库关联查询 =====
+
+/** 获取用户创建的所有知识库 */
+export async function getUserKnowledgeBases({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(userKnowledge)
+      .where(eq(userKnowledge.userId, userId))
+      .orderBy(desc(userKnowledge.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get user knowledge bases"
+    );
+  }
+}
+
+/** 记录用户创建的知识库 */
+export async function createUserKnowledgeRecord({
+  userId,
+  knowledgeId,
+  name,
+  description,
+}: {
+  userId: string;
+  knowledgeId: string;
+  name: string;
+  description?: string;
+}) {
+  try {
+    return await db
+      .insert(userKnowledge)
+      .values({
+        userId,
+        knowledgeId,
+        name,
+        description: description ?? null,
+      })
+      .returning();
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create user knowledge record"
+    );
+  }
+}
+
+/** 删除用户知识库记录 */
+export async function deleteUserKnowledgeRecord({
+  userId,
+  knowledgeId,
+}: {
+  userId: string;
+  knowledgeId: string;
+}) {
+  try {
+    return await db
+      .delete(userKnowledge)
+      .where(
+        and(
+          eq(userKnowledge.userId, userId),
+          eq(userKnowledge.knowledgeId, knowledgeId)
+        )
+      )
+      .returning();
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to delete user knowledge record"
+    );
+  }
+}
+
+/** 检查用户是否拥有指定知识库 */
+export async function checkUserKnowledgeOwnership(
+  userId: string,
+  knowledgeId: string
+): Promise<boolean> {
+  try {
+    const records = await db
+      .select({ id: userKnowledge.id })
+      .from(userKnowledge)
+      .where(
+        and(
+          eq(userKnowledge.userId, userId),
+          eq(userKnowledge.knowledgeId, knowledgeId)
+        )
+      )
+      .limit(1);
+    return records.length > 0;
+  } catch (_error) {
+    return false;
   }
 }

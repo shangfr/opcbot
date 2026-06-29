@@ -5,14 +5,17 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useActionState, useEffect, useState } from "react";
 import { AuthForm } from "@/components/chat/auth-form";
+import { PhoneAuthForm } from "@/components/chat/phone-auth-form";
 import { SubmitButton } from "@/components/chat/submit-button";
 import { toast } from "@/components/chat/toast";
+import { cn } from "@/lib/utils";
 import { type RegisterActionState, register } from "../actions";
 
 export default function Page() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [isSuccessful, setIsSuccessful] = useState(false);
+  const [authMode, setAuthMode] = useState<"email" | "phone">("phone");
 
   const [state, formAction] = useActionState<RegisterActionState, FormData>(
     register,
@@ -62,23 +65,73 @@ export default function Page() {
       >
         免费注册，立即体验
       </p>
-      <div className="auth-slide-in w-full" style={{ animationDelay: "0.28s" }}>
-        <AuthForm
-          action={handleSubmit}
-          defaultEmail={email}
-          error={state.message}
+
+      {/* 注册方式切换 Tab */}
+      <div
+        className="auth-slide-in mt-6 flex w-full rounded-lg border border-border/50 bg-muted/30 p-1"
+        style={{ animationDelay: "0.24s" }}
+      >
+        <button
+          className={cn(
+            "flex-1 rounded-md py-1.5 text-xs font-medium transition-colors",
+            authMode === "phone"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+          onClick={() => setAuthMode("phone")}
+          type="button"
         >
-          <SubmitButton isSuccessful={isSuccessful}>注册</SubmitButton>
-          <p className="text-center text-[13px] text-muted-foreground">
-            {"已有账号？"}
-            <Link
-              className="text-foreground underline-offset-4 hover:underline"
-              href="/login"
-            >
-              登录
-            </Link>
-          </p>
-        </AuthForm>
+          手机号注册
+        </button>
+        <button
+          className={cn(
+            "flex-1 rounded-md py-1.5 text-xs font-medium transition-colors",
+            authMode === "email"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+          onClick={() => setAuthMode("email")}
+          type="button"
+        >
+          邮箱注册
+        </button>
+      </div>
+
+      <div
+        className="auth-slide-in w-full"
+        style={{ animationDelay: "0.28s" }}
+      >
+        {authMode === "phone" ? (
+          <div className="flex flex-col gap-4">
+            <PhoneAuthForm mode="register" />
+            <p className="text-center text-[13px] text-muted-foreground">
+              {"已有账号？"}
+              <Link
+                className="text-foreground underline-offset-4 hover:underline"
+                href="/login"
+              >
+                登录
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <AuthForm
+            action={handleSubmit}
+            defaultEmail={email}
+            error={state.message}
+          >
+            <SubmitButton isSuccessful={isSuccessful}>注册</SubmitButton>
+            <p className="text-center text-[13px] text-muted-foreground">
+              {"已有账号？"}
+              <Link
+                className="text-foreground underline-offset-4 hover:underline"
+                href="/login"
+              >
+                登录
+              </Link>
+            </p>
+          </AuthForm>
+        )}
       </div>
     </>
   );

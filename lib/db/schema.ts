@@ -29,11 +29,15 @@ export const user = pgTable(
     image: text("image"),
     isAnonymous: boolean("isAnonymous").notNull().default(false),
     role: userRoleEnum("role").notNull().default("user"),
+    // 手机号字段：支持手机号注册登录，可选（邮箱注册用户可为空）
+    phone: varchar("phone", { length: 20 }),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
   (table) => ({
     emailIdx: uniqueIndex("User_email_idx").on(table.email),
+    // 手机号唯一索引（部分索引，仅当 phone 非空时生效，避免多个 NULL 冲突）
+    phoneIdx: uniqueIndex("User_phone_idx").on(table.phone).where(sql`${table.phone} IS NOT NULL`),
   })
 );
 
@@ -169,6 +173,12 @@ export const stream = pgTable(
 
 export type Stream = InferSelectModel<typeof stream>;
 
+// Agent 可见性枚举：public=全站公开（管理员创建）, private=仅创建者可见
+export const agentVisibilityEnum = pgEnum("agent_visibility", [
+  "public",
+  "private",
+]);
+
 export const agent = pgTable(
   "Agent",
   {
@@ -189,6 +199,8 @@ export const agent = pgTable(
     userId: uuid("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    // 可见性：public=全站可见（管理员创建的公共OPC），private=仅创建者可见（用户自建OPC）
+    visibility: agentVisibilityEnum("visibility").notNull().default("public"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
@@ -196,6 +208,8 @@ export const agent = pgTable(
     defaultUnique: uniqueIndex("agent_default_idx")
       .on(table.isDefault)
       .where(sql`${table.isDefault} = true`),
+    userIdIdx: index("agent_userId_idx").on(table.userId),
+    visibilityIdx: index("agent_visibility_idx").on(table.visibility),
   })
 );
 
@@ -237,3 +251,56 @@ export const passwordResetToken = pgTable("PasswordResetToken", {
 });
 
 export type PasswordResetToken = InferSelectModel<typeof passwordResetToken>;
+
+// 手机号验证码表：用于注册/登录时的短信验证码校验
+export const phoneVerificationCode = pgTable(
+  "PhoneVerificationCode",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    phone: varchar("phone", { length: 20 }).notNull(),
+    code: varchar("code", { length: 6 }).notNull(),
+    // 验证码用途：register=注册, login=登录
+    purpose: varchar("purpose", { length: 16 }).notNull().default("register"),
+    expiresAt: timestamp("expiresAt").notNull(),
+    usedAt: timestamp("usedAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    phoneIdx: index("PhoneVerificationCode_phone_idx").on(table.phone),
+    purposeIdx: index("PhoneVerificationCode_purpose_idx").on(table.purpose),
+  })
+);
+
+export type PhoneVerificationCode = InferSelectModel<
+  typeof phoneVerificationCode
+>;
+
+// 用户知识库关联表：记录用户创建的智谱知识库
+// 智谱知识库本身存储在 Zhipu API 侧，此表仅记录本地关联关系（谁创建了哪个知识库）
+export const userKnowledge = pgTable(
+  "UserKnowledge",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    // 智谱知识库 ID（由 Zhipu API 返回）
+    knowledgeId: text("knowledge_id").notNull(),
+    // 知识库名称（冗余存储，避免每次都调 API 查询）
+    name: text("name").notNull(),
+    description: text("description"),
+    // 创建者
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    // 同一用户下知识库 ID 唯一
+    userKbUnique: uniqueIndex("UserKnowledge_userId_knowledgeId_idx").on(
+      table.userId,
+      table.knowledgeId
+    ),
+    userIdIdx: index("UserKnowledge_userId_idx").on(table.userId),
+  })
+);
+
+export type UserKnowledge = InferSelectModel<typeof userKnowledge>;

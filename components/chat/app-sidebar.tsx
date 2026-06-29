@@ -9,6 +9,7 @@ import {
   PanelLeftIcon,
   PenSquareIcon,
   Pin,
+  Sparkles,
   TrashIcon,
   Users,
 } from "lucide-react";
@@ -223,6 +224,38 @@ export function AppSidebar({
                       <Link href="/artifacts" onClick={() => setOpenMobile(false)}>
                         <FileText className="size-3.5" />
                         <span>我的制品</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* 我的 OPC */}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip="我的 OPC"
+                    >
+                      <Link href="/my-opc" onClick={() => setOpenMobile(false)}>
+                        <Sparkles className="size-3.5" />
+                        <span>我的 OPC</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* 我的知识库 */}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip="我的知识库"
+                    >
+                      <Link href="/my-knowledge" onClick={() => setOpenMobile(false)}>
+                        <BookOpen className="size-3.5" />
+                        <span>我的知识库</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

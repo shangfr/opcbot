@@ -5,18 +5,33 @@ import {
   listDocuments,
   uploadDocument,
 } from "@/lib/ai/zhipu-knowledge";
+import { checkUserKnowledgeOwnership } from "@/lib/db/queries";
 import { ChatbotError } from "@/lib/errors";
 import { isAdmin } from "@/lib/utils";
 
-async function checkAdmin() {
+async function checkAuth() {
   const session = await auth();
   if (!session?.user) {
     throw new ChatbotError("unauthorized:agent");
   }
-  if (!isAdmin(session.user)) {
+  return session;
+}
+
+/**
+ * 检查用户是否有权操作指定知识库
+ * - 管理员：始终通过
+ * - 普通用户：必须拥有该知识库
+ */
+async function checkKnowledgeAccess(
+  knowledgeId: string,
+  userId: string,
+  admin: boolean
+) {
+  if (admin) return;
+  const owns = await checkUserKnowledgeOwnership(userId, knowledgeId);
+  if (!owns) {
     throw new ChatbotError("forbidden:agent");
   }
-  return session;
 }
 
 /**
@@ -24,7 +39,8 @@ async function checkAdmin() {
  */
 export async function GET(request: Request) {
   try {
-    await checkAdmin();
+    const session = await checkAuth();
+    const admin = isAdmin(session.user);
     const { searchParams } = new URL(request.url);
     const knowledgeId = searchParams.get("knowledgeId");
     const page = Number(searchParams.get("page") ?? 1);
@@ -36,6 +52,8 @@ export async function GET(request: Request) {
         "缺少参数 knowledgeId"
       ).toResponse();
     }
+
+    await checkKnowledgeAccess(knowledgeId, session.user.id, admin);
 
     const result = await listDocuments(knowledgeId, page, size);
 
@@ -61,7 +79,8 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    await checkAdmin();
+    const session = await checkAuth();
+    const admin = isAdmin(session.user);
 
     const formData = await request.formData();
     const knowledgeId = formData.get("knowledgeId");
@@ -74,6 +93,8 @@ export async function POST(request: Request) {
         "缺少参数 knowledgeId"
       ).toResponse();
     }
+
+    await checkKnowledgeAccess(knowledgeId, session.user.id, admin);
 
     const files = formData.getAll("files").filter(
       (f): f is File => f instanceof File
@@ -141,16 +162,30 @@ export async function POST(request: Request) {
 }
 
 /**
- * DELETE /api/knowledge/documents?id=xxx — 删除文档
+ * DELETE /api/knowledge/documents?id=xxx&knowledgeId=yyy — 删除文档
+ * 普通用户需提供 knowledgeId 以验证所有权
  */
 export async function DELETE(request: Request) {
   try {
-    await checkAdmin();
+    const session = await checkAuth();
+    const admin = isAdmin(session.user);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const knowledgeId = searchParams.get("knowledgeId");
 
     if (!id) {
       return new ChatbotError("bad_request:api", "缺少参数 id").toResponse();
+    }
+
+    // 普通用户必须提供 knowledgeId 以验证所有权
+    if (!admin) {
+      if (!knowledgeId) {
+        return new ChatbotError(
+          "bad_request:api",
+          "缺少参数 knowledgeId"
+        ).toResponse();
+      }
+      await checkKnowledgeAccess(knowledgeId, session.user.id, admin);
     }
 
     const result = await deleteDocument(id);

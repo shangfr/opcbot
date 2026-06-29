@@ -22,6 +22,13 @@
       "when": 1782367325626,
       "tag": "0002_add-pinned-at",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782450000000,
+      "tag": "0003_add-phone-and-visibility",
+      "breakpoints": true
     }
   ]
 }

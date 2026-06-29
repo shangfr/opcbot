@@ -4,7 +4,19 @@ import { compare } from "bcrypt-ts";
 import { z } from "zod";
 
 import { DUMMY_PASSWORD } from "@/lib/constants";
-import { createUser, getUser } from "@/lib/db/queries";
+import {
+  countRecentPhoneCodes,
+  createUser,
+  createUserByPhone,
+  getUser,
+  getUserByPhone,
+  verifyPhoneCode,
+} from "@/lib/db/queries";
+import {
+  isValidChinaPhone,
+  normalizePhone,
+  SMS_RATE_LIMIT,
+} from "@/lib/ai/sms-service";
 
 import { signIn } from "./auth";
 
@@ -126,3 +138,177 @@ export const register = async (
     return { status: "failed", message: "注册失败，请稍后重试" };
   }
 };
+
+// ===== 手机号注册登录 =====
+
+const phoneSchema = z.object({
+  phone: z.string().min(1, "手机号不能为空"),
+  code: z.string().length(6, "验证码必须是 6 位数字"),
+});
+
+export type PhoneActionState = {
+  status:
+    | "idle"
+    | "in_progress"
+    | "success"
+    | "failed"
+    | "invalid_data"
+    | "user_exists"
+    | "user_not_found"
+    | "code_invalid"
+    | "rate_limited";
+  message?: string;
+};
+
+/**
+ * 手机号注册：校验验证码 → 创建用户 → 自动登录
+ */
+export const registerByPhone = async (
+  _: PhoneActionState,
+  formData: FormData
+): Promise<PhoneActionState> => {
+  try {
+    const raw = {
+      phone: formData.get("phone"),
+      code: formData.get("code"),
+    };
+
+    let phone = String(raw.phone ?? "");
+    const code = String(raw.code ?? "");
+
+    if (!isValidChinaPhone(phone)) {
+      return {
+        status: "invalid_data",
+        message: "手机号格式不正确，请输入 11 位中国大陆手机号",
+      };
+    }
+
+    phone = normalizePhone(phone);
+
+    if (!/^\d{6}$/.test(code)) {
+      return {
+        status: "invalid_data",
+        message: "验证码必须是 6 位数字",
+      };
+    }
+
+    // 检查是否已注册
+    const existing = await getUserByPhone(phone);
+    if (existing.length > 0) {
+      return { status: "user_exists", message: "该手机号已注册，请直接登录" };
+    }
+
+    // 校验验证码
+    const valid = await verifyPhoneCode(phone, code, "register");
+    if (!valid) {
+      return {
+        status: "code_invalid",
+        message: "验证码错误或已过期，请重新获取",
+      };
+    }
+
+    // 创建用户
+    await createUserByPhone(phone);
+
+    // 自动登录（使用 phone provider，password 传 "phone-verified" 占位）
+    await signIn("phone", {
+      phone,
+      password: "phone-verified",
+      redirect: false,
+    });
+
+    return { status: "success" };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        status: "invalid_data",
+        message: error.errors[0]?.message ?? "提交数据验证失败",
+      };
+    }
+    return { status: "failed", message: "注册失败，请稍后重试" };
+  }
+};
+
+/**
+ * 手机号登录：校验验证码 → 查找用户 → 自动登录
+ */
+export const loginByPhone = async (
+  _: PhoneActionState,
+  formData: FormData
+): Promise<PhoneActionState> => {
+  try {
+    let phone = String(formData.get("phone") ?? "");
+    const code = String(formData.get("code") ?? "");
+
+    if (!isValidChinaPhone(phone)) {
+      return {
+        status: "invalid_data",
+        message: "手机号格式不正确，请输入 11 位中国大陆手机号",
+      };
+    }
+
+    phone = normalizePhone(phone);
+
+    if (!/^\d{6}$/.test(code)) {
+      return {
+        status: "invalid_data",
+        message: "验证码必须是 6 位数字",
+      };
+    }
+
+    // 检查用户是否存在
+    const existing = await getUserByPhone(phone);
+    if (existing.length === 0) {
+      return { status: "user_not_found", message: "该手机号未注册，请先注册" };
+    }
+
+    // 校验验证码
+    const valid = await verifyPhoneCode(phone, code, "login");
+    if (!valid) {
+      return {
+        status: "code_invalid",
+        message: "验证码错误或已过期，请重新获取",
+      };
+    }
+
+    // 自动登录
+    await signIn("phone", {
+      phone,
+      password: "phone-verified",
+      redirect: false,
+    });
+
+    return { status: "success" };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        status: "invalid_data",
+        message: error.errors[0]?.message ?? "提交数据验证失败",
+      };
+    }
+    return { status: "failed", message: "登录失败，请稍后重试" };
+  }
+};
+
+/**
+ * 检查发送验证码前的限流（供前端调用前预检）
+ */
+export async function checkPhoneRateLimit(phone: string): Promise<{
+  ok: boolean;
+  message?: string;
+}> {
+  const normalized = normalizePhone(phone);
+  if (!isValidChinaPhone(normalized)) {
+    return { ok: false, message: "手机号格式不正确" };
+  }
+
+  const count = await countRecentPhoneCodes(normalized, 60);
+  if (count >= SMS_RATE_LIMIT.maxPerHour) {
+    return {
+      ok: false,
+      message: `发送过于频繁，每小时最多 ${SMS_RATE_LIMIT.maxPerHour} 次`,
+    };
+  }
+
+  return { ok: true };
+}
