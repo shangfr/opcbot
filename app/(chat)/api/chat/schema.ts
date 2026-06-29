@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const textPartSchema = z.object({
   type: z.enum(["text"]),
-  text: z.string().min(1).max(100000), // 🚨 修改：放宽到 10 万字符
+  text: z.string().min(1).max(10000), // 🚨 修改：放宽到 10 万字符
 });
 
 const filePartSchema = z.object({
