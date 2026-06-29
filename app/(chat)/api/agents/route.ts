@@ -13,6 +13,9 @@ import {
 import { ChatbotError } from "@/lib/errors";
 import { isAdmin } from "@/lib/utils";
 
+// 引入校验知识库归属权的方法
+import { checkUserKnowledgeOwnership } from "@/lib/db/queries";
+
 const agentSchema = z.object({
   name: z.string().min(1, "名称不能为空").max(64, "名称最长 64 个字符"),
   description: z
@@ -38,21 +41,17 @@ const agentSchema = z.object({
 
 async function checkAuth() {
   const session = await auth();
-
   if (!session?.user) {
     throw new ChatbotError("unauthorized:agent");
   }
-
   return session;
 }
 
 async function checkAdmin() {
   const session = await checkAuth();
-
   if (!isAdmin(session.user)) {
     throw new ChatbotError("forbidden:agent");
   }
-
   return session;
 }
 
@@ -100,9 +99,7 @@ export async function GET(request: Request) {
 
     return Response.json(agents, { status: 200 });
   } catch (err) {
-    if (err instanceof ChatbotError) {
-      return err.toResponse();
-    }
+    if (err instanceof ChatbotError) return err.toResponse();
     return new ChatbotError("bad_request:agent").toResponse();
   }
 }
@@ -110,8 +107,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await checkAuth();
-
     let body: z.infer<typeof agentSchema>;
+
     try {
       body = agentSchema.parse(await request.json());
     } catch {
@@ -127,6 +124,20 @@ export async function POST(request: Request) {
 
     // 普通用户不能设置 isDefault
     const isDefault = userIsAdmin ? body.isDefault : false;
+
+    // 🚨 新增：普通用户绑定知识库时，校验是否属于自己的
+    if (!userIsAdmin && body.knowledgeId) {
+      const owns = await checkUserKnowledgeOwnership(
+        session.user.id,
+        body.knowledgeId
+      );
+      if (!owns) {
+        return new ChatbotError(
+          "forbidden:agent",
+          "无权使用该知识库"
+        ).toResponse();
+      }
+    }
 
     const result = await createAgent({
       name: body.name,
@@ -146,9 +157,7 @@ export async function POST(request: Request) {
 
     return Response.json(result, { status: 201 });
   } catch (err) {
-    if (err instanceof ChatbotError) {
-      return err.toResponse();
-    }
+    if (err instanceof ChatbotError) return err.toResponse();
     return new ChatbotError("bad_request:agent").toResponse();
   }
 }
@@ -183,6 +192,20 @@ export async function PATCH(request: Request) {
       delete body.isDefault;
     }
 
+    // 🚨 新增：普通用户修改知识库时，校验是否属于自己的
+    if (!userIsAdmin && body.knowledgeId !== undefined && body.knowledgeId !== null) {
+      const owns = await checkUserKnowledgeOwnership(
+        session.user.id,
+        body.knowledgeId
+      );
+      if (!owns) {
+        return new ChatbotError(
+          "forbidden:agent",
+          "无权使用该知识库"
+        ).toResponse();
+      }
+    }
+
     const result = await updateAgent({
       id,
       name: body.name ?? existing.name,
@@ -190,24 +213,19 @@ export async function PATCH(request: Request) {
       avatar: body.avatar ?? existing.avatar,
       systemPrompt: body.systemPrompt ?? existing.systemPrompt,
       phone: body.phone !== undefined ? body.phone : existing.phone,
-      knowledgeId:
-        body.knowledgeId !== undefined ? body.knowledgeId : existing.knowledgeId,
-      starterQuestions:
-        body.starterQuestions ?? existing.starterQuestions ?? [],
+      knowledgeId: body.knowledgeId !== undefined ? body.knowledgeId : existing.knowledgeId,
+      starterQuestions: body.starterQuestions ?? existing.starterQuestions ?? [],
       isActive: body.isActive ?? existing.isActive,
       isDefault: body.isDefault,
       sortOrder: body.sortOrder ?? existing.sortOrder,
-      categoryId:
-        body.categoryId !== undefined ? body.categoryId : existing.categoryId,
+      categoryId: body.categoryId !== undefined ? body.categoryId : existing.categoryId,
       visibility: body.visibility ?? existing.visibility,
     });
 
     invalidateAgentCache(id);
     return Response.json(result, { status: 200 });
   } catch (err) {
-    if (err instanceof ChatbotError) {
-      return err.toResponse();
-    }
+    if (err instanceof ChatbotError) return err.toResponse();
     return new ChatbotError("bad_request:agent").toResponse();
   }
 }
@@ -229,9 +247,7 @@ export async function DELETE(request: Request) {
     invalidateAgentCache(id);
     return Response.json(result, { status: 200 });
   } catch (err) {
-    if (err instanceof ChatbotError) {
-      return err.toResponse();
-    }
+    if (err instanceof ChatbotError) return err.toResponse();
     return new ChatbotError("bad_request:agent").toResponse();
   }
 }
