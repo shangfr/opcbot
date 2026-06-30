@@ -12,6 +12,7 @@ export const ROUTE_TITLES = {
   agentDetail: "智能体详情",
   agentCreate: "创建智能体",
   agentEdit: "编辑智能体",
+  tickets: "工单",
   login: "登录",
   register: "注册",
   profile: "个人中心",
@@ -46,6 +47,9 @@ export function getRouteTitle(
   }
   if (pathname === "/docs") {
     return ROUTE_TITLES.docs;
+  }
+  if (pathname === "/admin/tickets" || pathname.startsWith("/admin/tickets")) {
+    return ROUTE_TITLES.tickets;
   }
 
   // 前缀匹配

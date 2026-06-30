@@ -229,6 +229,180 @@ export const category = pgTable("Category", {
 
 export type Category = InferSelectModel<typeof category>;
 
+// ============================================================
+// 工单（Ticket）系统 —— 复刻 OPC 的分组+卡片模式，面向任务管理场景
+// ============================================================
+
+// 工单优先级枚举
+export const ticketPriorityEnum = pgEnum("ticket_priority", [
+  "low", // 低
+  "medium", // 中
+  "high", // 高
+  "urgent", // 紧急
+]);
+
+// 工单状态枚举（工单生命周期）
+export const ticketStatusEnum = pgEnum("ticket_status", [
+  "pending", // 待处理
+  "in_progress", // 进行中
+  "completed", // 已完成
+  "closed", // 已关闭
+]);
+
+// 工单可见性枚举：与 Agent 保持一致
+export const ticketVisibilityEnum = pgEnum("ticket_visibility", [
+  "public",
+  "private",
+]);
+
+// 工单分类表（任务类型分类，对应 OPC 的 Category 分组）
+export const ticketCategory = pgTable("TicketCategory", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  name: text("name").notNull(),
+  color: text("color").notNull().default("#6366f1"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  colorKey: text("color_key").notNull().default("indigo"),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type TicketCategory = InferSelectModel<typeof ticketCategory>;
+
+// 工单表（对应 OPC 的 Agent 表，扩展了优先级/状态/负责人/截止日期等任务管理字段）
+export const ticket = pgTable(
+  "Ticket",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    // 任务详情/验收标准等富文本说明
+    content: text("content"),
+    // 优先级：low/medium/high/urgent
+    priority: ticketPriorityEnum("priority").notNull().default("medium"),
+    // 状态：pending/in_progress/completed/closed
+    status: ticketStatusEnum("status").notNull().default("pending"),
+    // 进度百分比 0-100
+    progress: integer("progress").notNull().default(0),
+    // 负责人姓名（自由文本，便于灵活指派）
+    assignee: text("assignee"),
+    // 截止日期
+    dueDate: timestamp("due_date"),
+    // 关联分类（任务类型）
+    categoryId: uuid("categoryId").references(() => ticketCategory.id, {
+      onDelete: "set null",
+    }),
+    // 创建者
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // 可见性：public=全站可见，private=仅创建者可见
+    visibility: ticketVisibilityEnum("visibility")
+      .notNull()
+      .default("public"),
+    isActive: boolean("is_active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index("ticket_userId_idx").on(table.userId),
+    statusIdx: index("ticket_status_idx").on(table.status),
+    priorityIdx: index("ticket_priority_idx").on(table.priority),
+    visibilityIdx: index("ticket_visibility_idx").on(table.visibility),
+    dueDateIdx: index("ticket_due_date_idx").on(table.dueDate),
+  }),
+);
+
+export type Ticket = InferSelectModel<typeof ticket>;
+
+// ============================================================
+// 工单系统产品优化扩展表
+// ============================================================
+
+// 工单评论表 —— 支持多用户协作讨论
+export const ticketComment = pgTable("TicketComment", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  ticketId: uuid("ticketId")
+    .notNull()
+    .references(() => ticket.id, { onDelete: "cascade" }),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type TicketComment = InferSelectModel<typeof ticketComment>;
+
+// 活动日志类型枚举
+export const ticketActivityTypeEnum = pgEnum("ticket_activity_type", [
+  "created", // 工单创建
+  "updated", // 字段更新
+  "status_changed", // 状态变更
+  "priority_changed", // 优先级变更
+  "assignee_changed", // 负责人变更
+  "commented", // 评论
+  "deleted", // 删除
+]);
+
+// 工单活动日志表 —— 自动记录所有关键操作，便于追溯
+export const ticketActivity = pgTable("TicketActivity", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  ticketId: uuid("ticketId")
+    .notNull()
+    .references(() => ticket.id, { onDelete: "cascade" }),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  type: ticketActivityTypeEnum("type").notNull(),
+  // 变更摘要，如 "状态: 待处理 → 进行中"
+  summary: text("summary").notNull(),
+  // 变更前值（JSON 字符串）
+  oldValue: text("old_value"),
+  // 变更后值（JSON 字符串）
+  newValue: text("new_value"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type TicketActivity = InferSelectModel<typeof ticketActivity>;
+
+// 工单标签表 —— 多维度标记，弥补分类单选的不足
+export const ticketTag = pgTable("TicketTag", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  name: text("name").notNull(),
+  color: text("color").notNull().default("#6366f1"),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type TicketTag = InferSelectModel<typeof ticketTag>;
+
+// 工单-标签多对多关联表
+export const ticketTagRelation = pgTable(
+  "TicketTagRelation",
+  {
+    ticketId: uuid("ticketId")
+      .notNull()
+      .references(() => ticket.id, { onDelete: "cascade" }),
+    tagId: uuid("tagId")
+      .notNull()
+      .references(() => ticketTag.id, { onDelete: "cascade" }),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.ticketId, table.tagId] }),
+    ticketIdx: index("ticket_tag_relation_ticket_idx").on(table.ticketId),
+    tagIdx: index("ticket_tag_relation_tag_idx").on(table.tagId),
+  }),
+);
+
+export type TicketTagRelation = InferSelectModel<typeof ticketTagRelation>;
+
 export const siteConfig = pgTable("SiteConfig", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   defaultSystemPrompt: text("default_system_prompt"),

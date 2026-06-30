@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   Bot,
+  ClipboardList,
   FileText,
   MessagesSquareIcon,
   PanelLeftIcon,
@@ -180,49 +181,65 @@ export function AppSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {/* OPC */}
+                {/* 智库 */}
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      tooltip="OPC"
+                      tooltip="智库"
                     >
-                      <Link href="/admin" onClick={() => setOpenMobile(false)}>
+                      <Link href="/admin" onClick={() => setOpenMobile(false)} title="OPC智库咨询台">
                         <Bot className="size-3.5" />
-                        <span>OPC</span>
+                        <span>智库</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
 
-                {/* 我的置顶 */}
+                {/* 智客 */}
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      tooltip="我的置顶"
+                      tooltip="智客"
                     >
-                      <Link href="/pinned" onClick={() => setOpenMobile(false)}>
+                      <Link href="/admin/tickets" onClick={() => setOpenMobile(false)} title="AI获客与资源整合引擎">
+                        <ClipboardList className="size-3.5" />
+                        <span>智客</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+
+                {/* 智汇 */}
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      tooltip="智汇"
+                    >
+                      <Link href="/pinned" onClick={() => setOpenMobile(false)} title="重要信息汇聚中枢">
                         <Pin className="size-3.5" />
-                        <span>我的置顶</span>
+                        <span>智汇</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
 
-                {/* 我的制品 */}
+                {/* 智品 */}
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                      tooltip="我的制品"
+                      tooltip="智品"
                     >
-                      <Link href="/artifacts" onClick={() => setOpenMobile(false)}>
+                      <Link href="/artifacts" onClick={() => setOpenMobile(false)} title="AI生成的交付物">
                         <FileText className="size-3.5" />
-                        <span>我的制品</span>
+                        <span>智品</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

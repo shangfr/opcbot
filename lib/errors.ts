@@ -18,6 +18,8 @@ export type Surface =
   | "suggestions"
   | "agent"
   | "category"
+  | "ticket"
+  | "ticket-category"
   | "site-config"
   | "stats"
   | "users";
@@ -38,6 +40,8 @@ export const visibilityBySurface: Record<Surface, ErrorVisibility> = {
   suggestions: "response",
   agent: "response",
   category: "response",
+  ticket: "response",
+  "ticket-category": "response",
   "site-config": "response",
   stats: "response",
   users: "response",
@@ -125,6 +129,24 @@ export function getMessageByErrorCode(errorCode: ErrorCode): string {
       return "未找到该 Agent。请检查 ID 后重试。";
     case "bad_request:agent":
       return "Agent 操作请求无效。请检查输入后重试。";
+
+    case "unauthorized:ticket":
+      return "请先登录以访问工单管理。";
+    case "forbidden:ticket":
+      return "当前账号无权操作该工单。";
+    case "not_found:ticket":
+      return "未找到该工单。请检查 ID 后重试。";
+    case "bad_request:ticket":
+      return "工单操作请求无效。请检查输入后重试。";
+
+    case "unauthorized:ticket-category":
+      return "请先登录以访问工单分类管理。";
+    case "forbidden:ticket-category":
+      return "当前账号无权操作工单分类。仅管理员可操作。";
+    case "not_found:ticket-category":
+      return "未找到该工单分类。请检查 ID 后重试。";
+    case "bad_request:ticket-category":
+      return "工单分类操作请求无效。请检查输入后重试。";
 
     case "unauthorized:site-config":
       return "请先登录以访问系统配置。";

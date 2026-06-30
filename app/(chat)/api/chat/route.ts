@@ -135,7 +135,7 @@ export async function POST(request: Request) {
       });
 
       // 2. 拉取历史记录并拼装成标准大模型对话数组格式
-      const modelMessages = [];
+      const modelMessages: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
       for (const targetChatId of targetChatIds) {
         const targetChat = await getChatById({ id: targetChatId });
         if (targetChat && targetChat.userId === session.user.id) {
@@ -152,7 +152,10 @@ export async function POST(request: Request) {
                   .join("")
               : "";
             if (text) {
-              modelMessages.push({ role: m.role, content: text });
+              modelMessages.push({
+                role: m.role as "user" | "assistant" | "system",
+                content: text,
+              });
             }
           }
         }

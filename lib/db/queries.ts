@@ -35,6 +35,17 @@ import {
   siteConfig,
   stream,
   suggestion,
+  ticket,
+  ticketActivity,
+  type TicketActivity,
+  ticketCategory,
+  ticketComment,
+  type TicketComment,
+  type TicketCategory,
+  ticketTag,
+  ticketTagRelation,
+  type TicketTag,
+  type Ticket,
   type User,
   user,
   userKnowledge,
@@ -934,7 +945,8 @@ export async function getAgents() {
       .select()
       .from(agent)
       .orderBy(asc(agent.sortOrder), desc(agent.createdAt));
-  } catch (_error) {
+  } catch (error) {
+    console.error("🚨 Database Error in getAgents:", error); // 临时添加此行
     throw new ChatbotError("bad_request:database", "Failed to get agents");
   }
 }
@@ -1221,7 +1233,8 @@ export async function getCategories() {
       .select()
       .from(category)
       .orderBy(asc(category.sortOrder), asc(category.createdAt));
-  } catch (_error) {
+  } catch (error) {
+    console.error("🚨 Database Error in getCategories:", error); // 临时添加此行
     throw new ChatbotError("bad_request:database", "Failed to get categories");
   }
 }
@@ -1767,5 +1780,693 @@ export async function checkUserKnowledgeOwnership(
     return records.length > 0;
   } catch (_error) {
     return false;
+  }
+}
+
+// ============================================================
+// TicketCategory CRUD —— 工单分类（任务类型）
+// ============================================================
+
+export async function getTicketCategories(): Promise<TicketCategory[]> {
+  try {
+    return await db
+      .select()
+      .from(ticketCategory)
+      .orderBy(asc(ticketCategory.sortOrder), asc(ticketCategory.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get ticket categories"
+    );
+  }
+}
+
+export async function getTicketCategoryById({
+  id,
+}: {
+  id: string;
+}): Promise<TicketCategory | null> {
+  try {
+    const [result] = await db
+      .select()
+      .from(ticketCategory)
+      .where(eq(ticketCategory.id, id));
+    return result ?? null;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get ticket category by id"
+    );
+  }
+}
+
+export async function createTicketCategory({
+  name,
+  color,
+  sortOrder,
+  colorKey,
+  userId,
+}: {
+  name: string;
+  color: string;
+  sortOrder?: number;
+  colorKey?: string;
+  userId: string;
+}) {
+  try {
+    const [result] = await db
+      .insert(ticketCategory)
+      .values({
+        name,
+        color,
+        sortOrder: sortOrder ?? 0,
+        colorKey: colorKey ?? "indigo",
+        userId,
+      })
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create ticket category"
+    );
+  }
+}
+
+export async function updateTicketCategory({
+  id,
+  name,
+  color,
+  sortOrder,
+  colorKey,
+}: {
+  id: string;
+  name: string;
+  color: string;
+  sortOrder?: number;
+  colorKey?: string;
+}) {
+  try {
+    const updates: Record<string, unknown> = { name, color };
+    if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+    if (colorKey !== undefined) updates.colorKey = colorKey;
+    const [result] = await db
+      .update(ticketCategory)
+      .set(updates)
+      .where(eq(ticketCategory.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update ticket category"
+    );
+  }
+}
+
+export async function deleteTicketCategory({ id }: { id: string }) {
+  try {
+    const [result] = await db
+      .delete(ticketCategory)
+      .where(eq(ticketCategory.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to delete ticket category"
+    );
+  }
+}
+
+// ============================================================
+// Ticket CRUD —— 工单
+// ============================================================
+
+export async function getTickets(): Promise<Ticket[]> {
+  try {
+    return await db
+      .select()
+      .from(ticket)
+      .orderBy(asc(ticket.sortOrder), desc(ticket.createdAt));
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to get tickets");
+  }
+}
+
+// ── Ticket cache (5-min TTL, invalidated on CRUD mutations) ──
+const ticketCache = new Map<string, { data: unknown; ts: number }>();
+const TICKET_CACHE_TTL = 5 * 60 * 1000;
+
+export function invalidateTicketCache(id: string): void {
+  ticketCache.delete(id);
+}
+
+export async function getTicketById({
+  id,
+}: {
+  id: string;
+}): Promise<Ticket | null> {
+  const cached = ticketCache.get(id);
+  if (cached && Date.now() - cached.ts < TICKET_CACHE_TTL) {
+    return cached.data as Ticket;
+  }
+  try {
+    const [result] = await db
+      .select()
+      .from(ticket)
+      .where(eq(ticket.id, id));
+    if (result) {
+      ticketCache.set(id, { data: result, ts: Date.now() });
+    }
+    return result ?? null;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get ticket by id"
+    );
+  }
+}
+
+export async function getTicketsByUserId({
+  userId,
+}: {
+  userId: string;
+}): Promise<Ticket[]> {
+  try {
+    return await db
+      .select()
+      .from(ticket)
+      .where(eq(ticket.userId, userId))
+      .orderBy(asc(ticket.sortOrder), desc(ticket.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get tickets by user id"
+    );
+  }
+}
+
+/**
+ * 获取对用户可见的工单：
+ * - 管理员：所有 public 工单
+ * - 普通用户：所有 public 工单 + 自己创建的 private 工单
+ */
+export async function getVisibleTickets({
+  userId,
+  userIsAdmin,
+}: {
+  userId: string;
+  userIsAdmin: boolean;
+}): Promise<Ticket[]> {
+  try {
+    const condition = userIsAdmin
+      ? eq(ticket.visibility, "public")
+      : or(
+          eq(ticket.visibility, "public"),
+          and(eq(ticket.visibility, "private"), eq(ticket.userId, userId))
+        );
+    return await db
+      .select()
+      .from(ticket)
+      .where(condition)
+      .orderBy(asc(ticket.sortOrder), desc(ticket.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get visible tickets"
+    );
+  }
+}
+
+export async function createTicket({
+  title,
+  description,
+  content,
+  priority,
+  status,
+  progress,
+  assignee,
+  dueDate,
+  categoryId,
+  userId,
+  visibility = "public",
+  isActive,
+  sortOrder,
+}: {
+  title: string;
+  description: string;
+  content?: string | null;
+  priority?: "low" | "medium" | "high" | "urgent";
+  status?: "pending" | "in_progress" | "completed" | "closed";
+  progress?: number;
+  assignee?: string | null;
+  dueDate?: Date | null;
+  categoryId?: string | null;
+  userId: string;
+  visibility?: "public" | "private";
+  isActive: boolean;
+  sortOrder: number;
+}) {
+  try {
+    const [result] = await db
+      .insert(ticket)
+      .values({
+        title,
+        description,
+        content: content ?? null,
+        priority: priority ?? "medium",
+        status: status ?? "pending",
+        progress: progress ?? 0,
+        assignee: assignee ?? null,
+        dueDate: dueDate ?? null,
+        categoryId: categoryId ?? null,
+        userId,
+        visibility,
+        isActive,
+        sortOrder,
+      })
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to create ticket");
+  }
+}
+
+export async function updateTicket({
+  id,
+  title,
+  description,
+  content,
+  priority,
+  status,
+  progress,
+  assignee,
+  dueDate,
+  categoryId,
+  visibility,
+  isActive,
+  sortOrder,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  content?: string | null;
+  priority?: "low" | "medium" | "high" | "urgent";
+  status?: "pending" | "in_progress" | "completed" | "closed";
+  progress?: number;
+  assignee?: string | null;
+  dueDate?: Date | null;
+  categoryId?: string | null;
+  visibility?: "public" | "private";
+  isActive: boolean;
+  sortOrder: number;
+}) {
+  try {
+    const updates: Record<string, unknown> = {
+      title,
+      description,
+      content: content ?? null,
+      priority: priority ?? "medium",
+      status: status ?? "pending",
+      progress: progress ?? 0,
+      assignee: assignee ?? null,
+      dueDate: dueDate ?? null,
+      categoryId: categoryId ?? null,
+      isActive,
+      sortOrder,
+      updatedAt: new Date(),
+    };
+    if (visibility) updates.visibility = visibility;
+
+    const [result] = await db
+      .update(ticket)
+      .set(updates)
+      .where(eq(ticket.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to update ticket");
+  }
+}
+
+export async function deleteTicket({ id }: { id: string }) {
+  try {
+    const [result] = await db
+      .delete(ticket)
+      .where(eq(ticket.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to delete ticket");
+  }
+}
+
+// ============================================================
+// 工单批量操作 —— 产品优化项
+// ============================================================
+
+export async function batchUpdateTicketStatus({
+  ids,
+  status,
+}: {
+  ids: string[];
+  status: "pending" | "in_progress" | "completed" | "closed";
+}) {
+  try {
+    const results = await db
+      .update(ticket)
+      .set({ status, updatedAt: new Date() })
+      .where(inArray(ticket.id, ids))
+      .returning();
+    return results;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to batch update ticket status"
+    );
+  }
+}
+
+export async function batchUpdateTicketPriority({
+  ids,
+  priority,
+}: {
+  ids: string[];
+  priority: "low" | "medium" | "high" | "urgent";
+}) {
+  try {
+    const results = await db
+      .update(ticket)
+      .set({ priority, updatedAt: new Date() })
+      .where(inArray(ticket.id, ids))
+      .returning();
+    return results;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to batch update ticket priority"
+    );
+  }
+}
+
+export async function batchDeleteTickets({ ids }: { ids: string[] }) {
+  try {
+    const results = await db
+      .delete(ticket)
+      .where(inArray(ticket.id, ids))
+      .returning();
+    return results;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to batch delete tickets"
+    );
+  }
+}
+
+// ============================================================
+// 工单评论 CRUD —— 协作讨论
+// ============================================================
+
+export async function getTicketComments({
+  ticketId,
+}: {
+  ticketId: string;
+}): Promise<TicketComment[]> {
+  try {
+    return await db
+      .select()
+      .from(ticketComment)
+      .where(eq(ticketComment.ticketId, ticketId))
+      .orderBy(asc(ticketComment.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get ticket comments"
+    );
+  }
+}
+
+export async function createTicketComment({
+  ticketId,
+  userId,
+  content,
+}: {
+  ticketId: string;
+  userId: string;
+  content: string;
+}) {
+  try {
+    const [result] = await db
+      .insert(ticketComment)
+      .values({ ticketId, userId, content })
+      .returning();
+
+    // 同步记录活动日志
+    await db.insert(ticketActivity).values({
+      ticketId,
+      userId,
+      type: "commented",
+      summary: "添加了评论",
+      newValue: content.slice(0, 200),
+    });
+
+    return result;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create ticket comment"
+    );
+  }
+}
+
+export async function deleteTicketComment({ id }: { id: string }) {
+  try {
+    const [result] = await db
+      .delete(ticketComment)
+      .where(eq(ticketComment.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to delete ticket comment"
+    );
+  }
+}
+
+// ============================================================
+// 工单活动日志 —— 操作追溯
+// ============================================================
+
+export async function getTicketActivities({
+  ticketId,
+}: {
+  ticketId: string;
+}): Promise<TicketActivity[]> {
+  try {
+    return await db
+      .select()
+      .from(ticketActivity)
+      .where(eq(ticketActivity.ticketId, ticketId))
+      .orderBy(desc(ticketActivity.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get ticket activities"
+    );
+  }
+}
+
+/**
+ * 记录工单字段变更活动日志（供 updateTicket 调用）
+ */
+export async function logTicketActivity({
+  ticketId,
+  userId,
+  type,
+  summary,
+  oldValue,
+  newValue,
+}: {
+  ticketId: string;
+  userId: string;
+  type:
+    | "created"
+    | "updated"
+    | "status_changed"
+    | "priority_changed"
+    | "assignee_changed"
+    | "deleted";
+  summary: string;
+  oldValue?: string;
+  newValue?: string;
+}) {
+  try {
+    await db.insert(ticketActivity).values({
+      ticketId,
+      userId,
+      type,
+      summary,
+      oldValue: oldValue ?? null,
+      newValue: newValue ?? null,
+    });
+  } catch (_error) {
+    // 活动日志记录失败不应阻断主流程
+    console.error("Failed to log ticket activity:", _error);
+  }
+}
+
+// ============================================================
+// 工单标签 CRUD —— 多维度标记
+// ============================================================
+
+export async function getTicketTags(): Promise<TicketTag[]> {
+  try {
+    return await db.select().from(ticketTag).orderBy(asc(ticketTag.name));
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to get ticket tags");
+  }
+}
+
+export async function createTicketTag({
+  name,
+  color,
+  userId,
+}: {
+  name: string;
+  color: string;
+  userId: string;
+}) {
+  try {
+    const [result] = await db
+      .insert(ticketTag)
+      .values({ name, color, userId })
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to create ticket tag");
+  }
+}
+
+export async function deleteTicketTag({ id }: { id: string }) {
+  try {
+    const [result] = await db
+      .delete(ticketTag)
+      .where(eq(ticketTag.id, id))
+      .returning();
+    return result;
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to delete ticket tag");
+  }
+}
+
+/** 获取工单关联的所有标签 ID */
+export async function getTicketTagIds({
+  ticketId,
+}: {
+  ticketId: string;
+}): Promise<string[]> {
+  try {
+    const results = await db
+      .select({ tagId: ticketTagRelation.tagId })
+      .from(ticketTagRelation)
+      .where(eq(ticketTagRelation.ticketId, ticketId));
+    return results.map((r) => r.tagId);
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get ticket tag ids"
+    );
+  }
+}
+
+/** 设置工单的标签（全量覆盖） */
+export async function setTicketTags({
+  ticketId,
+  tagIds,
+}: {
+  ticketId: string;
+  tagIds: string[];
+}) {
+  try {
+    // 先删除旧关联
+    await db
+      .delete(ticketTagRelation)
+      .where(eq(ticketTagRelation.ticketId, ticketId));
+
+    // 再批量插入新关联
+    if (tagIds.length > 0) {
+      await db.insert(ticketTagRelation).values(
+        tagIds.map((tagId) => ({ ticketId, tagId }))
+      );
+    }
+    return tagIds;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to set ticket tags"
+    );
+  }
+}
+
+// ============================================================
+// 工单统计 —— 扩展统计看板
+// ============================================================
+
+export async function getTicketStats() {
+  try {
+    const allTickets = await db.select().from(ticket);
+    const now = new Date();
+
+    const byStatus = {
+      pending: 0,
+      in_progress: 0,
+      completed: 0,
+      closed: 0,
+    };
+    const byPriority = { low: 0, medium: 0, high: 0, urgent: 0 };
+    const byCategory: Record<string, number> = {};
+    const byAssignee: Record<string, number> = {};
+
+    let overdue = 0;
+    let urgentOpen = 0;
+
+    for (const t of allTickets) {
+      byStatus[t.status]++;
+      byPriority[t.priority]++;
+      if (t.categoryId) {
+        byCategory[t.categoryId] = (byCategory[t.categoryId] ?? 0) + 1;
+      }
+      if (t.assignee) {
+        byAssignee[t.assignee] = (byAssignee[t.assignee] ?? 0) + 1;
+      }
+      // 逾期：截止日期已过且未完成/未关闭
+      if (
+        t.dueDate &&
+        t.dueDate < now &&
+        t.status !== "completed" &&
+        t.status !== "closed"
+      ) {
+        overdue++;
+      }
+      // 紧急且未关闭
+      if (t.priority === "urgent" && t.status !== "closed") {
+        urgentOpen++;
+      }
+    }
+
+    return {
+      total: allTickets.length,
+      byStatus,
+      byPriority,
+      byCategory,
+      byAssignee,
+      overdue,
+      urgentOpen,
+    };
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to get ticket stats");
   }
 }

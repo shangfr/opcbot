@@ -210,6 +210,7 @@ export function useAgents() {
     searchAgents,
     handleStartChat,
     ctxValue,
+    setCategories: mutateCategories,
   };
 }
 
