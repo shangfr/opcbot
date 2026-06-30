@@ -39,6 +39,7 @@ import {
   useTickets,
 } from "./ticket-shared";
 import { TicketFormDialog } from "./ticket-form-dialog";
+import { TicketDetailDrawer } from "./ticket-detail-drawer";
 
 export function TicketCards() {
   const {
@@ -89,9 +90,18 @@ export function TicketCards() {
   );
 
   const [showCreate, setShowCreate] = useState(false);
+  // 详情抽屉状态
+  const [detailTicket, setDetailTicket] = useState<Ticket | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [deleteTicket, setDeleteTicket] = useState<Ticket | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  
+  const openDetail = (ticket: Ticket) => {
+    setDetailTicket(ticket);
+    setDetailOpen(true);
+  };
 
   const openCreate = () => {
     setEditingTicket(null);
@@ -278,7 +288,9 @@ export function TicketCards() {
             {filtered !== null && filtered.length > 0 && (
               <div className="card-grid">
                 {filtered.map((ticket) => (
+                  <div key={ticket.id} onClick={() => openDetail(ticket)}>
                   <TicketCard key={ticket.id} ticket={ticket} />
+                  </div>
                 ))}
               </div>
             )}
@@ -303,7 +315,9 @@ export function TicketCards() {
                   />
                   <div className="card-grid">
                     {groupTickets.map((ticket) => (
+                      <div key={ticket.id} onClick={() => openDetail(ticket)}>
                       <TicketCard key={ticket.id} ticket={ticket} />
+                  </div>
                     ))}
                   </div>
                 </section>
@@ -503,6 +517,16 @@ export function TicketCards() {
         onOpenGroupDialog={() => {}}
         onSuccess={refreshAll}
         open={showCreate}
+      />
+
+      {/* 新增：详情抽屉组件 */}
+      <TicketDetailDrawer 
+        categories={categories}
+        ticket={detailTicket}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onRefresh={refreshAll}
+        // 普通用户可以不传 onEdit 和 onDelete，抽屉里就不会显示编辑和删除按钮
       />
 
       {/* 删除确认弹窗 */}
