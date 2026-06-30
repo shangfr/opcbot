@@ -121,9 +121,12 @@ export const document = pgTable(
     userId: uuid("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    
+    chatId: uuid("chatId").references(() => chat.id, { onDelete: "set null" }), 
   },
   (table) => ({
     pk: primaryKey({ columns: [table.id, table.createdAt] }),
+    chatIdIdx: index("Document_chatId_idx").on(table.chatId),
   })
 );
 
