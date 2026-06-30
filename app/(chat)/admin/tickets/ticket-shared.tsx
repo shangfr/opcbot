@@ -45,7 +45,7 @@ export const PRIORITY_STYLES: Record<TicketPriority, string> = {
 };
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
-  pending: "待处理",
+  pending: "待匹配",
   in_progress: "进行中",
   completed: "已完成",
   closed: "已关闭",

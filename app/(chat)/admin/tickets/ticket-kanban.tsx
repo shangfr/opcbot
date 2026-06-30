@@ -11,7 +11,7 @@ import {
 } from "./ticket-shared";
 
 const KANBAN_COLUMNS: { status: TicketStatus; label: string; color: string }[] = [
-  { status: "pending", label: "待处理", color: "bg-slate-400" },
+  { status: "pending", label: "待匹配", color: "bg-slate-400" },
   { status: "in_progress", label: "进行中", color: "bg-blue-500" },
   { status: "completed", label: "已完成", color: "bg-green-500" },
   { status: "closed", label: "已关闭", color: "bg-gray-500" },
