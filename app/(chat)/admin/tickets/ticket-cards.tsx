@@ -54,7 +54,7 @@ export function TicketCards() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  // Tab 状态：我的工单 / 发现工单
+  // Tab 状态：我的发布 / 服务市场
   const [activeTab, setActiveTab] = useState<"discover" | "mine">("mine");
 
   const { data: myTickets = [], mutate: mutateMine } = useSWR<Ticket[]>(
@@ -131,7 +131,7 @@ export function TicketCards() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("删除失败");
-      toast.success("工单已删除");
+      toast.success("信息已删除");
       setDeleteTicket(null);
       refreshAll();
     } catch {
@@ -169,7 +169,7 @@ export function TicketCards() {
             onClick={() => setActiveTab("mine")}
             type="button"
           >
-            我的工单
+            我的发布
             <span className="ml-1 text-xs text-muted-foreground/50">
               {myTickets.length}
             </span>
@@ -187,14 +187,14 @@ export function TicketCards() {
             onClick={() => setActiveTab("discover")}
             type="button"
           >
-            发现工单
+            服务市场
             {activeTab === "discover" && (
               <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
             )}
           </button>
         </div>
 
-        {/* ═══ Tab: 发现工单 ═══ */}
+        {/* ═══ Tab: 服务市场 ═══ */}
         {activeTab === "discover" && (
           <>
             {/* 搜索框 */}
@@ -204,7 +204,7 @@ export function TicketCards() {
                 <input
                   className="search-input"
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="搜索工单..."
+                  placeholder="搜索信息..."
                   type="text"
                   value={search}
                 />
@@ -269,7 +269,7 @@ export function TicketCards() {
               <div className="empty-state">
                 <Lightbulb className="mb-4 size-12 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">
-                  还没有可用的工单
+                  还没有可用的信息
                 </p>
               </div>
             )}
@@ -288,7 +288,7 @@ export function TicketCards() {
               <div className="empty-state py-16">
                 <Search className="mb-3 size-8 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">
-                  未找到匹配的工单
+                  未找到匹配的信息
                 </p>
               </div>
             )}
@@ -309,19 +309,19 @@ export function TicketCards() {
                 </section>
               ))}
 
-            {/* 该类别下无工单 */}
+            {/* 该类别下无信息 */}
             {filtered === null &&
               visibleGroups.length === 0 &&
               tickets.length > 0 && (
                 <div className="empty-state py-16">
                   <Lightbulb className="mb-3 size-8 text-muted-foreground/30" />
                   <p className="text-sm text-muted-foreground">
-                    该类别下暂无工单
+                    该类别下暂无信息
                   </p>
                 </div>
               )}
 
-            {/* 已停用的工单 */}
+            {/* 已停用的信息 */}
             {filtered === null &&
               activeCategory === null &&
               inactive.length > 0 && (
@@ -369,7 +369,7 @@ export function TicketCards() {
           </>
         )}
 
-        {/* ═══ Tab: 我的工单 ═══ */}
+        {/* ═══ Tab: 我的发布 ═══ */}
         {activeTab === "mine" && (
           <section>
             <div className="mb-4 flex items-center justify-end">
@@ -379,7 +379,7 @@ export function TicketCards() {
                 type="button"
               >
                 <Plus className="size-3.5" />
-                <span className="hidden sm:inline">创建工单</span>
+                <span className="hidden sm:inline">发布信息</span>
                 <span className="sm:hidden">创建</span>
               </button>
             </div>
@@ -388,7 +388,7 @@ export function TicketCards() {
               <div className="empty-state py-16">
                 <Plus className="mb-3 size-8 text-muted-foreground/30" />
                 <p className="text-xs text-muted-foreground">
-                  创建专属工单，跟踪任务进度与截止日期
+                  创建专属信息，跟踪任务进度与截止日期
                 </p>
                 <button
                   className="touch-target mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
@@ -396,7 +396,7 @@ export function TicketCards() {
                   type="button"
                 >
                   <Plus className="size-3.5" />
-                  创建第一个
+                  创建第一条
                 </button>
               </div>
             ) : (
@@ -512,7 +512,7 @@ export function TicketCards() {
       >
         <DialogContent className="dialog-mobile-friendly max-w-sm">
           <DialogHeader>
-            <DialogTitle>删除工单？</DialogTitle>
+            <DialogTitle>删除信息？</DialogTitle>
             <DialogDescription>
               确定要删除「{deleteTicket?.title}」吗？此操作无法撤销。
             </DialogDescription>

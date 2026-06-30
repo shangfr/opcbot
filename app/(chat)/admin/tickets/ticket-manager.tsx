@@ -108,7 +108,7 @@ export function TicketManager() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete");
-      toast.success("工单已删除");
+      toast.success("信息已删除");
       setDeleteConfirm(null);
       refresh();
     } catch {
@@ -162,11 +162,11 @@ export function TicketManager() {
         ? tickets.filter((t) => ids.includes(t.id))
         : tickets;
     if (toExport.length === 0) {
-      toast.error("没有可导出的工单");
+      toast.error("没有可导出的信息");
       return;
     }
     exportTicketsCSV(toExport);
-    toast.success(`已导出 ${toExport.length} 个工单`);
+    toast.success(`已导出 ${toExport.length} 条信息`);
   };
 
   // 应用筛选条件
@@ -240,12 +240,12 @@ export function TicketManager() {
             </Button>
             <Button className="gap-2" onClick={openCreate}>
               <Plus className="size-4" />
-              新建工单
+              新建发布
             </Button>
           </div>
         </div>
 
-        {/* 统计看板 —— 工单系统优化项 */}
+        {/* 统计看板 —— 信息系统优化项 */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
           <StatCard
             className="text-blue-600 dark:text-blue-400"
@@ -291,7 +291,7 @@ export function TicketManager() {
           />
         </div>
 
-        {/* 筛选栏 + 视图切换 —— 工单系统优化项 */}
+        {/* 筛选栏 + 视图切换 —— 信息系统优化项 */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <span className="text-xs font-medium text-muted-foreground">
             筛选：
@@ -389,14 +389,14 @@ export function TicketManager() {
         {tickets.length === 0 && (
           <div className="empty-state">
             <Plus className="mb-4 size-12 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">还没有任何工单</p>
+            <p className="text-sm text-muted-foreground">还没有任何信息</p>
             <Button
               className="mt-4 gap-2"
               onClick={openCreate}
               variant="outline"
             >
               <Plus className="size-4" />
-              创建第一个工单
+              创建第一条信息
             </Button>
           </div>
         )}
@@ -406,7 +406,7 @@ export function TicketManager() {
           <div className="empty-state">
             <ClipboardList className="mb-4 size-12 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">
-              没有符合筛选条件的工单
+              没有符合筛选条件的信息
             </p>
           </div>
         )}
@@ -546,7 +546,7 @@ export function TicketManager() {
             <DialogHeader>
               <DialogTitle>确认删除</DialogTitle>
               <DialogDescription>
-                确定要删除工单「{deleteConfirm?.title}」吗？此操作不可撤销。
+                确定要删除信息「{deleteConfirm?.title}」吗？此操作不可撤销。
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -571,7 +571,7 @@ export function TicketManager() {
                 refresh();
               }
             } catch (error) {
-              console.error("刷新工单分类列表失败", error);
+              console.error("刷新信息分类列表失败", error);
             }
           }}
           onOpenChange={setGroupDialogOpen}

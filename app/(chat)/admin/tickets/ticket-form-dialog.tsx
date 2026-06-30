@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Settings2 } from "lucide-react";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +24,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-
 import type { Ticket, TicketCategory } from "@/lib/db/schema";
 import {
   PRIORITY_LABELS,
@@ -133,11 +131,7 @@ export function TicketFormDialog({
       content: form.content || null,
       assignee: form.assignee.trim() || null,
       dueDate: dueDateIso,
-      categoryId: isAdmin
-        ? form.categoryId === "__none__"
-          ? null
-          : form.categoryId
-        : null,
+      categoryId: isAdmin ? (form.categoryId === "__none__" ? null : form.categoryId) : null,
       sortOrder: isAdmin ? form.sortOrder : 0,
       visibility: isAdmin ? form.visibility : "private",
     };
@@ -151,7 +145,7 @@ export function TicketFormDialog({
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error("Failed to update");
-        toast.success("工单已更新");
+        toast.success("信息已更新");
       } else {
         const res = await fetch("/api/tickets", {
           method: "POST",
@@ -159,7 +153,7 @@ export function TicketFormDialog({
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error("Failed to create");
-        toast.success("工单已创建");
+        toast.success("发布成功");
       }
       onOpenChange(false);
       onSuccess();
@@ -175,12 +169,12 @@ export function TicketFormDialog({
       <DialogContent className="dialog-mobile-friendly max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editingTicket ? "编辑工单" : "新建工单"}
+            {editingTicket ? "编辑信息" : "发布信息"}
           </DialogTitle>
           <DialogDescription>
             {editingTicket
-              ? "修改工单的标题、描述、优先级和状态"
-              : "创建一个新的工单任务"}
+              ? "修改您的服务发布或求购需求详情"
+              : "发布一个新的服务或求购需求"}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -190,11 +184,10 @@ export function TicketFormDialog({
             <Input
               id="title"
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="例如：修复登录页面样式问题"
+              placeholder="例如：提供企业官网定制开发服务 / 求购二手商用咖啡机"
               value={form.title}
             />
           </div>
-
           {/* 描述 */}
           <div className="space-y-2">
             <Label htmlFor="desc">描述 *</Label>
@@ -204,26 +197,24 @@ export function TicketFormDialog({
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              placeholder="简短描述工单内容..."
+              placeholder="简短描述您能提供的服务或您的求购需求..."
               value={form.description}
             />
           </div>
-
           {/* 详情 */}
           <div className="space-y-2">
-            <Label htmlFor="content">任务详情</Label>
+            <Label htmlFor="content">详细说明</Label>
             <Textarea
               className="min-h-[100px] text-xs"
               id="content"
               onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder="详细说明任务要求、验收标准等..."
+              placeholder="详细说明服务范围、报价、交付周期或求购具体要求等..."
               value={form.content}
             />
             <p className="text-[11px] text-muted-foreground">
-              可选。详细描述任务的具体要求和验收标准
+              可选。详细描述服务细节或求购要求，以便更好地匹配
             </p>
           </div>
-
           {/* 优先级 + 状态 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -276,7 +267,6 @@ export function TicketFormDialog({
               </Select>
             </div>
           </div>
-
           {/* 进度 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -298,11 +288,10 @@ export function TicketFormDialog({
               value={form.progress}
             />
           </div>
-
           {/* 负责人 + 截止日期 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="assignee">负责人</Label>
+              <Label htmlFor="assignee">服务方/接单人</Label>
               <Input
                 id="assignee"
                 onChange={(e) =>
@@ -324,7 +313,6 @@ export function TicketFormDialog({
               />
             </div>
           </div>
-
           {/* 仅管理员可见：分类选择 */}
           {isAdmin && (
             <div className="space-y-2">
@@ -364,34 +352,31 @@ export function TicketFormDialog({
                     ))}
                   </SelectContent>
                 </Select>
-                {form.categoryId &&
-                  form.categoryId !== "__none__" &&
-                  (() => {
-                    const cat = categories.find(
-                      (c) => c.id === form.categoryId
-                    );
-                    return cat ? (
-                      <Badge
-                        className="shrink-0 gap-1 px-2 py-0.5 text-[11px]"
-                        style={{
-                          borderColor: cat.color + "40",
-                          backgroundColor: cat.color + "10",
-                          color: cat.color,
-                        }}
-                        variant="outline"
-                      >
-                        <span
-                          className="inline-block size-2 rounded-full"
-                          style={{ backgroundColor: cat.color }}
-                        />
-                        {cat.name}
-                      </Badge>
-                    ) : null;
-                  })()}
+                {form.categoryId && form.categoryId !== "__none__" && (() => {
+                  const cat = categories.find(
+                    (c) => c.id === form.categoryId
+                  );
+                  return cat ? (
+                    <Badge
+                      className="shrink-0 gap-1 px-2 py-0.5 text-[11px]"
+                      style={{
+                        borderColor: cat.color + "40",
+                        backgroundColor: cat.color + "10",
+                        color: cat.color,
+                      }}
+                      variant="outline"
+                    >
+                      <span
+                        className="inline-block size-2 rounded-full"
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      {cat.name}
+                    </Badge>
+                  ) : null;
+                })()}
               </div>
             </div>
           )}
-
           {/* 仅管理员可见：可见性设置 */}
           {isAdmin && (
             <div className="flex items-center gap-2 rounded-lg border border-blue-500/15 bg-blue-500/[0.03] px-3 py-2.5">
@@ -403,14 +388,13 @@ export function TicketFormDialog({
                 }
               />
               <Label className="cursor-pointer text-sm" htmlFor="visibility">
-                公开到工单广场
+                公开到服务市场
               </Label>
               <span className="ml-auto text-[11px] text-muted-foreground">
                 {form.visibility === "public" ? "所有用户可见" : "仅创建者可见"}
               </span>
             </div>
           )}
-
           {/* 启用 + 排序 */}
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 rounded-lg border border-blue-500/15 bg-blue-500/[0.03] px-3 py-2.5">
@@ -449,11 +433,7 @@ export function TicketFormDialog({
             取消
           </Button>
           <Button disabled={saving} onClick={handleSave}>
-            {saving
-              ? "保存中..."
-              : editingTicket
-                ? "保存修改"
-                : "创建"}
+            {saving ? "保存中..." : editingTicket ? "保存修改" : "发布"}
           </Button>
         </DialogFooter>
       </DialogContent>
