@@ -2007,6 +2007,7 @@ export async function createTicket({
   status,
   progress,
   assignee,
+  phone,
   dueDate,
   categoryId,
   userId,
@@ -2021,6 +2022,7 @@ export async function createTicket({
   status?: "pending" | "in_progress" | "completed" | "closed";
   progress?: number;
   assignee?: string | null;
+  phone?: string | null;
   dueDate?: Date | null;
   categoryId?: string | null;
   userId: string;
@@ -2039,6 +2041,7 @@ export async function createTicket({
         status: status ?? "pending",
         progress: progress ?? 0,
         assignee: assignee ?? null,
+        phone: phone ?? null,
         dueDate: dueDate ?? null,
         categoryId: categoryId ?? null,
         userId,
@@ -2062,6 +2065,7 @@ export async function updateTicket({
   status,
   progress,
   assignee,
+  phone,
   dueDate,
   categoryId,
   visibility,
@@ -2076,6 +2080,7 @@ export async function updateTicket({
   status?: "pending" | "in_progress" | "completed" | "closed";
   progress?: number;
   assignee?: string | null;
+  phone?: string | null;
   dueDate?: Date | null;
   categoryId?: string | null;
   visibility?: "public" | "private";
@@ -2091,6 +2096,7 @@ export async function updateTicket({
       status: status ?? "pending",
       progress: progress ?? 0,
       assignee: assignee ?? null,
+      phone: phone ?? null,
       dueDate: dueDate ?? null,
       categoryId: categoryId ?? null,
       isActive,

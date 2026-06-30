@@ -10,7 +10,9 @@ import {
   PowerOff,
   Search,
   Trash2,
+  Globe,  Lock, 
 } from "lucide-react";
+
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -288,7 +290,7 @@ export function TicketCards() {
             {filtered !== null && filtered.length > 0 && (
               <div className="card-grid">
                 {filtered.map((ticket) => (
-                  <div key={ticket.id} onClick={() => openDetail(ticket)}>
+                  <div key={ticket.id} className="cursor-pointer" onClick={() => openDetail(ticket)}>
                   <TicketCard key={ticket.id} ticket={ticket} />
                   </div>
                 ))}
@@ -315,7 +317,7 @@ export function TicketCards() {
                   />
                   <div className="card-grid">
                     {groupTickets.map((ticket) => (
-                      <div key={ticket.id} onClick={() => openDetail(ticket)}>
+                      <div key={ticket.id} className="cursor-pointer" onClick={() => openDetail(ticket)}>
                       <TicketCard key={ticket.id} ticket={ticket} />
                   </div>
                     ))}
@@ -417,11 +419,12 @@ export function TicketCards() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {myTickets.map((ticket) => {
                   const avatarChar = getAvatarChar(ticket.title);
+                  const isPublished = ticket.visibility === "public";
                   return (
                     <div
                       className={cn(
                         "group rounded-xl border p-4 transition-all",
-                        ticket.isActive
+                        ticket.visibility === "private"
                           ? "border-border/50 bg-card hover:border-border hover:shadow-sm"
                           : "border-border/30 bg-muted/20 opacity-60"
                       )}
@@ -463,6 +466,18 @@ export function TicketCards() {
                                 已停用
                               </span>
                             )}
+                            {/* 新增的 已发布/未发布 状态 */}
+                            {ticket.visibility === "public" ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-blue-600">
+                                <Globe className="size-2.5" />
+                                已发布
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                                <Lock className="size-2.5" />
+                                未发布
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -470,31 +485,34 @@ export function TicketCards() {
                         {ticket.description}
                       </p>
                       <div className="flex items-center gap-1.5">
-                        <button
-                          className="touch-target inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border/50 px-2 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-                          onClick={() => openEdit(ticket)}
-                          type="button"
+                        {/* 编辑按钮 */}
+                        <button 
+                          className="touch-target inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border/50 px-2 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50" 
+                          disabled={isPublished}
+                          onClick={() => openEdit(ticket)} 
+                          type="button" 
                         >
-                          <Edit className="size-3.5" />
-                          编辑
+                          <Edit className="size-3.5" /> 编辑
                         </button>
-                        <button
-                          className="touch-target inline-flex items-center justify-center rounded-lg border border-border/50 px-2 py-1.5 text-xs transition-colors hover:bg-muted"
-                          onClick={() => handleToggleActive(ticket)}
-                          title={ticket.isActive ? "停用" : "启用"}
-                          type="button"
+                        
+                        {/* 启用/停用按钮 */}
+                        <button 
+                          className="touch-target inline-flex items-center justify-center rounded-lg border border-border/50 px-2 py-1.5 text-xs transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50" 
+                          disabled={isPublished}
+                          onClick={() => handleToggleActive(ticket)} 
+                          title={ticket.isActive ? "停用" : "启用"} 
+                          type="button" 
                         >
-                          {ticket.isActive ? (
-                            <PowerOff className="size-3.5" />
-                          ) : (
-                            <Power className="size-3.5" />
-                          )}
+                          {ticket.isActive ? ( <PowerOff className="size-3.5" /> ) : ( <Power className="size-3.5" /> )}
                         </button>
-                        <button
-                          className="touch-target inline-flex items-center justify-center rounded-lg border border-destructive/30 px-2 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/5"
-                          onClick={() => setDeleteTicket(ticket)}
-                          title="删除"
-                          type="button"
+                        
+                        {/* 删除按钮 */}
+                        <button 
+                          className="touch-target inline-flex items-center justify-center rounded-lg border border-destructive/30 px-2 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/5 disabled:pointer-events-none disabled:opacity-50" 
+                          disabled={isPublished}
+                          onClick={() => setDeleteTicket(ticket)} 
+                          title="删除" 
+                          type="button" 
                         >
                           <Trash2 className="size-3.5" />
                         </button>

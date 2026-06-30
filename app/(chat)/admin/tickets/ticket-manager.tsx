@@ -54,6 +54,7 @@ import { TicketKanban } from "./ticket-kanban";
 type StatusFilter = "all" | "pending" | "in_progress" | "completed" | "closed";
 type PriorityFilter = "all" | "low" | "medium" | "high" | "urgent";
 type ViewMode = "list" | "kanban";
+type VisibilityFilter = "all" | "public" | "private"; 
 
 export function TicketManager() {
   const {
@@ -75,7 +76,7 @@ export function TicketManager() {
   // 优化项：状态 & 优先级筛选
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
-
+  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
   // 优化项：视图切换（列表 / 看板）
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
@@ -173,11 +174,11 @@ export function TicketManager() {
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
       if (statusFilter !== "all" && t.status !== statusFilter) return false;
-      if (priorityFilter !== "all" && t.priority !== priorityFilter)
-        return false;
+      if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
+      if (visibilityFilter !== "all" && t.visibility !== visibilityFilter) return false; 
       return true;
     });
-  }, [tickets, statusFilter, priorityFilter]);
+  }, [tickets, statusFilter, priorityFilter, visibilityFilter]); // 依赖项增加 visibilityFilter
 
   const filteredGroups = useMemo(() => {
     const groups = adminGroups.groups
@@ -205,7 +206,7 @@ export function TicketManager() {
     );
   }
 
-  const hasFilters = statusFilter !== "all" || priorityFilter !== "all";
+  const hasFilters = statusFilter !== "all" || priorityFilter !== "all" || visibilityFilter !== "all";
   const selectedIdArray = Array.from(selectedIds);
 
   return (
@@ -296,6 +297,20 @@ export function TicketManager() {
           <span className="text-xs font-medium text-muted-foreground">
             筛选：
           </span>
+                    {/* 新增：可见性筛选 */}
+          <Select
+            onValueChange={(v) => setVisibilityFilter(v as VisibilityFilter)}
+            value={visibilityFilter}
+          >
+            <SelectTrigger className="h-8 w-28 text-xs">
+              <SelectValue placeholder="发布状态" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">发布状态</SelectItem>
+              <SelectItem value="public">发布</SelectItem>
+              <SelectItem value="private">私有</SelectItem>
+            </SelectContent>
+          </Select>
           <Select
             onValueChange={(v) => setStatusFilter(v as StatusFilter)}
             value={statusFilter}
@@ -304,7 +319,7 @@ export function TicketManager() {
               <SelectValue placeholder="状态" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
+              <SelectItem value="all">匹配状态</SelectItem>
               <SelectItem value="pending">{STATUS_LABELS.pending}</SelectItem>
               <SelectItem value="in_progress">
                 {STATUS_LABELS.in_progress}
@@ -323,7 +338,7 @@ export function TicketManager() {
               <SelectValue placeholder="优先级" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部优先级</SelectItem>
+              <SelectItem value="all">优先级</SelectItem>
               <SelectItem value="low">{PRIORITY_LABELS.low}</SelectItem>
               <SelectItem value="medium">{PRIORITY_LABELS.medium}</SelectItem>
               <SelectItem value="high">{PRIORITY_LABELS.high}</SelectItem>
@@ -335,6 +350,7 @@ export function TicketManager() {
               onClick={() => {
                 setStatusFilter("all");
                 setPriorityFilter("all");
+                setVisibilityFilter("all");
               }}
               size="sm"
               variant="ghost"
@@ -430,7 +446,7 @@ export function TicketManager() {
                 <TicketGroupHeader count={groupTickets.length} group={group} />
                 <div className="card-grid">
                   {groupTickets.map((ticket) => (
-                    <div key={ticket.id} className="relative">
+                    <div key={ticket.id} className="cursor-pointer relative">
                       {/* 批量选择复选框 */}
                       <button
                         className="absolute left-2 top-2 z-10 rounded border-border bg-background/80 p-0.5 opacity-0 transition-opacity hover:bg-background group-hover:opacity-100"
@@ -473,7 +489,7 @@ export function TicketManager() {
                 />
                 <div className="card-grid">
                   {filteredGroups.ungrouped.map((ticket) => (
-                    <div key={ticket.id} className="relative">
+                    <div key={ticket.id} className="cursor-pointer relative">
                       <button
                         className="absolute left-2 top-2 z-10 rounded border-border bg-background/80 p-0.5 opacity-0 transition-opacity hover:bg-background group-hover:opacity-100"
                         onClick={(e) => {

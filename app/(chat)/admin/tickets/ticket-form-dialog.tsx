@@ -40,6 +40,7 @@ type TicketFormData = {
   status: TicketStatus;
   progress: number;
   assignee: string;
+  phone: string;
   dueDate: string; // yyyy-mm-dd 格式，便于 input[type=date]
   categoryId: string;
   isActive: boolean;
@@ -55,6 +56,7 @@ const emptyForm: TicketFormData = {
   status: "pending",
   progress: 0,
   assignee: "",
+  phone: "",
   dueDate: "",
   categoryId: "__none__",
   isActive: true,
@@ -99,10 +101,11 @@ export function TicketFormDialog({
           title: editingTicket.title,
           description: editingTicket.description,
           content: editingTicket.content ?? "",
-          priority: editingTicket.priority,
-          status: editingTicket.status,
-          progress: editingTicket.progress,
+          priority: editingTicket.priority ?? "medium",
+          status: editingTicket.status ?? "pending",
+          progress: editingTicket.progress ?? 0,
           assignee: editingTicket.assignee ?? "",
+          phone: editingTicket.phone || "",
           dueDate: toDateInput(editingTicket.dueDate),
           categoryId: editingTicket.categoryId ?? "__none__",
           isActive: editingTicket.isActive,
@@ -131,7 +134,7 @@ export function TicketFormDialog({
       content: form.content || null,
       assignee: form.assignee.trim() || null,
       dueDate: dueDateIso,
-      categoryId: isAdmin ? (form.categoryId === "__none__" ? null : form.categoryId) : null,
+      categoryId: form.categoryId === "__none__" ? null : form.categoryId,
       sortOrder: isAdmin ? form.sortOrder : 0,
       visibility: isAdmin ? form.visibility : "private",
     };
@@ -184,7 +187,7 @@ export function TicketFormDialog({
             <Input
               id="title"
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="例如：提供企业官网定制开发服务 / 求购二手商用咖啡机"
+              placeholder="例如：提供企业智能体开发服务 / 求购算力服务"
               value={form.title}
             />
           </div>
@@ -216,6 +219,7 @@ export function TicketFormDialog({
             </p>
           </div>
           {/* 优先级 + 状态 */}
+          {isAdmin && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>优先级</Label>
@@ -267,39 +271,24 @@ export function TicketFormDialog({
               </Select>
             </div>
           </div>
-          {/* 进度 */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="progress">进度</Label>
-              <span className="text-[11px] text-muted-foreground">
-                {form.progress}%
-              </span>
-            </div>
-            <input
-              className="w-full accent-foreground"
-              id="progress"
-              max={100}
-              min={0}
-              onChange={(e) =>
-                setForm({ ...form, progress: Number(e.target.value) })
-              }
-              step={5}
-              type="range"
-              value={form.progress}
-            />
-          </div>
-          {/* 负责人 + 截止日期 */}
+          )}
+
+          {/* 联系人+ 截止日期 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="assignee">服务方/接单人</Label>
+              <Label htmlFor="assignee">联系人</Label>
               <Input
                 id="assignee"
                 onChange={(e) =>
                   setForm({ ...form, assignee: e.target.value })
                 }
-                placeholder="例如：张三"
+                placeholder="联系人姓名"
                 value={form.assignee}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">手机号</Label>
+              <Input id="phone" onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="例如：13800138000" value={form.phone} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="dueDate">截止日期</Label>
@@ -313,9 +302,10 @@ export function TicketFormDialog({
               />
             </div>
           </div>
-          {/* 仅管理员可见：分类选择 */}
-          {isAdmin && (
+          {/* 分类选择 */}
+          
             <div className="space-y-2">
+              {isAdmin && (
               <div className="flex items-center justify-between">
                 <Label>所属分类</Label>
                 <button
@@ -327,6 +317,7 @@ export function TicketFormDialog({
                   管理分类
                 </button>
               </div>
+              )}
               <div className="flex items-center gap-2">
                 <Select
                   onValueChange={(v) =>
@@ -376,7 +367,7 @@ export function TicketFormDialog({
                 })()}
               </div>
             </div>
-          )}
+
           {/* 仅管理员可见：可见性设置 */}
           {isAdmin && (
             <div className="flex items-center gap-2 rounded-lg border border-blue-500/15 bg-blue-500/[0.03] px-3 py-2.5">
@@ -388,7 +379,7 @@ export function TicketFormDialog({
                 }
               />
               <Label className="cursor-pointer text-sm" htmlFor="visibility">
-                公开到服务市场
+                发布到服务市场
               </Label>
               <span className="ml-auto text-[11px] text-muted-foreground">
                 {form.visibility === "public" ? "所有用户可见" : "仅创建者可见"}

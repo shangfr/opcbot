@@ -287,6 +287,8 @@ export const ticket = pgTable(
     progress: integer("progress").notNull().default(0),
     // 负责人姓名（自由文本，便于灵活指派）
     assignee: text("assignee"),
+    // 负责人手机号
+    phone: text("phone"),
     // 截止日期
     dueDate: timestamp("due_date"),
     // 关联分类（任务类型）

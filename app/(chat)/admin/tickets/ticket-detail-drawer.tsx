@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Activity,
   CalendarClock,
@@ -8,6 +7,7 @@ import {
   Edit,
   Loader2,
   MessageSquare,
+  Phone,
   Send,
   Tag as TagIcon,
   Trash2,
@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,7 +39,7 @@ type Comment = {
   userId: string;
   content: string;
   createdAt: string;
-  user?: { name?: string | null; image?: string | null }; // 优化：期望后端返回用户信息
+  user?: { name?: string | null; image?: string | null }; // 期望后端返回用户信息
 };
 
 type ActivityLog = {
@@ -181,9 +180,7 @@ export function TicketDetailDrawer({
     const next = prevIds.includes(tagId)
       ? prevIds.filter((t) => t !== tagId)
       : [...prevIds, tagId];
-    
     setTicketTagIds(next); // 乐观更新 UI
-
     try {
       await fetch(`/api/tickets/${ticket.id}/tags`, {
         method: "PUT",
@@ -253,7 +250,7 @@ export function TicketDetailDrawer({
               key={t.key}
               onClick={() => setTab(t.key)}
               type="button"
-              role="tab" // 优化：无障碍属性
+              role="tab"
               aria-selected={tab === t.key}
             >
               {t.icon}
@@ -280,7 +277,7 @@ export function TicketDetailDrawer({
           </div>
         </div>
 
-        {/* Tab Content - 优化：抽离为子组件 */}
+        {/* Tab Content */}
         <ScrollArea className="flex-1">
           {tab === "detail" && <DetailTabContent ticket={ticket} overdue={!!overdue} />}
           {tab === "comments" && (
@@ -307,12 +304,16 @@ function DetailTabContent({ ticket, overdue }: { ticket: Ticket; overdue: boolea
     <div className="space-y-4 p-5">
       <DetailField label="描述" value={ticket.description} />
       {ticket.content && <DetailField label="详情" value={ticket.content} multiline />}
+      
       <div className="grid grid-cols-2 gap-3">
-        <DetailMeta icon={<UserIcon className="size-3.5" />} label="负责人" value={ticket.assignee || "未指派"} />
+        <DetailMeta icon={<UserIcon className="size-3.5" />} label="联系人" value={ticket.assignee || "无"} />
+        {/* 新增：手机号字段 */}
+        <DetailMeta icon={<Phone className="size-3.5" />} label="手机号" value={ticket.phone || "无"} />
         <DetailMeta icon={<CalendarClock className="size-3.5" />} label="截止日期" value={formatDate(ticket.dueDate)} highlight={overdue} />
         <DetailMeta icon={<Clock className="size-3.5" />} label="创建时间" value={formatDate(ticket.createdAt)} />
         <DetailMeta icon={<Activity className="size-3.5" />} label="更新时间" value={formatDate(ticket.updatedAt)} />
       </div>
+
       {/* 进度条 */}
       <div>
         <div className="mb-1.5 flex items-center justify-between text-xs">
@@ -356,7 +357,6 @@ function CommentsTabContent({
           comments.map((c) => (
             <div className="rounded-lg border border-border/50 bg-muted/30 p-3" key={c.id}>
               <div className="mb-1 flex items-center justify-between">
-                {/* 优化：优先显示用户昵称，如果没有则截取 userId */}
                 <span className="text-xs font-medium">
                   {c.user?.name || `用户 ${c.userId.slice(0, 6)}`}
                 </span>
@@ -470,7 +470,8 @@ function DetailMeta({ icon, label, value, highlight }: { icon: React.ReactNode; 
   return (
     <div className="rounded-lg border border-border/50 bg-muted/20 p-2.5">
       <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-        {icon} {label}
+        {icon}
+        {label}
       </div>
       <div className={cn("mt-1 truncate text-xs font-medium", highlight && "text-red-600")}>{value}</div>
     </div>
