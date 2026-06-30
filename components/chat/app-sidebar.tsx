@@ -205,7 +205,7 @@ export function AppSidebar({
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       tooltip="智客"
                     >
-                      <Link href="/admin/tickets" onClick={() => setOpenMobile(false)} title="AI获客与资源整合引擎">
+                      <Link href="/admin/tickets" onClick={() => setOpenMobile(false)} title="AI资源整合引擎">
                         <ClipboardList className="size-3.5" />
                         <span>智客</span>
                       </Link>
@@ -221,7 +221,7 @@ export function AppSidebar({
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       tooltip="智汇"
                     >
-                      <Link href="/pinned" onClick={() => setOpenMobile(false)} title="重要信息汇聚中枢">
+                      <Link href="/pinned" onClick={() => setOpenMobile(false)} title="信息汇聚中枢">
                         <Pin className="size-3.5" />
                         <span>智汇</span>
                       </Link>
@@ -237,7 +237,7 @@ export function AppSidebar({
                       className="h-8 gap-2.5 rounded-lg text-[13px] text-sidebar-foreground/65 transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       tooltip="智品"
                     >
-                      <Link href="/artifacts" onClick={() => setOpenMobile(false)} title="AI生成的交付物">
+                      <Link href="/artifacts" onClick={() => setOpenMobile(false)} title="AI交付物品库">
                         <FileText className="size-3.5" />
                         <span>智品</span>
                       </Link>

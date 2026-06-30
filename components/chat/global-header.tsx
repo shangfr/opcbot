@@ -9,9 +9,12 @@ const EXCLUDED_PATHS = ["/chat"];
 const ROUTE_TITLES: { path: string; title: string; exact?: boolean }[] = [
   { path: "/", title: " ", exact: true },
   { path: "/admin/knowledge", title: "知识库" },
-  { path: "/admin/stats", title: "查看平台使用情况和各 OPC 的表现数据" },
-  { path: "/admin/users", title: "查看用户列表、活跃度统计和访客转化数据" },
-  { path: "/admin", title: "OPC" },
+  { path: "/admin/stats", title: "平台使用数据" },
+  { path: "/admin/users", title: "用户统计数据" },
+  { path: "/admin/tickets", title: "AI资源整合引擎" },
+  { path: "/admin", title: "OPC智库咨询台" },
+  { path: "/pinned", title: "信息汇聚中枢" },
+  { path: "/artifacts", title: "AI交付物品库" },
 ];
 
 function getPageTitle(pathname: string): string {
