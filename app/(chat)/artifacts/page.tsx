@@ -3,16 +3,12 @@
 import { formatDistance } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
-  AlertCircle,
   ArrowLeft,
-  ClipboardCopy,
   Code2,
   FileText,
   FileType2,
   Image as ImageIcon,
   Loader2,
-  MessageSquare, // 新增：对话图标
-  RefreshCw,
   Search,
   Sheet,
   Trash2,
@@ -31,7 +27,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// --- 类型定义 ---
 type ArtifactKind = "text" | "code" | "html" | "image" | "sheet";
 
 type UserDocument = {
@@ -40,13 +35,11 @@ type UserDocument = {
   kind: ArtifactKind;
   content: string;
   createdAt: string;
-  chatId?: string; // 新增：关联的对话ID，用于跳转
 };
 
-// --- 常量定义 ---
 const KIND_META: Record<
   ArtifactKind,
-  { label: string; icon: any; color: string; bg: string }
+  { label: string; icon: typeof FileText; color: string; bg: string }
 > = {
   text: {
     label: "文本",
@@ -80,223 +73,38 @@ const KIND_META: Record<
   },
 };
 
-// --- 自定义 Hook: 防抖 ---
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useMemo(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-// --- 子组件: 制品卡片 ---
-interface ArtifactCardProps {
-  doc: UserDocument;
-  onClick: (doc: UserDocument) => void;
-}
-
-function ArtifactCard({ doc, onClick }: ArtifactCardProps) {
-  const meta = KIND_META[doc.kind];
-  const Icon = meta.icon;
-
-  return (
-    <button
-      className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-md sm:p-4"
-      onClick={() => onClick(doc)}
-      type="button"
-    >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div
-          className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-lg",
-            meta.bg
-          )}
-        >
-          <Icon className={cn("size-4", meta.color)} />
-        </div>
-        <span className="shrink-0 text-[10px] text-muted-foreground/50">
-          {formatDistance(new Date(doc.createdAt), new Date(), {
-            addSuffix: true,
-            locale: zhCN,
-          })}
-        </span>
-      </div>
-      <h3 className="line-clamp-2 text-sm font-medium text-foreground">
-        {doc.title || "无标题"}
-      </h3>
-      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-        {doc.content?.slice(0, 100) || "无内容"}
-      </p>
-    </button>
-  );
-}
-
-// --- 子组件: 预览弹窗 ---
-interface ArtifactPreviewDialogProps {
-  doc: UserDocument | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDelete: (doc: UserDocument) => void;
-  isDeleting: boolean;
-}
-
-function ArtifactPreviewDialog({
-  doc,
-  open,
-  onOpenChange,
-  onDelete,
-  isDeleting,
-}: ArtifactPreviewDialogProps) {
-  const router = useRouter(); // 在子组件中使用 router
-
-  if (!doc) return null;
-
-  const meta = KIND_META[doc.kind];
-  const Icon = meta.icon;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(doc.content);
-    toast.success("已复制到剪贴板");
-  };
-
-  // 打开对话逻辑
-  const handleOpenChat = () => {
-    if (!doc.chatId) {
-      toast.warning("无法找到来源对话");
-      return;
-    }
-    // 假设你的对话页面路由是 /chat/[chatId]
-    router.push(`/chat/${doc.chatId}`);
-    onOpenChange(false); // 关闭弹窗
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="dialog-mobile-friendly max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div
-              className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-md",
-                meta.bg
-              )}
-            >
-              <Icon className={cn("size-3.5", meta.color)} />
-            </div>
-            <span className="truncate">{doc.title || "无标题"}</span>
-          </DialogTitle>
-          <DialogDescription>
-            {`${meta.label} · ${formatDistance(new Date(doc.createdAt), new Date(), {
-              addSuffix: true,
-              locale: zhCN,
-            })}`}
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* 内容预览区：图片渲染 img，其他渲染 pre */}
-        <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-border/50 bg-muted/30 p-3 sm:p-4">
-          {doc.kind === "image" && doc.content ? (
-            <img
-              src={doc.content}
-              alt={doc.title}
-              className="mx-auto max-w-full rounded-sm object-contain"
-            />
-          ) : (
-            <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground/80">
-              {doc.content || "无内容"}
-            </pre>
-          )}
-        </div>
-
-        <DialogFooter className="gap-2 sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {/* 删除按钮 */}
-            <button
-              className="touch-target inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
-              disabled={isDeleting}
-              onClick={() => onDelete(doc)}
-              type="button"
-            >
-              {isDeleting ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="size-3.5" />
-              )}
-              删除
-            </button>
-
-            {/* 打开对话按钮 */}
-            {doc.chatId && (
-              <button
-                className="touch-target inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
-                onClick={handleOpenChat}
-                type="button"
-              >
-                <MessageSquare className="size-3.5" />
-                打开对话
-              </button>
-            )}
-
-            {/* 复制按钮 */}
-            <button
-              className="touch-target inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-              onClick={handleCopy}
-              type="button"
-            >
-              <ClipboardCopy className="size-3.5" />
-              复制
-            </button>
-          </div>
-          
-          <button
-            className="touch-target rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
-            onClick={() => onOpenChange(false)}
-            type="button"
-          >
-            关闭
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// --- 主页面组件 ---
 export default function ArtifactsPage() {
   const router = useRouter();
   const { mutate } = useSWRConfig();
-  const { data, isLoading, error } = useSWR<{ documents: UserDocument[] }>(
+  const { data, isLoading } = useSWR<{ documents: UserDocument[] }>(
     "/api/documents/list",
     fetcher
   );
 
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
   const [previewDoc, setPreviewDoc] = useState<UserDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const documents = data?.documents ?? [];
 
-  // 搜索过滤逻辑
-  const filteredDocs = useMemo(() => {
-    if (!debouncedSearch.trim()) return documents;
-    const q = debouncedSearch.trim().toLowerCase();
-    return documents.filter(
-      (d) =>
-        d.title.toLowerCase().includes(q) ||
-        d.content.toLowerCase().includes(q)
-    );
-  }, [documents, debouncedSearch]);
+  // 按类型分组
+  const grouped = useMemo(() => {
+    const map = new Map<ArtifactKind, UserDocument[]>();
+    for (const doc of documents) {
+      const bucket = map.get(doc.kind) ?? [];
+      bucket.push(doc);
+      map.set(doc.kind, bucket);
+    }
+    return map;
+  }, [documents]);
 
-  // 按类型分组逻辑
+  // 搜索过滤
+  const filteredDocs = useMemo(() => {
+    if (!search.trim()) return documents;
+    const q = search.trim().toLowerCase();
+    return documents.filter((d) => d.title.toLowerCase().includes(q));
+  }, [documents, search]);
+
   const filteredGrouped = useMemo(() => {
     const map = new Map<ArtifactKind, UserDocument[]>();
     for (const doc of filteredDocs) {
@@ -308,8 +116,6 @@ export default function ArtifactsPage() {
   }, [filteredDocs]);
 
   const handleDelete = async (doc: UserDocument) => {
-    if (!confirm("确定要删除这个制品吗？此操作无法撤销。")) return;
-
     setDeleting(true);
     try {
       const res = await fetch(`/api/documents/list?id=${doc.id}`, {
@@ -353,32 +159,11 @@ export default function ArtifactsPage() {
           <div className="flex h-full items-center justify-center">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
-        ) : error ? (
-          <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10">
-              <AlertCircle className="size-6 text-destructive" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                加载失败
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                无法获取制品列表，请检查网络连接
-              </p>
-            </div>
-            <button
-              onClick={() => mutate("/api/documents/list")}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              <RefreshCw className="size-3.5" />
-              重试
-            </button>
-          </div>
         ) : documents.length === 0 ? (
-          <div className="empty-state h-full flex flex-col items-center justify-center">
+          <div className="empty-state h-full">
             <FileText className="mb-3 size-12 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">还没有制品</p>
-            <p className="mt-1 px-6 text-center text-xs text-muted-foreground/60">
+            <p className="mt-1 px-6 text-xs text-muted-foreground/60">
               在对话中让 OPC 创建文档、代码、表格等制品，它们会自动保存在这里
             </p>
           </div>
@@ -390,7 +175,7 @@ export default function ArtifactsPage() {
               <input
                 className="search-input"
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索制品标题或内容..."
+                placeholder="搜索制品..."
                 type="text"
                 value={search}
               />
@@ -422,20 +207,53 @@ export default function ArtifactsPage() {
                       </span>
                     </div>
                     <div className="card-grid">
-                      {docs.map((doc) => (
-                        <ArtifactCard
-                          key={`${doc.id}-${doc.createdAt}`}
-                          doc={doc}
-                          onClick={setPreviewDoc}
-                        />
-                      ))}
+                      {docs.map((doc) => {
+                        const DocIcon = KIND_META[doc.kind].icon;
+                        return (
+                          <button
+                            className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-md sm:p-4"
+                            key={`${doc.id}-${doc.createdAt}`}
+                            onClick={() => setPreviewDoc(doc)}
+                            type="button"
+                          >
+                            <div className="mb-2 flex items-start justify-between gap-2">
+                              <div
+                                className={cn(
+                                  "flex size-8 shrink-0 items-center justify-center rounded-lg",
+                                  KIND_META[doc.kind].bg
+                                )}
+                              >
+                                <DocIcon
+                                  className={cn(
+                                    "size-4",
+                                    KIND_META[doc.kind].color
+                                  )}
+                                />
+                              </div>
+                              <span className="shrink-0 text-[10px] text-muted-foreground/50">
+                                {formatDistance(
+                                  new Date(doc.createdAt),
+                                  new Date(),
+                                  { addSuffix: true, locale: zhCN }
+                                )}
+                              </span>
+                            </div>
+                            <h3 className="line-clamp-2 text-sm font-medium text-foreground">
+                              {doc.title || "无标题"}
+                            </h3>
+                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                              {doc.content?.slice(0, 100) || "无内容"}
+                            </p>
+                          </button>
+                        );
+                      })}
                     </div>
                   </section>
                 );
               })}
 
             {filteredDocs.length === 0 && (
-              <div className="empty-state py-16 flex flex-col items-center justify-center">
+              <div className="empty-state py-16">
                 <Search className="mb-3 size-8 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">未找到匹配的制品</p>
               </div>
@@ -445,13 +263,73 @@ export default function ArtifactsPage() {
       </div>
 
       {/* 预览弹窗 */}
-      <ArtifactPreviewDialog
-        doc={previewDoc}
-        open={!!previewDoc}
+      <Dialog
         onOpenChange={(open) => !open && setPreviewDoc(null)}
-        onDelete={handleDelete}
-        isDeleting={deleting}
-      />
+        open={!!previewDoc}
+      >
+        <DialogContent className="dialog-mobile-friendly max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {previewDoc && (() => {
+                const Icon = KIND_META[previewDoc.kind].icon;
+                return (
+                  <div
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-md",
+                      KIND_META[previewDoc.kind].bg
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "size-3.5",
+                        KIND_META[previewDoc.kind].color
+                      )}
+                    />
+                  </div>
+                );
+              })()}
+              <span className="truncate">
+                {previewDoc?.title || "无标题"}
+              </span>
+            </DialogTitle>
+            <DialogDescription>
+              {previewDoc &&
+                `${KIND_META[previewDoc.kind].label} · ${formatDistance(
+                  new Date(previewDoc.createdAt),
+                  new Date(),
+                  { addSuffix: true, locale: zhCN }
+                )}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-border/50 bg-muted/30 p-3 sm:p-4">
+            <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground/80">
+              {previewDoc?.content || "无内容"}
+            </pre>
+          </div>
+          <DialogFooter className="gap-2">
+            <button
+              className="touch-target inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+              disabled={deleting}
+              onClick={() => previewDoc && handleDelete(previewDoc)}
+              type="button"
+            >
+              {deleting ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="size-3.5" />
+              )}
+              删除
+            </button>
+            <button
+              className="touch-target rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+              onClick={() => setPreviewDoc(null)}
+              type="button"
+            >
+              关闭
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
