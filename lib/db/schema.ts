@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-*** Begin Patch
-*** Update File: lib/db/schema.ts
-@@
--    kind: varchar("text", { enum: ["text", "code", "image", "html", "sheet"] })
--      .notNull()
--      .default("text"),
-+    kind: varchar("kind", { enum: ["text", "code", "image", "html", "sheet"] })
-+      .notNull()
-+      .default("text"),
-*** End Patch
-=======
 import { type InferSelectModel, sql } from "drizzle-orm";
 import {
   boolean,
@@ -133,6 +121,9 @@ export const document = pgTable(
     userId: uuid("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    chatId: uuid("chatId")
+      .notNull()
+      .references(() => chat.id, { onDelete: "cascade" }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.id, table.createdAt] }),
@@ -492,4 +483,4 @@ export const userKnowledge = pgTable(
 );
 
 export type UserKnowledge = InferSelectModel<typeof userKnowledge>;
->>>>>>> parent of 2818a24 (制品跳转，待修复)
+

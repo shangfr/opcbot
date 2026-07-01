@@ -12,6 +12,7 @@ import { ChatbotError } from "@/lib/errors";
 const documentSchema = z.object({
   content: z.string(),
   title: z.string(),
+  chatId: z.string(),
   kind: z.enum(["text", "code", "image", "sheet"]),
   isManualEdit: z.boolean().optional(),
 });
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
 
   let content: string;
   let title: string;
+  let chatId: string;
   let kind: ArtifactKind;
   let isManualEdit: boolean | undefined;
 
@@ -74,8 +76,10 @@ export async function POST(request: Request) {
     const parsed = documentSchema.parse(await request.json());
     content = parsed.content;
     title = parsed.title;
+    chatId = parsed.chatId;
     kind = parsed.kind;
     isManualEdit = parsed.isManualEdit;
+
   } catch {
     return new ChatbotError(
       "bad_request:api",
@@ -103,6 +107,7 @@ export async function POST(request: Request) {
     content,
     title,
     kind,
+    chatId,
     userId: session.user.id,
   });
 

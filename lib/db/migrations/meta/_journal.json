@@ -43,6 +43,13 @@
       "when": 1782801519895,
       "tag": "0005_cuddly_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782869846210,
+      "tag": "0006_loving_gargoyle",
+      "breakpoints": true
     }
   ]
 }
