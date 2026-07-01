@@ -135,15 +135,21 @@ export async function POST(request: Request) {
       });
 
       // 2. 拉取历史记录并拼装成标准大模型对话数组格式
-      const modelMessages: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
+      // 注意：这里不再直接构建 modelMessages，而是先构建 uiMessages，以便后续进行知识库检索
+      const historyMessagesForContext: Array<{ role: "user" | "assistant" | "system"; content: string; chatTitle?: string }> = [];
+      
       for (const targetChatId of targetChatIds) {
         const targetChat = await getChatById({ id: targetChatId });
         if (targetChat && targetChat.userId === session.user.id) {
           const msgs = await getMessagesByChatId({ id: targetChatId });
-          modelMessages.push({
+          
+          // 添加对话标题作为分隔符，帮助大模型区分不同上下文
+          historyMessagesForContext.push({
             role: "user",
             content: `--- 以下是对话《${targetChat.title}》的记录 ---`,
+            chatTitle: targetChat.title,
           });
+
           for (const m of msgs) {
             const text = Array.isArray(m.parts)
               ? m.parts
@@ -152,7 +158,7 @@ export async function POST(request: Request) {
                   .join("")
               : "";
             if (text) {
-              modelMessages.push({
+              historyMessagesForContext.push({
                 role: m.role as "user" | "assistant" | "system",
                 content: text,
               });
@@ -162,21 +168,74 @@ export async function POST(request: Request) {
       }
 
       // 3. 在末尾追加总结指令
-      modelMessages.push({
+      historyMessagesForContext.push({
         role: "user",
-        content: "请基于以上多个对话的内容，生成一份综合分析报告。要求：1. 提取核心主题；2. 归纳关键信息；3. 分析共同点与差异；4. 给出后续行动建议。",
+        content: "请基于以上多个对话的内容，生成一份综合分析报告。**重要：请务必调用 createDocument 工具生成一个文档来展示这份报告。** 要求：1. 提取核心主题；2. 归纳关键信息；3. 分析共同点与差异；4. 给出后续行动建议。",
       });
 
-      // 4. 组装 System Prompt
+      // ==========================================
+      // 🔥 修改点：引入 Agent 能力逻辑 (参考正常聊天流程)
+      // ==========================================
+      
+      // 4. 初始化 System Prompt
+      // 先获取基础 Prompt，此时不确定是否会添加知识库
       let systemMessage = systemPrompt({
         requestHints: { longitude: undefined, latitude: undefined, city: undefined, country: undefined },
-        supportsTools: false,
+        supportsTools: true, // 🔥 汇总任务也需要支持工具
       });
-      if (agentRecord?.isActive) {
-        systemMessage = `${agentRecord.systemPrompt}\n\n${systemMessage}`;
+
+      let knowledgeContext = "";
+
+      // 5. 知识库检索逻辑 (RAG)
+      // 如果启用了 Agent 且配置了知识库，尝试基于汇总上下文进行检索
+      if (agentRecord?.isActive && agentRecord?.knowledgeId) {
+        try {
+          // 构建检索查询：使用历史消息的最后一条（即包含总结指令的那条），或者摘要所有内容
+          // 这里使用最后一条指令作为查询最为精准
+          const lastMsg = historyMessagesForContext[historyMessagesForContext.length - 1];
+          const queryText = lastMsg?.content ?? "信息汇总分析";
+
+          const retrieveResult = await retrieveKnowledge({
+            query: queryText.slice(0, 1000),
+            knowledge_ids: [agentRecord.knowledgeId],
+            top_k: 5,
+            recall_method: "mixed",
+          });
+
+          if (retrieveResult.code === 200 && retrieveResult.data && retrieveResult.data.length > 0) {
+            const chunks = retrieveResult.data.map((r) => r.text).join("\n\n");
+            knowledgeContext = `\n\n## 知识库参考内容\n以下是从知识库中检索到的相关信息，请优先基于这些内容回答用户问题。\n\n${chunks}`;
+          }
+        } catch (e) {
+          console.warn("[chat] 知识库检索失败:", e instanceof Error ? e.message : e);
+        }
       }
 
-      // 5. 保存用户的触发消息到数据库
+      // 6. 组装最终的 System Prompt
+      // 优先级：Agent Prompt > 知识库内容 > 基础 System Prompt
+      if (agentRecord?.isActive) {
+        systemMessage = `${agentRecord.systemPrompt}${knowledgeContext}\n\n${systemMessage}`;
+      } else if (!agentId) {
+        // 如果没有指定 Agent，使用默认站点配置（如果需要）
+        const config = await getSiteConfig();
+        if (config?.defaultSystemPrompt) {
+          const infrastructure = infrastructurePrompt({
+            requestHints: { longitude: undefined, latitude: undefined, city: undefined, country: undefined },
+            supportsTools: true,
+          });
+          systemMessage = `${config.defaultSystemPrompt}\n\n${infrastructure}`;
+        }
+      }
+
+      // 7. 将上下文消息转换为模型可用的格式
+      // 正常聊天中使用了 convertToModelMessages，这里我们手动构建标准数组
+      // 也可以尝试复用 convertToModelMessages 如果格式兼容，但在汇总场景下手动构建更可控
+      const modelMessages = historyMessagesForContext.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      // 8. 保存用户的触发消息到数据库
       if (message?.role === "user") {
         await saveMessages({
           messages: [
@@ -192,13 +251,35 @@ export async function POST(request: Request) {
         });
       }
 
-      // 6. 流式调用大模型
+      // 9. 流式调用大模型
       const stream = createUIMessageStream({
         execute: async ({ writer: dataStream }) => {
           const result = await streamText({
             model: getLanguageModel(chatModel),
             system: systemMessage,
-            messages: modelMessages, // 🚨 完美的标准对话数组！
+            messages: modelMessages,
+            
+            // 🔥 工具配置：不仅要 createDocument，还应支持 Agent 可能配置的其他工具
+            // 这里我们保留完整的工具定义，以获得最大能力
+            experimental_activeTools: [
+              "getWeather", 
+              "createDocument", 
+              "editDocument", 
+              "updateDocument", 
+              "requestSuggestions"
+            ],
+            
+            // 🔥 注入完整的工具定义
+            tools: {
+              getWeather,
+              createDocument: createDocument({ session, dataStream, modelId: chatModel, chatId: id }),
+              editDocument: editDocument({ dataStream, session }),
+              updateDocument: updateDocument({ session, dataStream, modelId: chatModel }),
+              requestSuggestions: requestSuggestions({ session, dataStream, modelId: chatModel }),
+            },
+            
+            // 🔥 重试逻辑（可选，参考正常逻辑）
+            // ...(其他配置)
           });
 
           dataStream.merge(result.toUIMessageStream());
@@ -223,6 +304,7 @@ export async function POST(request: Request) {
 
       return createUIMessageStreamResponse({ stream });
     }
+
     // ==========================================
     // 汇总分支结束，以下是原有正常聊天逻辑
     // ==========================================
@@ -362,7 +444,7 @@ export async function POST(request: Request) {
             },
             tools: {
               getWeather,
-              createDocument: createDocument({ session, dataStream, modelId: chatModel, chatId: id }),
+              createDocument: createDocument({ session, dataStream, modelId: chatModel, chatId: id}),
               editDocument: editDocument({ dataStream, session}),
               updateDocument: updateDocument({ session, dataStream, modelId: chatModel}),
               requestSuggestions: requestSuggestions({ session, dataStream, modelId: chatModel}),
