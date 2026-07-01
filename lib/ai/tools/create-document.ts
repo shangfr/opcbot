@@ -12,12 +12,14 @@ type CreateDocumentProps = {
   session: Session;
   dataStream: UIMessageStreamWriter<ChatMessage>;
   modelId: string;
+  chatId: string;
 };
 
 export const createDocument = ({
   session,
   dataStream,
   modelId,
+  chatId,
 }: CreateDocumentProps) =>
   tool({
     description:
@@ -72,6 +74,7 @@ export const createDocument = ({
         dataStream,
         session,
         modelId,
+        chatId,
       });
 
       dataStream.write({ type: "data-finish", data: null, transient: true });
@@ -80,6 +83,7 @@ export const createDocument = ({
         id,
         title,
         kind,
+        chatId,
         content:
           kind === "code"
             ? "A script was created and is now visible to the user."
