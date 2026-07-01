@@ -259,7 +259,24 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             { revalidate: false }
           );
         }
+        // ==========================================
+        // 🔥 修复核心：动态判断使用哪个 Agent ID
+        // ==========================================
+        
+        let finalAgentIdToSend = agentIdRef.current;
 
+        // 如果当前有待发送的汇总任务，尝试从中提取 agentId
+        if (summarizeTaskRef.current) {
+          try {
+            const taskPayload = JSON.parse(summarizeTaskRef.current);
+            if (taskPayload.agentId) {
+              finalAgentIdToSend = taskPayload.agentId;
+              console.log("[Hook] Overriding Agent ID for Summarize Task:", finalAgentIdToSend);
+            }
+          } catch (e) {
+            console.warn("[Hook] Failed to parse summarizeTask for agentId");
+          }
+        }
         return {
           body: {
             id: request.id,
@@ -270,7 +287,8 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             selectedVisibilityType: visibility,
             thinkingEnabled: thinkingEnabledRef.current,
             isNewChat: isNewChatRef.current,
-            ...(agentIdRef.current ? { agentId: agentIdRef.current } : {}),
+            // ✅ 使用计算后的 finalAgentIdToSend
+            ...(finalAgentIdToSend ? { agentId: finalAgentIdToSend } : {}),
             // 🚨 注入 summarizeTask 标识
             ...(summarizeTaskRef.current
               ? { summarizeTask: summarizeTaskRef.current }
@@ -348,54 +366,66 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     }
   }, [effectiveData, isNewChat]);
 
-  const hasAppendedQueryRef = useRef(false);
-  useEffect(() => {
-    if (hasAppendedQueryRef.current) return;
+// 1. 记录上一次成功处理的 ChatId，而不是简单的 true/false
+const processedChatIdRef = useRef<string | null>(null);
 
-    // 1. 优先检查是否是"信息汇总"跳转过来的
-    const storedSummaryTask = sessionStorage.getItem(`pending-summarize-task-${chatId}`);
-    if (storedSummaryTask) {
-      hasAppendedQueryRef.current = true;
-      
-      // 🚨 记录标识到 Ref，让 transport 拼接到 body
-      summarizeTaskRef.current = storedSummaryTask;
-      
-      sessionStorage.removeItem(`pending-summarize-task-${chatId}`);
+useEffect(() => {
+  // ✅ 优化判断：
+  // 如果当前 chatId 已经被处理过了，且 sessionStorage 也没有了，那就跳过
+  // 这样既防止了重复发送，又允许同一个 chatId 刷新时仍然尝试（如果你需要的话）
+  // 最重要的是：如果 chatId 变了，processedChatIdRef.current !== chatId，逻辑就会重新运行
+  if (processedChatIdRef.current === chatId) {
+    return; 
+  }
+
+  // 1. 检查 sessionStorage
+  const storedSummaryTask = sessionStorage.getItem(`pending-summarize-task-${chatId}`);
+
+  if (storedSummaryTask) {
+    // 2. 标记这个 chatId 已经处理过了
+    processedChatIdRef.current = chatId;
+
+    // ... (原有的逻辑保持不变)
+    summarizeTaskRef.current = storedSummaryTask;
+    sessionStorage.removeItem(`pending-summarize-task-${chatId}`);
+    window.history.replaceState(
+      {},
+      "",
+      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
+    );
+
+    sendMessage({
+      role: "user" as const,
+      parts: [
+        {
+          type: "text",
+          text: "请帮我汇总并分析以上选中的对话记录",
+        },
+      ],
+    });
+
+    setTimeout(() => {
+      summarizeTaskRef.current = null;
+    }, 1000);
+  } else {
+    // ✅ 也要处理兼容旧逻辑
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get("query");
+    if (query) {
+      processedChatIdRef.current = chatId;
       window.history.replaceState(
         {},
         "",
         `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
       );
-
-      // 发送一条普通的触发消息，后端会根据 body 里的 summarizeTask 拦截处理
       sendMessage({
         role: "user" as const,
-        parts: [{ type: "text", text: "请帮我汇总并分析以上选中的对话记录" }],
+        parts: [{ type: "text", text: query }],
       });
-
-      // 发送后清理 Ref，避免后续正常聊天误触
-      setTimeout(() => {
-        summarizeTaskRef.current = null;
-      }, 1000);
-      
-    } else {
-      // 2. 兼容原有的 URL query 参数模式
-      const params = new URLSearchParams(window.location.search);
-      const query = params.get("query");
-      if (query) {
-        hasAppendedQueryRef.current = true;
-        window.history.replaceState(
-          {},
-          "",
-          `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
-        );
-        sendMessage({
-          role: "user" as const,
-          parts: [{ type: "text", text: query }],
-        });
-      }
     }
-  }, [sendMessage, chatId]);
+  }
+}, [sendMessage, chatId]); // ✅ 依赖项保持不变，确保 chatId 变化时触发
+
 
   useAutoResume({
     autoResume: isNewChat ? false : !!effectiveData,

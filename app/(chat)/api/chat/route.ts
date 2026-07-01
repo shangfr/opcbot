@@ -324,7 +324,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title: "New chat",
         visibility: selectedVisibilityType,
-        agentId,
+        agentId: agentId,
         agentName: agentRecord?.name ?? null,
       });
       titlePromise = generateTitleFromUserMessage({ message });
