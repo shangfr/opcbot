@@ -370,7 +370,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       // 发送一条普通的触发消息，后端会根据 body 里的 summarizeTask 拦截处理
       sendMessage({
         role: "user" as const,
-        parts: [{ type: "text", text: "请帮我汇总并分析以上选中的对话记录，并生成报告。" }],
+        parts: [{ type: "text", text: "请帮我汇总并分析以上选中的对话记录" }],
       });
 
       // 发送后清理 Ref，避免后续正常聊天误触

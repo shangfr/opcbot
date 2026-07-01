@@ -57,6 +57,7 @@ export const editDocument = ({ session, dataStream }: EditDocumentProps) =>
         kind: document.kind,
         content: updated,
         userId: document.userId,
+        chatId: document.chatId,
       });
 
       dataStream.write({

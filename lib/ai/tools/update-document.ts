@@ -60,6 +60,7 @@ export const updateDocument = ({
         dataStream,
         session,
         modelId,
+        chatId: document.chatId,
       });
 
       dataStream.write({ type: "data-finish", data: null, transient: true });
