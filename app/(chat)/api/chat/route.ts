@@ -140,7 +140,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title: "信息汇总分析",
         visibility: selectedVisibilityType,
-        agentId,
+        agentId: agentId,
         agentName: agentRecord?.name ?? null,
       });
 
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
       // 3. 在末尾追加总结指令
       historyMessagesForContext.push({
         role: "user",
-        content: "请基于以上多个对话的内容，生成一份综合分析报告。**重要：请务必调用 createDocument 工具生成一个文档来展示这份报告。** 要求：1. 提取核心主题；2. 归纳关键信息；3. 分析共同点与差异；4. 给出后续行动建议。",
+        content: "请基于以上多个对话的内容，融合你擅长的领域知识，生成一份综合分析报告。**重要：请务必调用 createDocument 工具生成一个文档来展示这份报告。** 要求：1. 提取核心主题；2. 归纳关键信息；3. 分析共同点与差异；4. 给出后续行动建议。",
       });
 
       // ==========================================

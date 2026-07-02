@@ -137,7 +137,9 @@ export default function PinnedPage() {
 
       // 3. 存入 sessionStorage，由 use-active-chat.tsx 消费
       sessionStorage.setItem(`pending-summarize-task-${newChatId}`, payload);
-
+      // 🚨 新增：和普通聊天一样，缓存 agentId 给聊天页面组件接管
+      sessionStorage.setItem(`pending-chat-${newChatId}`, agent.id);
+      
       // 4. 跳转新页面，触发 useChat 自动发送
       setShowAgentPicker(false);
       router.push(`/chat/${newChatId}`);
