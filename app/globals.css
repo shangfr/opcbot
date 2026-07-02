@@ -44,6 +44,13 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ===== 移动端图标尺寸 spacing token（Tailwind v4 @theme 方式）===== */
+  /* 用法：size-icon (20px) / size-icon-md (24px) / size-icon-mobile (26px) / size-icon-big (28px) */
+  --spacing-icon: 1.25rem;
+  --spacing-icon-md: 1.5rem;
+  --spacing-icon-mobile: 1.625rem;
+  --spacing-icon-big: 1.75rem;
 }
 
 :root {
@@ -696,25 +703,52 @@ select:focus-visible,
   }
 }
 
-/* ===== 移动端专用优化 ===== */
+/* ===== 全局移动端适配重置（根治 90% 移动端疑难杂症）===== */
+
+/* 禁止微信/QQ/浏览器内嵌页自动调整字体大小（全局生效，非仅移动端） */
+html,
+body {
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+  /* 优化移动端触摸滚动性能 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 全局禁止点击高亮 + 消除 300ms 点击延迟 */
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* 关键：所有 svg 图标禁止被 flex 挤压缩小（图标缩小头号元凶） */
+svg {
+  flex-shrink: 0;
+}
+
+/* 防止安卓手机页面向下拉动留白 */
+body {
+  overscroll-behavior: none;
+}
+
+/* 隐形扩大点击区域，不用改 dom 结构 */
+.hit-expand {
+  position: relative;
+}
+.hit-expand::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+
+/* 一行文字省略 */
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== 移动端专用优化（< 640px）===== */
 @media (max-width: 640px) {
-  /* 防止移动端文字过小 */
-  html {
-    -webkit-text-size-adjust: 100%;
-  }
-
-  /* 优化移动端触摸滚动 */
-  .overflow-y-auto,
-  .overflow-auto {
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* 防止移动端点击高亮 */
-  button,
-  a {
-    -webkit-tap-highlight-color: transparent;
-  }
-
   /* 移动端输入框字体不小于 16px，防止 iOS 自动缩放 */
   input,
   textarea,
@@ -728,13 +762,26 @@ select:focus-visible,
   }
 }
 
-/* ===== 安全区域适配（刘海屏、底部横条）===== */
+/* ===== 安全区域适配（刘海屏、底部横条、异形屏）===== */
 @supports (padding: env(safe-area-inset-bottom)) {
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* 文档规范命名：pb-safe / mb-safe / pt-safe */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
     padding-top: env(safe-area-inset-top);
   }
 }

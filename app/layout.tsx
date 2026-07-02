@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { FlexibleProvider } from "@/components/flexible-provider";
 
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
@@ -16,9 +17,13 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  minimumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 const LIGHT_THEME_COLOR = "hsl(0 0% 100%)";
@@ -57,6 +62,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <FlexibleProvider />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
