@@ -111,6 +111,21 @@ export function AgentCards() {
       <div className="page-container">
         {/* ═══ Tab 切换栏 ═══ */}
         <div className="mb-6 flex gap-4 border-b border-border/40">
+
+          <button
+            className={cn(
+              "relative pb-2 text-sm font-medium transition-colors",
+              activeTab === "discover" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => setActiveTab("discover")}
+            type="button"
+          >
+            发现 OPC
+            {activeTab === "discover" && (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
+            )}
+          </button>
+
           <button
             className={cn(
               "relative pb-2 text-sm font-medium transition-colors",
@@ -124,19 +139,6 @@ export function AgentCards() {
               {myAgents.length}
             </span>
             {activeTab === "mine" && (
-              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
-            )}
-          </button>
-          <button
-            className={cn(
-              "relative pb-2 text-sm font-medium transition-colors",
-              activeTab === "discover" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => setActiveTab("discover")}
-            type="button"
-          >
-            发现 OPC
-            {activeTab === "discover" && (
               <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
             )}
           </button>
@@ -161,7 +163,7 @@ export function AgentCards() {
 
             {/* 分类筛选 */}
             {filtered === null && categoryFilters.length > 0 && (
-              <div className="mb-6 flex flex-wrap items-center gap-2">
+              <div className="mb-6 flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <button
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all sm:px-3.5",
