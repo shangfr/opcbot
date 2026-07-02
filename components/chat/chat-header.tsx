@@ -118,16 +118,6 @@ function PureChatHeader({
               <p className="mb-2 text-xs font-semibold text-foreground">
                 切换到其他 OPC
               </p>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
-                <input
-                  className="w-full rounded-lg border border-border/50 bg-background py-2 pl-8 pr-3 text-sm placeholder:text-muted-foreground/40 focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10"
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="搜索 OPC..."
-                  type="text"
-                  value={search}
-                />
-              </div>
             </div>
             <div className="max-h-[60dvh] overflow-y-auto p-1.5">
               {filteredAgents.length === 0 ? (

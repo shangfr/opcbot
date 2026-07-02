@@ -21,10 +21,15 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
-  cacheComponents: true,
-  devIndicators: false,
-  poweredByHeader: false,
-  reactCompiler: true,
+  // 🚨 暂时注释掉这些，测试动画是否恢复
+  // cacheComponents: true,
+  // experimental: {
+  //   prefetchInlining: true,
+  //   cachedNavigations: true,
+  //   appNewScrollHandler: true,
+  //   inlineCss: true,
+  //   turbopackFileSystemCacheForDev: true,
+  // },
   logging: {
     fetches: {
       fullUrl: false,
@@ -42,17 +47,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    prefetchInlining: true,
-    cachedNavigations: true,
-    appNewScrollHandler: true,
-    inlineCss: true,
-    turbopackFileSystemCacheForDev: true,
-  },
+  allowedDevOrigins: ['10.137.109.204'],
 };
 
 export default nextConfig;
-// next.config.js
-module.exports = {
-  allowedDevOrigins: ['10.137.109.204'],
-}

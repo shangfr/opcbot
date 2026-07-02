@@ -120,7 +120,7 @@ function PureMultimodalInput({
   const { width } = useWindowSize();
   const hasAutoFocused = useRef(false);
   useEffect(() => {
-    if (!hasAutoFocused.current && width) {
+    if (!hasAutoFocused.current && width > 768) {
       const timer = setTimeout(() => {
         textareaRef.current?.focus();
         hasAutoFocused.current = true;
@@ -807,11 +807,13 @@ function PureModelSelectorCompact({
                         }
                         setOpen(false);
                         setTimeout(() => {
-                          document
-                            .querySelector<HTMLTextAreaElement>(
-                              "[data-testid='multimodal-input']"
-                            )
-                            ?.focus();
+                          if (window.innerWidth > 768) {
+                            document
+                              .querySelector<HTMLTextAreaElement>(
+                                "[data-testid='multimodal-input']"
+                              )
+                              ?.focus();
+                          }
                         }, 50);
                       }}
                       value={model.id}

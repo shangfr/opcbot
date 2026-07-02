@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"
   ),
-  title: "OPC Bot",
-  description: "OPC Bot - AI-powered one-person company assistant.",
+  title: "OPC",
+  description: "OPC - AI-powered one-person company assistant.",
   icons: {
     icon: "/icon.png",
   },
