@@ -16,6 +16,14 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // 客户端邮箱格式校验，避免无效请求
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("请输入有效的邮箱地址");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -34,8 +42,8 @@ export default function ForgotPasswordPage() {
 
       setSent(true);
 
-      // 开发模式下显示重置链接
-      if (data.resetLink) {
+      // 仅在开发模式下显示重置链接，避免生产环境泄露
+      if (data.resetLink && process.env.NODE_ENV === "development") {
         console.log("重置链接:", data.resetLink);
       }
     } catch {

@@ -18,7 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWR, { useSWRConfig } from "swr";
 import { cn, fetcher } from "@/lib/utils";
@@ -46,7 +46,12 @@ type UserDocument = {
 // --- 常量定义 ---
 const KIND_META: Record<
   ArtifactKind,
-  { label: string; icon: any; color: string; bg: string }
+  {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    bg: string;
+  }
 > = {
   text: {
     label: "文本",
@@ -84,7 +89,7 @@ const KIND_META: Record<
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
-  useMemo(() => {
+  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
@@ -162,9 +167,13 @@ function ArtifactPreviewDialog({
   const meta = KIND_META[doc.kind];
   const Icon = meta.icon;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(doc.content);
-    toast.success("已复制到剪贴板");
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(doc.content);
+      toast.success("已复制到剪贴板");
+    } catch {
+      toast.error("复制失败，请手动选择文本复制");
+    }
   };
 
   // 打开对话逻辑

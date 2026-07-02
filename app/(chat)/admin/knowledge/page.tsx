@@ -138,7 +138,11 @@ export default function KnowledgePage() {
     fetchKnowledgeBases();
   }, [fetchKnowledgeBases]);
 
-  // ── Fetch documents ──
+  // ── Fetch documents & refresh KB stats in a single request ──
+  // ZhiPu's list & detail APIs return stale document_size/word_num,
+  // so we compute real stats from the document list instead.
+  // 优化：原先 fetchDocuments 与 refreshKbStats 各自请求同一接口，
+  // 现合并为一次请求，同时更新文档列表与知识库统计数据。
 
   const fetchDocuments = useCallback(async (kbId: string) => {
     setDocsLoading(true);
@@ -148,7 +152,31 @@ export default function KnowledgePage() {
       );
       if (res.ok) {
         const data = await res.json();
-        setDocuments(data?.list ?? []);
+        const docs: DocumentItem[] = data?.list ?? [];
+        // 更新文档列表
+        setDocuments(docs);
+        // 同时更新知识库统计数据（文档数 & 字数）
+        const computedSize = docs.length;
+        const computedWordNum = docs.reduce((sum, d) => sum + d.word_num, 0);
+        setKnowledgeBases((prev) =>
+          prev.map((kb) =>
+            kb.id === kbId
+              ? {
+                  ...kb,
+                  document_size: computedSize,
+                  word_num: computedWordNum,
+                }
+              : kb,
+          ),
+        );
+        setSelectedKb((prev) => {
+          if (!prev || prev.id !== kbId) return prev;
+          return {
+            ...prev,
+            document_size: computedSize,
+            word_num: computedWordNum,
+          };
+        });
       }
     } catch {
       toast.error("加载文档列表失败");
@@ -157,59 +185,11 @@ export default function KnowledgePage() {
     }
   }, []);
 
-  // ── Refresh KB stats from document list (real-time) ──
-  // ZhiPu's list & detail APIs return stale document_size/word_num,
-  // so we compute real stats from the document list instead.
-
-  const refreshKbStats = useCallback(
-    async (kbId: string) => {
-      try {
-        const res = await fetch(
-          `/api/knowledge/documents?knowledgeId=${kbId}`,
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const docs: DocumentItem[] = data?.list ?? [];
-          setKnowledgeBases((prev) =>
-            prev.map((kb) =>
-              kb.id === kbId
-                ? {
-                    ...kb,
-                    document_size: docs.length,
-                    word_num: docs.reduce(
-                      (sum, d) => sum + d.word_num,
-                      0,
-                    ),
-                  }
-                : kb,
-            ),
-          );
-          // also update selectedKb if it matches
-          setSelectedKb((prev) => {
-            if (!prev || prev.id !== kbId) return prev;
-            return {
-              ...prev,
-              document_size: docs.length,
-              word_num: docs.reduce(
-                (sum, d) => sum + d.word_num,
-                0,
-              ),
-            };
-          });
-        }
-      } catch {
-        // non-fatal
-      }
-    },
-    [],
-  );
-
   useEffect(() => {
     if (selectedKb) {
       fetchDocuments(selectedKb.id);
-      refreshKbStats(selectedKb.id);
     }
-  }, [selectedKb?.id, fetchDocuments, refreshKbStats]);
+  }, [selectedKb?.id, fetchDocuments]);
 
   // ── Create KB ──
 
@@ -289,7 +269,6 @@ export default function KnowledgePage() {
           toast.error(`${failCount} 个文件上传失败`);
         }
         await fetchDocuments(selectedKb.id);
-        await refreshKbStats(selectedKb.id); // refresh stats
       } else {
         toast.error("上传失败");
       }
@@ -314,7 +293,6 @@ export default function KnowledgePage() {
         toast.success(`已删除「${name}」`);
         if (selectedKb) {
           await fetchDocuments(selectedKb.id);
-          await refreshKbStats(selectedKb.id);
         }
       } else {
         toast.error("删除失败");

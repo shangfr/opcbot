@@ -1,10 +1,11 @@
 "use client";
 
 import { ArrowLeft, Bot, MessageSquare, ThumbsUp, Users } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { fetcher } from "@/lib/utils";
 
 interface DashboardStats {
   overview: {
@@ -106,19 +107,14 @@ function PeriodCard({
 
 export default function StatsPage() {
   const router = useRouter();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch("/api/stats")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setStats(data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: stats, isLoading: loading } = useSWR<DashboardStats>(
+    "/api/stats",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
+    },
+  );
 
   const { overview, periods, agentStats = [] } = stats ?? {};
   const p = periods ?? {
@@ -136,7 +132,7 @@ export default function StatsPage() {
     <div className="page-container">
       {/* Header */}
 
-      {loading && !stats ? (
+      {loading ? (
         <div className="py-12 text-center text-sm text-muted-foreground">
           加载数据中...
         </div>

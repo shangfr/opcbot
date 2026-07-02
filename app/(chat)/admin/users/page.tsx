@@ -22,13 +22,15 @@ import {
   UserX,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import useSWR, { useSWRConfig } from "swr";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { fetcher } from "@/lib/utils";
 
 interface UserStats {
   id: string;
@@ -121,8 +123,15 @@ function formatTimeAgo(dateStr: string | null): string {
 
 export default function UsersPage() {
   const router = useRouter();
-  const [data, setData] = useState<UserManagementData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { mutate } = useSWRConfig();
+  const { data, isLoading: loading } = useSWR<UserManagementData>(
+    "/api/users",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
+    },
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteGuestsDialog, setShowDeleteGuestsDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -137,11 +146,8 @@ export default function UsersPage() {
       if (!res.ok) throw new Error("Failed to delete guest users");
       const result = await res.json();
       toast.success(`成功删除 ${result.deletedCount} 个访客用户`);
-      // Refresh data
-      const refreshRes = await fetch("/api/users");
-      if (refreshRes.ok) {
-        setData(await refreshRes.json());
-      }
+      // Refresh data via SWR cache invalidation
+      await mutate("/api/users");
     } catch {
       toast.error("删除访客用户失败，请重试");
     } finally {
@@ -162,11 +168,8 @@ export default function UsersPage() {
         throw new Error(error.message || "更新角色失败");
       }
       toast.success("角色更新成功");
-      // Refresh data
-      const refreshRes = await fetch("/api/users");
-      if (refreshRes.ok) {
-        setData(await refreshRes.json());
-      }
+      // Refresh data via SWR cache invalidation
+      await mutate("/api/users");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "更新角色失败");
     } finally {
@@ -174,17 +177,6 @@ export default function UsersPage() {
       setEditingRole(null);
     }
   };
-
-  useEffect(() => {
-    setLoading(true);
-    fetch("/api/users")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((result) => {
-        if (result) setData(result);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
 
   const { users = [], conversion, feedback } = data ?? {};
 
@@ -213,7 +205,7 @@ export default function UsersPage() {
       {/* Header */}
 
 
-      {loading && !data ? (
+      {loading ? (
         <div className="py-12 text-center text-sm text-muted-foreground">
           加载数据中...
         </div>
