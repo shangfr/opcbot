@@ -257,7 +257,7 @@ export function TicketManager() {
           <StatCard
             className="text-slate-600 dark:text-slate-300"
             icon={<Loader2 className="size-4" />}
-            label="待匹配"
+            label={STATUS_LABELS.pending}
             value={stats.pending}
           />
           <StatCard

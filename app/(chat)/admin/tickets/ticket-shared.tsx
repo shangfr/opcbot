@@ -21,34 +21,30 @@ import {
   getAvatarChar,
 } from "@/lib/agent-groups";
 import type { Ticket, TicketCategory } from "@/lib/db/schema";
+import {
+  type TicketPriority,
+  type TicketStatus,
+  PRIORITY_LABELS,
+  STATUS_LABELS,
+} from "@/lib/ticket-status-machine";
 import { cn, fetcher } from "@/lib/utils";
 
 /* ================================================================
  * 优先级 & 状态样式映射 —— 工单系统优化项
+ *
+ * 注意：TicketPriority / TicketStatus 类型与 PRIORITY_LABELS /
+ * STATUS_LABELS 标签统一从 @/lib/ticket-status-machine 复用，
+ * 避免与状态机定义重复导致标签不一致（如 pending "待处理" vs "待匹配"）。
  * ================================================================ */
 
-export type TicketPriority = "low" | "medium" | "high" | "urgent";
-export type TicketStatus = "pending" | "in_progress" | "completed" | "closed";
-
-export const PRIORITY_LABELS: Record<TicketPriority, string> = {
-  low: "低",
-  medium: "中",
-  high: "高",
-  urgent: "紧急",
-};
+// 重新导出，便于现有引用保持兼容
+export { type TicketPriority, type TicketStatus, PRIORITY_LABELS, STATUS_LABELS };
 
 export const PRIORITY_STYLES: Record<TicketPriority, string> = {
   low: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
   medium: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   high: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
   urgent: "bg-red-500/10 text-red-600 dark:text-red-400",
-};
-
-export const STATUS_LABELS: Record<TicketStatus, string> = {
-  pending: "待匹配",
-  in_progress: "进行中",
-  completed: "已完成",
-  closed: "已关闭",
 };
 
 export const STATUS_STYLES: Record<TicketStatus, string> = {

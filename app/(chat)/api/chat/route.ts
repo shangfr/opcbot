@@ -122,7 +122,17 @@ export async function POST(request: Request) {
     // 🚨 核心分支：如果是置顶对话汇总任务
     // ==========================================
     if (summarizeTask) {
-      const { chatIds: targetChatIds } = JSON.parse(summarizeTask);
+      // 解析汇总任务参数，防止恶意输入导致 500
+      let targetChatIds: string[];
+      try {
+        const parsed = JSON.parse(summarizeTask);
+        if (!parsed || !Array.isArray(parsed.chatIds)) {
+          return new ChatbotError("bad_request:chat", "汇总任务参数格式不正确").toResponse();
+        }
+        targetChatIds = parsed.chatIds;
+      } catch {
+        return new ChatbotError("bad_request:chat", "汇总任务参数格式不正确").toResponse();
+      }
 
       // 1. 创建新对话记录
       await saveChat({
@@ -251,36 +261,39 @@ export async function POST(request: Request) {
         });
       }
 
-      // 9. 流式调用大模型
+      // 9. 流式调用大模型（与正常分支一致，使用 withRetry 增强健壮性）
       const stream = createUIMessageStream({
         execute: async ({ writer: dataStream }) => {
-          const result = await streamText({
-            model: getLanguageModel(chatModel),
-            system: systemMessage,
-            messages: modelMessages,
-            
-            // 🔥 工具配置：不仅要 createDocument，还应支持 Agent 可能配置的其他工具
-            // 这里我们保留完整的工具定义，以获得最大能力
-            experimental_activeTools: [
-              "getWeather", 
-              "createDocument", 
-              "editDocument", 
-              "updateDocument", 
-              "requestSuggestions"
-            ],
-            
-            // 🔥 注入完整的工具定义
-            tools: {
-              getWeather,
-              createDocument: createDocument({ session, dataStream, modelId: chatModel, chatId: id }),
-              editDocument: editDocument({ dataStream, session }),
-              updateDocument: updateDocument({ session, dataStream, modelId: chatModel }),
-              requestSuggestions: requestSuggestions({ session, dataStream, modelId: chatModel }),
-            },
-            
-            // 🔥 重试逻辑（可选，参考正常逻辑）
-            // ...(其他配置)
-          });
+          const result = await withRetry(
+            () => streamText({
+              model: getLanguageModel(chatModel),
+              system: systemMessage,
+              messages: modelMessages,
+
+              // 🔥 工具配置：不仅要 createDocument，还应支持 Agent 可能配置的其他工具
+              // 这里我们保留完整的工具定义，以获得最大能力
+              experimental_activeTools: [
+                "getWeather",
+                "createDocument",
+                "editDocument",
+                "updateDocument",
+                "requestSuggestions"
+              ],
+
+              // 🔥 注入完整的工具定义
+              tools: {
+                getWeather,
+                createDocument: createDocument({ session, dataStream, modelId: chatModel, chatId: id }),
+                editDocument: editDocument({ dataStream, session }),
+                updateDocument: updateDocument({ session, dataStream, modelId: chatModel }),
+                requestSuggestions: requestSuggestions({ session, dataStream, modelId: chatModel }),
+              },
+            }),
+            2,
+            (attempt, error, delayMs) => {
+              console.warn(`[chat:summarize] streamText retry ${attempt}:`, error instanceof Error ? error.message : error);
+            }
+          );
 
           dataStream.merge(result.toUIMessageStream());
         },

@@ -58,7 +58,7 @@ export function TicketCards() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   // Tab 状态：我的发布 / 服务市场
-  const [activeTab, setActiveTab] = useState<"discover" | "mine">("mine");
+  const [activeTab, setActiveTab] = useState<"mine" | "discover">("discover");
 
   const { data: myTickets = [], mutate: mutateMine } = useSWR<Ticket[]>(
     "/api/tickets?scope=mine",

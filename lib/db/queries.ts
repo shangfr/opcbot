@@ -949,8 +949,7 @@ export async function getAgents() {
       .select()
       .from(agent)
       .orderBy(asc(agent.sortOrder), desc(agent.createdAt));
-  } catch (error) {
-    console.error("🚨 Database Error in getAgents:", error); // 临时添加此行
+  } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to get agents");
   }
 }
@@ -1237,8 +1236,7 @@ export async function getCategories() {
       .select()
       .from(category)
       .orderBy(asc(category.sortOrder), asc(category.createdAt));
-  } catch (error) {
-    console.error("🚨 Database Error in getCategories:", error); // 临时添加此行
+  } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to get categories");
   }
 }

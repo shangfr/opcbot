@@ -50,15 +50,13 @@ export async function PATCH(request: Request) {
     let body: z.infer<typeof siteConfigSchema>;
     try {
       body = siteConfigSchema.parse(await request.json());
-    } catch (err) {
-      console.error("SiteConfig PATCH validation error:", err);
+    } catch {
       return new ChatbotError(
         "bad_request:site-config",
         "请求数据格式不正确。"
       ).toResponse();
     }
 
-    console.log("Saving site config:", body);
     const result = await upsertSiteConfig({
       defaultSystemPrompt: body.defaultSystemPrompt,
       defaultStarterQuestions: body.defaultStarterQuestions,
@@ -68,7 +66,6 @@ export async function PATCH(request: Request) {
 
     return Response.json(result, { status: 200 });
   } catch (err) {
-    console.error("SiteConfig PATCH error:", err);
     if (err instanceof ChatbotError) {
       return err.toResponse();
     }

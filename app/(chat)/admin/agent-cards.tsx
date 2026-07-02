@@ -20,7 +20,7 @@ export function AgentCards() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   
   // 新增 Tab 状态
-  const [activeTab, setActiveTab] = useState<"discover" | "mine">("mine");
+  const [activeTab, setActiveTab] = useState<"mine" | "discover">("discover");
 
   const { data: myAgents = [], mutate: mutateMine } = useSWR<Agent[]>("/api/agents?scope=mine", fetcher);
 

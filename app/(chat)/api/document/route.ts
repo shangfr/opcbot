@@ -13,7 +13,7 @@ const documentSchema = z.object({
   content: z.string(),
   title: z.string(),
   chatId: z.string(),
-  kind: z.enum(["text", "code", "image", "sheet"]),
+  kind: z.enum(["text", "code", "image", "html", "sheet"]),
   isManualEdit: z.boolean().optional(),
 });
 

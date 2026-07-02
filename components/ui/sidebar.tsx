@@ -179,7 +179,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="inset-x-0 bottom-0 top-auto h-[70dvh] w-full rounded-t-2xl border-t border-border/30 bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="inset-x-0 bottom-0 top-auto flex h-[90dvh] w-full flex-col rounded-t-2xl border-t border-border/30 bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
           showCloseButton={false}
           side="bottom"
         >
@@ -187,12 +187,19 @@ function Sidebar({
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
-          <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-sidebar-foreground/20" />
-          <div className="flex min-h-0 flex-1 w-full flex-col overflow-y-auto pt-2">{children}</div>
+          
+          {/* 顶部小圆点 */}
+          <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-sidebar-foreground/20" />
+          
+          {/* 核心修复：直接用 max-h 锁死高度，强制触发滚动，抛弃 flex-1 */}
+          <div className="flex w-full flex-col overflow-y-auto overscroll-contain pt-2 max-h-[calc(80dvh-1.5rem)]">
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     )
   }
+
 
   return (
     <div
