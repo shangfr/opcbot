@@ -11,6 +11,7 @@ import {
   Search,
   Trash2,
   Globe,  Lock, 
+  Sparkles,
 } from "lucide-react";
 
 import { useCallback, useMemo, useState } from "react";
@@ -42,6 +43,7 @@ import {
 } from "./ticket-shared";
 import { TicketFormDialog } from "./ticket-form-dialog";
 import { TicketDetailDrawer } from "./ticket-detail-drawer";
+import { TicketAIEditor } from "./ticket-ai-editor";
 
 export function TicketCards() {
   const {
@@ -98,6 +100,9 @@ export function TicketCards() {
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [deleteTicket, setDeleteTicket] = useState<Ticket | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // 🆕 AI 智能发布对话框状态
+  const [showAIEditor, setShowAIEditor] = useState(false);
 
   
   const openDetail = (ticket: Ticket) => {
@@ -391,14 +396,24 @@ export function TicketCards() {
         {/* ═══ Tab: 我的发布 ═══ */}
         {activeTab === "mine" && (
           <section>
-            <div className="mb-4 flex items-center justify-end">
+            <div className="mb-4 flex items-center justify-end gap-2">
+              {/* 🆕 AI 智能发布按钮 */}
+              <button
+                className="touch-target inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary to-primary/80 px-2.5 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-all hover:shadow-md"
+                onClick={() => setShowAIEditor(true)}
+                type="button"
+              >
+                <Sparkles className="size-3.5" />
+                <span className="hidden sm:inline">AI 智能发布</span>
+                <span className="sm:hidden">AI 发布</span>
+              </button>
               <button
                 className="touch-target inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
                 onClick={openCreate}
                 type="button"
               >
                 <Plus className="size-3.5" />
-                <span className="hidden sm:inline">发布信息</span>
+                <span className="hidden sm:inline">手动发布</span>
                 <span className="sm:hidden">创建</span>
               </button>
             </div>
@@ -538,6 +553,13 @@ export function TicketCards() {
         onOpenGroupDialog={() => {}}
         onSuccess={refreshAll}
         open={showCreate}
+      />
+
+      {/* 🆕 AI 智能发布对话框 */}
+      <TicketAIEditor
+        open={showAIEditor}
+        onOpenChange={setShowAIEditor}
+        onSuccess={refreshAll}
       />
 
       {/* 新增：详情抽屉组件 */}

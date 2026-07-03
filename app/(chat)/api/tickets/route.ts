@@ -5,8 +5,10 @@ import {
   batchUpdateTicketPriority,
   batchUpdateTicketStatus,
   createTicket,
+  createTicketCategory,
   deleteTicket,
   getTicketById,
+  getTicketCategories,
   getTickets,
   getTicketsByUserId,
   getVisibleTickets,
@@ -37,7 +39,54 @@ const ticketSchema = z.object({
   sortOrder: z.number().int().default(0),
   categoryId: z.string().uuid().nullable().default(null),
   visibility: z.enum(["public", "private"]).default("public"),
+  // 🆕 AI 解析产出的结构化表单 Blob URL，存入 content 字段
+  formSchemaUrl: z
+    .string()
+    .url()
+    .optional()
+    .describe("Vercel Blob 中结构化表单 JSON 的公开访问 URL"),
+  // 🆕 AI 解析推断的类目名称，用于自动归类（当 categoryId 为空时按名称匹配/创建）
+  autoCategoryName: z
+    .string()
+    .max(32)
+    .optional()
+    .describe("AI 推断的类目名称，用于自动分类匹配"),
 });
+
+/**
+ * 自动分类匹配：根据类目名称查找或创建 TicketCategory
+ * - 优先按名称匹配已有类目（不区分大小写）
+ * - 未匹配到则创建新类目，归属当前用户
+ * - 返回 categoryId（匹配/新建失败时返回 null）
+ */
+async function resolveCategoryIdByName(
+  name: string | undefined,
+  userId: string
+): Promise<string | null> {
+  if (!name || !name.trim()) return null;
+  const trimmed = name.trim();
+
+  try {
+    const categories = await getTicketCategories();
+    const matched = categories.find(
+      (c) => c.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (matched) return matched.id;
+
+    // 未匹配则创建新类目
+    const created = await createTicketCategory({
+      name: trimmed,
+      color: "#6366f1",
+      colorKey: "indigo",
+      sortOrder: 0,
+      userId,
+    });
+    return created.id;
+  } catch (err) {
+    console.error("[tickets] 自动分类失败:", err);
+    return null;
+  }
+}
 
 // 批量操作 schema
 const batchSchema = z.object({
@@ -177,17 +226,40 @@ export async function POST(request: Request) {
     const userIsAdmin = isAdmin(session.user);
     const visibility = userIsAdmin ? body.visibility : "private";
 
+    // 🆕 自动分类匹配：若未显式指定 categoryId，则按 AI 推断的类目名称匹配/创建
+    let resolvedCategoryId = body.categoryId;
+    if (!resolvedCategoryId && body.autoCategoryName) {
+      resolvedCategoryId = await resolveCategoryIdByName(
+        body.autoCategoryName,
+        session.user.id
+      );
+    }
+
+    // 🆕 将 formSchemaUrl 与原始 content 合并写入 content 字段
+    // content 字段最多 4096 字符，存储 JSON 元信息（formSchemaUrl + 摘要）
+    let finalContent = body.content;
+    if (body.formSchemaUrl) {
+      const meta = {
+        formSchemaUrl: body.formSchemaUrl,
+        autoCategoryName: body.autoCategoryName ?? null,
+        content: body.content ?? "",
+      };
+      const metaStr = JSON.stringify(meta);
+      // 若元信息超长则降级为仅存 URL
+      finalContent = metaStr.length <= 4096 ? metaStr : body.formSchemaUrl;
+    }
+
     const result = await createTicket({
       title: body.title,
       description: body.description,
-      content: body.content,
+      content: finalContent,
       priority: body.priority,
       status: body.status,
       progress: body.progress,
       assignee: body.assignee,
       phone: body.phone,
       dueDate: body.dueDate ? new Date(body.dueDate) : null,
-      categoryId: body.categoryId,
+      categoryId: resolvedCategoryId,
       userId: session.user.id,
       visibility,
       isActive: body.isActive,

@@ -6,9 +6,12 @@ import {
   Clock,
   Edit,
   Loader2,
+  MapPin,
   MessageSquare,
+  Package,
   Phone,
   Send,
+  Sparkles,
   Tag as TagIcon,
   Trash2,
   User as UserIcon,
@@ -59,7 +62,7 @@ type Tag = {
   color: string;
 };
 
-type TabKey = "detail" | "comments" | "activity" | "tags";
+type TabKey = "detail" | "match" | "comments" | "activity" | "tags";
 
 // --- 工具函数 ---
 /** 安全的日期格式化函数，防止 Invalid Date 报错 */
@@ -204,6 +207,7 @@ export function TicketDetailDrawer({
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode; count?: number }[] = [
     { key: "detail", label: "详情", icon: <CheckCircle2 className="size-3.5" /> },
+    { key: "match", label: "智能匹配", icon: <Sparkles className="size-3.5" /> },
     { key: "comments", label: "评论", icon: <MessageSquare className="size-3.5" />, count: comments.length },
     { key: "activity", label: "活动", icon: <Activity className="size-3.5" />, count: activities.length },
     { key: "tags", label: "标签", icon: <TagIcon className="size-3.5" /> },
@@ -280,6 +284,7 @@ export function TicketDetailDrawer({
         {/* Tab Content */}
         <ScrollArea className="flex-1">
           {tab === "detail" && <DetailTabContent ticket={ticket} overdue={!!overdue} />}
+          {tab === "match" && <MatchTabContent ticketId={ticket.id} />}
           {tab === "comments" && (
             <CommentsTabContent
               comments={comments}
@@ -303,7 +308,8 @@ function DetailTabContent({ ticket, overdue }: { ticket: Ticket; overdue: boolea
   return (
     <div className="space-y-4 p-5">
       <DetailField label="描述" value={ticket.description} />
-      {ticket.content && <DetailField label="详情" value={ticket.content} multiline />}
+      {/* 🆕 结构化供需表单回显（替代原始 content 文本） */}
+      <StructuredFormCard content={ticket.content} />
       
       <div className="grid grid-cols-2 gap-3">
         <DetailMeta icon={<UserIcon className="size-3.5" />} label="联系人" value={ticket.assignee || "无"} />
@@ -474,6 +480,330 @@ function DetailMeta({ icon, label, value, highlight }: { icon: React.ReactNode; 
         {label}
       </div>
       <div className={cn("mt-1 truncate text-xs font-medium", highlight && "text-red-600")}>{value}</div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// 🆕 结构化供需表单卡片
+// 解析 ticket.content 中的 formSchemaUrl，从 Blob 拉取表单 JSON 并结构化渲染。
+// 若 content 不是 JSON 或无 formSchemaUrl，降级为原始文本展示。
+// ════════════════════════════════════════════════════════════
+interface SupplyDemandForm {
+  demand_type?: "supply" | "demand" | null;
+  title?: string | null;
+  content?: string | null;
+  category?: string | null;
+  goods_name?: string | null;
+  material?: string | null;
+  spec?: string | null;
+  quantity?: number | string | null;
+  month_quantity?: number | string | null;
+  price_min?: number | string | null;
+  price_max?: number | string | null;
+  province?: string | null;
+  city?: string | null;
+  delivery_days?: number | string | null;
+  payment_method?: string | null;
+  settlement_method?: string | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  tags?: string[] | null;
+}
+
+function StructuredFormCard({ content }: { content: string | null }) {
+  const [form, setForm] = useState<SupplyDemandForm | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [fallbackText, setFallbackText] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!content) return;
+    let formUrl: string | null = null;
+    let rawText: string | null = null;
+    try {
+      const meta = JSON.parse(content);
+      formUrl = meta?.formSchemaUrl ?? null;
+      rawText = meta?.content ?? null;
+    } catch {
+      setFallbackText(content);
+      return;
+    }
+    if (!formUrl) {
+      setFallbackText(rawText ?? content);
+      return;
+    }
+    setLoading(true);
+    fetch(`/api/tickets/form-storage?url=${encodeURIComponent(formUrl)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("fetch failed"))))
+      .then((data) => setForm(data.form as SupplyDemandForm))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [content]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
+        <Loader2 className="size-3.5 animate-spin" />
+        加载结构化表单...
+      </div>
+    );
+  }
+
+  if (error || (!form && !fallbackText)) return null;
+
+  if (!form && fallbackText) {
+    return <DetailField label="详情" value={fallbackText} multiline />;
+  }
+
+  const f = form!;
+  const isSupply = f.demand_type === "supply";
+  const priceText =
+    f.price_min != null && f.price_max != null
+      ? `${f.price_min} ~ ${f.price_max} 元`
+      : f.price_min != null
+        ? `${f.price_min} 元起`
+        : f.price_max != null
+          ? `≤ ${f.price_max} 元`
+          : null;
+  const qtyText =
+    f.quantity != null
+      ? `${f.quantity}${f.month_quantity ? " / 月供 " + f.month_quantity : ""}`
+      : f.month_quantity != null
+        ? `月供 ${f.month_quantity}`
+        : null;
+  const locationText = [f.province, f.city].filter(Boolean).join(" · ") || null;
+
+  return (
+    <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+            isSupply
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+          )}
+        >
+          <Package className="size-3" />
+          {isSupply ? "供应" : "求购"}
+        </span>
+        {f.category && (
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+            {f.category}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5 text-xs">
+        {f.goods_name && <FormKV icon={<Package className="size-3" />} label="品名" value={String(f.goods_name)} />}
+        {f.material && <FormKV label="材质" value={String(f.material)} />}
+        {f.spec && <FormKV label="规格" value={String(f.spec)} />}
+        {qtyText && <FormKV label="数量" value={qtyText} />}
+        {priceText && <FormKV label="价格" value={priceText} highlight />}
+        {locationText && <FormKV icon={<MapPin className="size-3" />} label="地区" value={locationText} />}
+        {f.delivery_days != null && <FormKV label="交货期" value={`${f.delivery_days} 天`} />}
+        {f.payment_method && <FormKV label="付款方式" value={String(f.payment_method)} />}
+        {f.settlement_method && <FormKV label="结算方式" value={String(f.settlement_method)} />}
+      </div>
+
+      {f.tags && f.tags.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {f.tags.map((t, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+            >
+              <TagIcon className="size-2.5" />
+              {t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {f.content && (
+        <div className="mt-3 border-t border-border/40 pt-2.5">
+          <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            详细描述
+          </div>
+          <p className="whitespace-pre-wrap text-xs leading-relaxed text-foreground/80">
+            {f.content}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FormKV({
+  icon,
+  label,
+  value,
+  highlight,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex flex-col">
+      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        {icon}
+        {label}
+      </span>
+      <span className={cn("font-medium", highlight && "text-primary")}>{value}</span>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// 🆕 智能匹配 Tab
+// 调用 /api/tickets/match 获取与当前工单匹配的对方供需信息
+// ════════════════════════════════════════════════════════════
+interface MatchResult {
+  ticket: {
+    id: string;
+    title: string;
+    description: string;
+    assignee: string | null;
+    phone: string | null;
+    status: string;
+    priority: string;
+    createdAt: string;
+    categoryId: string | null;
+  };
+  form?: SupplyDemandForm | null;
+  score: number;
+  matchedDimensions: string[];
+}
+
+function MatchTabContent({ ticketId }: { ticketId: string }) {
+  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [sourceType, setSourceType] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/tickets/match?ticketId=${ticketId}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("match failed"))))
+      .then((data) => {
+        setMatches(data.data ?? []);
+        setSourceType(data.sourceType ?? null);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [ticketId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" />
+        <span className="ml-2 text-xs">正在智能匹配供需信息...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-12 text-center text-xs text-muted-foreground">
+        匹配服务暂时不可用，请稍后重试
+      </div>
+    );
+  }
+
+  if (matches.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+        <Sparkles className="size-8 text-muted-foreground/40" />
+        <p className="text-xs text-muted-foreground">
+          {sourceType
+            ? `暂未找到匹配的${sourceType === "supply" ? "求购" : "供应"}信息`
+            : "当前工单未包含结构化供需表单，无法进行智能匹配"}
+        </p>
+        <p className="text-[10px] text-muted-foreground/60">
+          建议完善品名、规格、价格等字段以提高匹配率
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 p-5">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Sparkles className="size-3.5 text-primary" />
+        为你找到 <span className="font-semibold text-primary">{matches.length}</span> 条
+        {sourceType === "supply" ? "求购" : "供应"}匹配信息
+      </div>
+      {matches.map((m) => (
+        <MatchCard key={m.ticket.id} match={m} />
+      ))}
+    </div>
+  );
+}
+
+function MatchCard({ match }: { match: MatchResult }) {
+  const scoreLevel = match.score >= 70 ? "high" : match.score >= 40 ? "mid" : "low";
+  const scoreColor =
+    scoreLevel === "high"
+      ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
+      : scoreLevel === "mid"
+        ? "text-amber-600 bg-amber-50 dark:bg-amber-900/20"
+        : "text-muted-foreground bg-muted/40";
+  const t = match.ticket;
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card p-3.5 transition-colors hover:border-primary/40">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h4 className="truncate text-sm font-medium">{t.title}</h4>
+          <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
+            {t.description}
+          </p>
+        </div>
+        <div className={cn("flex flex-col items-center rounded-lg px-2 py-1", scoreColor)}>
+          <span className="text-base font-bold leading-none">{match.score}</span>
+          <span className="text-[9px]">匹配度</span>
+        </div>
+      </div>
+
+      {match.matchedDimensions.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {match.matchedDimensions.map((d) => (
+            <span
+              key={d}
+              className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary"
+            >
+              {d} ✓
+            </span>
+          ))}
+        </div>
+      )}
+
+      {match.form && (
+        <div className="grid grid-cols-2 gap-1.5 text-[10px] text-muted-foreground">
+          {match.form.goods_name && (
+            <span>品名: <span className="text-foreground">{match.form.goods_name}</span></span>
+          )}
+          {match.form.spec && (
+            <span>规格: <span className="text-foreground">{match.form.spec}</span></span>
+          )}
+          {match.form.province && (
+            <span>地区: <span className="text-foreground">{match.form.province}</span></span>
+          )}
+        </div>
+      )}
+
+      {t.phone && (
+        <a
+          href={`tel:${t.phone}`}
+          className="mt-2.5 inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20"
+        >
+          <Phone className="size-3" />
+          {t.assignee || "联系对方"}
+        </a>
+      )}
     </div>
   );
 }
